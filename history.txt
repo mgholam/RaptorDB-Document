@@ -1,0 +1,29 @@
+V1
+---
+
+
+
+v1.1
+----
+- Count() 
+- InMemoryIndex property and SaveIndex() -> log files kept until index saved to disk
+- storage file header size bug fix
+- safedictionary byte[] key fix 
+
+v1.2
+-----
+- EnumerateStorageFile() : keyvaluepair -> using yield
+- GetDuplicates(key)
+- FetchDuplicate(offset)  
+- FreeCacheOnCommit property
+
+v1.3
+-----
+- bug fix CheckHeader in StorageFile
+- bug fix Get in LogFile 
+
+v1.4
+----
+- reverse short, int, long bytes (big endian) so they sort properly in byte compare (in ascending order)
+- read operation on data file uses another stream 
+- bug fix duplicate page not set in keypointer

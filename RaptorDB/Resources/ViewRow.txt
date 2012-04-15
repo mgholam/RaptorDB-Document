@@ -1,0 +1,8 @@
+public class %VIEWNAME%Row 
+{ 
+	public %VIEWNAME%Row(object[] values) 
+	{ 
+		d = values; 
+	}
+	private object[] d;
+	public Guid DocID { get { return (Guid)d[0]; } set { d[0] = value; } }
