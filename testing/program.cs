@@ -35,6 +35,7 @@ namespace testing
         public List<LineItem> Items { get; set; }
         public DateTime Date { get; set; }
         public int Serial { get; set; }
+        public byte Status { get; set; }
     }
 
 
@@ -49,6 +50,7 @@ namespace testing
                 public DateTime InvoiceDate;
                 public string Address;
                 public int Serial;
+                public byte Status;
             }
 
             public SalesInvoiceView()
@@ -65,7 +67,7 @@ namespace testing
 
                 this.Mapper = (api, docid, doc) =>
                 {
-                    api.Emit(docid, doc.CustomerName, doc.Date, doc.Address, doc.Serial);
+                    api.Emit(docid, doc.CustomerName, doc.Date, doc.Address, doc.Serial, doc.Status);
                 };
             }
         }
@@ -93,6 +95,7 @@ namespace testing
                     Date = FastDateTime.Now,
                     Serial = i % 10000,
                     CustomerName = "me " + i % 10,
+                    Status = (byte)(i % 4),
                     Address = "df asd sdf asdf asdf"
                 };
 
@@ -106,7 +109,7 @@ namespace testing
             dt = FastDateTime.Now;
 
             int j = 50;
-            var res = rap.Query(typeof(SalesInvoice), (SalesInvoice s) => (s.Serial < j) || (s.Serial <=10 && s.Serial>2));
+            var res = rap.Query(typeof(SalesInvoice), (SalesInvoice s) => (s.Serial < j) && (s.Status == 1 || s.Status == 3));
 
             if (res.OK)
             {

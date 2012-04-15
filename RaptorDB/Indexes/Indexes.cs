@@ -27,7 +27,14 @@ namespace RaptorDB
 
         public WAHBitArray Query(RDBExpression ex, object from)
         {
-            return base.Query(ex, (T)from);
+            T f = default(T);
+            if(typeof(T).Equals(from.GetType()) == false )
+            {
+                f = (T) Convert.ChangeType(from, typeof(T));
+            }
+            else
+                f = (T)from;
+            return base.Query(ex, f);
         }
 
         void IIndex.FreeMemory()

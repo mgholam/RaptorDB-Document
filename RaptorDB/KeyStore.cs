@@ -259,7 +259,6 @@ namespace RaptorDB
         private MGIndex<T> _index;
         private string _datExtension = ".mgdat";
         private string _idxExtension = ".mgidx";
-        //private long _Count = -1;
         private System.Timers.Timer _savetimer;
 
 
