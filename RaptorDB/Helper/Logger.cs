@@ -152,16 +152,21 @@ namespace RaptorDB
         private string FormatLog(string log, string type, string meth, string msg, object[] objs)
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine(
-                "" + DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss") +
-                "|" + log +
-                "|" + Thread.CurrentThread.ManagedThreadId +
-                "|" + type +
-                "|" + meth +
-                "| " + msg);
+            sb.Append(DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss"));
+            sb.Append("|");
+            sb.Append(log);
+            sb.Append("|");
+            sb.Append(Thread.CurrentThread.ManagedThreadId.ToString());
+            sb.Append("|");
+            sb.Append(type);
+            sb.Append("|");
+            sb.Append(meth);
+            sb.Append("| ");
+            sb.AppendLine(msg);
 
-            foreach (object o in objs)
-                sb.AppendLine("" + o);
+            if (objs != null)
+                foreach (object o in objs)
+                    sb.AppendLine("" + o);
 
             return sb.ToString();
         }

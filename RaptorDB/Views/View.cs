@@ -23,7 +23,7 @@ namespace RaptorDB.Views
 
     public abstract class ViewBase
     {
-        public Guid DocID { get; set; }
+        //public Guid DocID { get; set; }
         /// <summary>
         /// Name of the view will be used for foldernames and filename and generated code
         /// </summary>
@@ -94,10 +94,10 @@ namespace RaptorDB.Views
 
     public class View<T> : ViewBase
     {
-        public delegate void MapFunctionDelgate<V>(Mapping.IMapAPI api, Guid docid, V doc);
+        public delegate void MapFunctionDelgate<V>(IMapAPI api, Guid docid, V doc);
         public View()
         {
-            DocID = Guid.NewGuid();
+            //DocID = Guid.NewGuid();
             isActive = true;
             FireOnTypes = new List<string>();
             DeleteBeforeInsert = true;
@@ -110,14 +110,14 @@ namespace RaptorDB.Views
         [XmlIgnore]
         public MapFunctionDelgate<T> Mapper { get; set; }
 
-        public bool Verify()
+        public Result Verify()
         {
-            if (Name == null || Name == "") return false;
-            if (Schema == null) return false;
-            if (Mapper == null) return false;
-            if (FireOnTypes.Count == 0) return false;
+            if (Name == null || Name == "") return new Result(false, new Exception("Name must be given"));
+            if (Schema == null) return new Result(false, new Exception("Schema must be defined"));
+            if (Mapper == null) return new Result(false, new Exception("A map function must be defined"));
+            if (FireOnTypes.Count == 0) return new Result(false, new Exception("No types have been defined to fire on"));
             // FIX : add more verifications
-            return true;
+            return new Result(true);
         }
     }
 }

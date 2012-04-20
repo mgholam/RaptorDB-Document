@@ -10,7 +10,7 @@ namespace RaptorDB
     /// </summary>
     public class NormalString
     {
-        public string str;
+        //public string str;
     }
 
     internal interface IGetBytes<T>

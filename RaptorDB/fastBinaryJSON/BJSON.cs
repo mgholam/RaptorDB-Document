@@ -425,6 +425,7 @@ namespace fastBinaryJSON
         private object ParseDictionary(Dictionary<string, object> d, Dictionary<string, object> globaltypes, Type type)
         {
             object tn = "";
+            globaltypes = new Dictionary<string, object>();
             if (d.TryGetValue("$types", out tn))
             {
                 UsingGlobalTypes = true;

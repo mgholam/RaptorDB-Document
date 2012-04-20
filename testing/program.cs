@@ -15,6 +15,7 @@ using System.Collections.ObjectModel;
 
 namespace testing
 {
+    #region [  class definition  ]
     public class LineItem
     {
         public decimal QTY { get; set; }
@@ -36,9 +37,8 @@ namespace testing
         public DateTime Date { get; set; }
         public int Serial { get; set; }
         public byte Status { get; set; }
-    }
-
-
+    } 
+    #endregion
 
     public class program
     {
@@ -72,11 +72,43 @@ namespace testing
             }
         }
 
+        public class SalesItemRowsView : View<SalesInvoice>
+        {
+            public class RowSchema
+            {
+                public NormalString Product;
+                public decimal QTY;
+                public decimal Price;
+                public decimal Discount;
+            }
+
+            public SalesItemRowsView()
+            {
+                this.Name = "SalesItemRows";
+                this.Description = "";
+                this.isPrimaryList = false;
+                this.isActive = true;
+                this.BackgroundIndexing = true;
+
+                this.Schema = typeof(SalesItemRowsView.RowSchema);
+
+                this.AddFireOnTypes(typeof(SalesInvoice));
+
+                this.Mapper = (api, docid, doc) =>
+                    {
+                        if (doc.Status == 3 && doc.Items != null)
+                            foreach (var i in doc.Items)
+                            {
+                                api.Emit(docid, i.Product, i.QTY, i.Price, i.Discount);
+                            }
+                    };
+            }
+        }
 
         public static void Main()
         {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
-            DateTime dt = FastDateTime.Now;
+
 
             RaptorDB.RaptorDB rap = RaptorDB.RaptorDB.Open("RaptorDB");
 
@@ -86,7 +118,20 @@ namespace testing
             {
                 Console.WriteLine("Error registering view");
                 return;
-            }              
+            }
+
+            SalesItemRowsView v2 = new SalesItemRowsView();
+
+            if (rap.RegisterView(v2).OK == false)
+            {
+                Console.WriteLine("Error registering view");
+                return;
+            }
+            DateTime dt = FastDateTime.Now;
+            var q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "asdas 1" || l.Product == "asdas 3"));
+            Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+            
+            dt = FastDateTime.Now;
 
             for (int i = 0; i < 100000; i++)
             {
@@ -98,24 +143,34 @@ namespace testing
                     Status = (byte)(i % 4),
                     Address = "df asd sdf asdf asdf"
                 };
-
+                inv.Items = new List<LineItem>();
+                for (int k = 0; k < 5; k++)
+                {
+                    inv.Items.Add(new LineItem() { Product = "asdas " + k, Discount = 0, Price = 10 + k, QTY = 1 + k });
+                }
                 rap.Save(inv.ID, inv);
             }
 
             Console.WriteLine("insert time secs = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("Press (R) for redo query");
-            //Thread.Sleep(4000);
-            redo:
+        //Thread.Sleep(4000);
+        redo:
             dt = FastDateTime.Now;
-
-            int j = 50;
-            var res = rap.Query(typeof(SalesInvoice), (SalesInvoice s) => (s.Serial < j) && (s.Status == 1 || s.Status == 3));
+            //q = rap.Query("SalesItemRows", (LineItem l) => (l.Price == 10));
+            int j = 100;
+            var res = rap.Query(//"SalesInvoice",
+                typeof(SalesInvoice),
+                (SalesInvoice s) => (s.Serial < j) && (s.Status == 1 || s.Status == 3));
 
             if (res.OK)
             {
                 Console.WriteLine("count = " + res.Count);
             }
             Console.WriteLine("query time secs = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+            dt = FastDateTime.Now;
+            q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "asdas 1" || l.Product == "asdas 3"));
+            Console.WriteLine("Count = " + q.Count);
+            Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             if (Console.ReadKey().Key == ConsoleKey.R) { Console.WriteLine("edo"); goto redo; }
             rap.Dispose();
             return;

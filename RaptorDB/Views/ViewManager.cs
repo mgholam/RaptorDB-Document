@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using RaptorDB.Mapping;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Threading;
@@ -20,33 +19,34 @@ namespace RaptorDB.Views
         private KeyStoreGuid _objectStore;
         private ILog _log = LogManager.GetLogger(typeof(ViewManager));
         private string _Path = "";
+        // list of views
         private SafeDictionary<string, ViewHandler> _views = new SafeDictionary<string, ViewHandler>();
+        // primary view list
         private SafeDictionary<Type, string> _primaryView = new SafeDictionary<Type, string>();
+        // other views type->list of view names to call
         private SafeDictionary<Type, List<string>> _otherViews = new SafeDictionary<Type, List<string>>();
         private TaskQueue _que = new TaskQueue();
 
-        internal Result Query<T>(Type objtype, Expression<Predicate<T>> filter, int start, int count)
+        internal Result Query<T>(Type objtype, Expression<Predicate<T>> filter)//, int start, int count)
         {
             string viewname = null;
             // find view from name
             if (_primaryView.TryGetValue(objtype, out viewname))
-            {
-                return Query(viewname, filter, start, count);
-            }
+                return Query(viewname, filter);//, start, count);
+            
             _log.Error("view not found", viewname);
-            return null;
+            return new Result(false, new Exception("view not found : "+ viewname));
         }
 
-        internal Result Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
+        internal Result Query<T>(string viewname, Expression<Predicate<T>> filter)//, int start, int count)
         {
             ViewHandler view = null;
             // find view from name
             if (_views.TryGetValue(viewname, out view))
-            {
-                return view.Query(filter, start, count);
-            }
+                return view.Query(filter);//, start, count);
+            
             _log.Error("view not found", viewname);
-            return null;
+            return new Result(false, new Exception("view not found : " + viewname));
         }
 
         internal void Insert<T>(string viewname, Guid docid, T data)
@@ -61,9 +61,10 @@ namespace RaptorDB.Views
                     return;
                 }
                 if (vman._view.BackgroundIndexing) 
-                    _que.AddTask(() => vman.Insert(docid, data));
+                    _que.AddTask(() => vman.Insert<T>(docid, data));
                 else
-                    vman.Insert(docid, data);
+                    vman.Insert<T>(docid, data);
+
                 return;
             }
             _log.Error("view not found", viewname);
@@ -78,9 +79,8 @@ namespace RaptorDB.Views
         {
             byte[] b = null;
             if (_objectStore.Get(guid, out b))
-            {
                 return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
-            }
+            
             return null;
         }
 
@@ -105,9 +105,8 @@ namespace RaptorDB.Views
 
         internal Result RegisterView<T>(View<T> view)
         {
-            if (view.Verify() == false) return new Result(false);
-            // FEATURE : check if view name exists in memory -> replace
-            //       serialize to folder
+            Result ret = view.Verify();
+            if (ret.OK == false) return ret;
 
             ViewHandler vh = null;
             if (_views.TryGetValue(view.Name, out vh))
@@ -129,11 +128,22 @@ namespace RaptorDB.Views
                 {
                     foreach (string tn in view.FireOnTypes)
                     {
-                        // FIX : add to other views
-                        //_otherViews.Add(Type.GetType(tn), view.Name);
+                        // add to other views
+                        List<string> list = null;
+                        Type t = Type.GetType(tn);
+                        if (_otherViews.TryGetValue(t, out list))
+                            list.Add(view.Name);
+                        else
+                        {
+                            list = new List<string>();
+                            list.Add(view.Name);
+                            _otherViews.Add(t, list);
+                        }
                     }
                 }
             }
+
+            // FEATURE : add existing data to this view
 
             return new Result(true);
         }
@@ -144,9 +154,7 @@ namespace RaptorDB.Views
             _que.Shutdown();
             // shutdown views
             foreach (var v in _views)
-            {
                 v.Value.Shutdown();
-            }
         }
     }
 }

@@ -10,17 +10,18 @@ namespace RaptorDB
 {
     internal class StorageFile<T>
     {
-        FileStream _datawrite;
-        FileStream _recfilewrite;
-        FileStream _recfileread = null;
-        FileStream _dataread = null;
+        FileStream _data;
+        FileStream _recs;
+        //FileStream _recfileread = null;
+        //FileStream _dataread = null;
 
-        private bool _BackgroundWrites = false;
+        //private bool _BackgroundWrites = false;
         private string _filename = "";
         private string _recfilename = "";
         private int _lastRecordNum = 0;
         private long _lastWriteOffset = 0;
         IGetBytes<T> _T = null;
+        private bool _dirty = false;
 
         public static byte[] _fileheader = { (byte)'M', (byte)'G', (byte)'D', (byte)'B',
                                               0, // 4 -- not used,
@@ -48,118 +49,123 @@ namespace RaptorDB
 
         public bool SkipDateTime = false;
 
-        public StorageFile(string filename, bool backgroundwrites)
+        public StorageFile(string filename)//, bool backgroundwrites)
         {
-            _BackgroundWrites = backgroundwrites;
+            //_BackgroundWrites = backgroundwrites;
             _T = RDBDataType<T>.ByteHandler();
             _filename = filename;
             if (File.Exists(filename) == false)
-                _datawrite = new FileStream(filename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
+                _data = new FileStream(filename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
             else
-                _datawrite = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                _data = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
 
             // load rec pointers
             _recfilename = filename.Substring(0, filename.LastIndexOf('.')) + ".mgrec";
             if (File.Exists(_recfilename) == false)
-                _recfilewrite = new FileStream(_recfilename, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite);
+                _recs = new FileStream(_recfilename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
             else
-                _recfilewrite = new FileStream(_recfilename, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+                _recs = new FileStream(_recfilename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
 
-            if (_datawrite.Length == 0)
+            if (_data.Length == 0)
             {
                 // new file
-                _datawrite.Write(_fileheader, 0, _fileheader.Length);
-                _datawrite.Flush();
+                _data.Write(_fileheader, 0, _fileheader.Length);
+                _data.Flush();
             }
 
-            _lastRecordNum = (int)(_recfilewrite.Length / 8);
-            _recfilewrite.Seek(0L, SeekOrigin.End);
-            _lastWriteOffset = _datawrite.Seek(0L, SeekOrigin.End);
+            _lastRecordNum = (int)(_recs.Length / 8);
+            _recs.Seek(0L, SeekOrigin.End);
+            _lastWriteOffset = _data.Seek(0L, SeekOrigin.End);
         }
 
         public int Count()
         {
-            return (int)(_recfilewrite.Length >> 3);
+            return (int)(_recs.Length >> 3);
         }
 
         #region [  traverse  ]
-        public IEnumerable<KeyValuePair<T, byte[]>> Traverse()
-        {
-            long offset = 0;
-            offset = _fileheader.Length;
+        //public IEnumerable<KeyValuePair<T, byte[]>> Traverse()
+        //{
+        //    long offset = 0;
+        //    offset = _fileheader.Length;
 
-            while (offset < _datawrite.Length)
-            {
-                long pointer = offset;
-                byte[] key;
-                bool deleted = false;
-                offset = NextOffset(offset, out key, out deleted);
-                KeyValuePair<T, byte[]> kv = new KeyValuePair<T, byte[]>(_T.GetObject(key, 0, key.Length), internalReadData(pointer));
-                if (deleted == false)
-                    yield return kv;
-            }
-        }
+        //    while (offset < _datawrite.Length)
+        //    {
+        //        long pointer = offset;
+        //        byte[] key;
+        //        bool deleted = false;
+        //        offset = NextOffset(offset, out key, out deleted);
+        //        KeyValuePair<T, byte[]> kv = new KeyValuePair<T, byte[]>(_T.GetObject(key, 0, key.Length), internalReadData(pointer));
+        //        if (deleted == false)
+        //            yield return kv;
+        //    }
+        //}
 
-        private long NextOffset(long curroffset, out byte[] key, out bool isdeleted)
-        {
-            isdeleted = false;
-            if (_dataread == null)
-                _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            {
-                long next = _dataread.Length;
-                // seek offset in file
-                byte[] hdr = new byte[_rowheader.Length];
-                _dataread.Seek(curroffset, System.IO.SeekOrigin.Begin);
-                // read header
-                _dataread.Read(hdr, 0, _rowheader.Length);
-                key = new byte[hdr[(int)HDR_POS.KeyLen]];
-                _dataread.Read(key, 0, hdr[(int)HDR_POS.KeyLen]);
-                // check header
-                if (CheckHeader(hdr))
-                {
-                    next = curroffset + hdr.Length + Helper.ToInt32(hdr, (int)HDR_POS.DataLength) + hdr[(int)HDR_POS.KeyLen];
-                    isdeleted = isDeleted(hdr);
-                }
+        //private long NextOffset(long curroffset, out byte[] key, out bool isdeleted)
+        //{
+        //    isdeleted = false;
+        //    if (_dataread == null)
+        //        _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        //    {
+        //        long next = _dataread.Length;
+        //        // seek offset in file
+        //        byte[] hdr = new byte[_rowheader.Length];
+        //        _dataread.Seek(curroffset, System.IO.SeekOrigin.Begin);
+        //        // read header
+        //        _dataread.Read(hdr, 0, _rowheader.Length);
+        //        key = new byte[hdr[(int)HDR_POS.KeyLen]];
+        //        _dataread.Read(key, 0, hdr[(int)HDR_POS.KeyLen]);
+        //        // check header
+        //        if (CheckHeader(hdr))
+        //        {
+        //            next = curroffset + hdr.Length + Helper.ToInt32(hdr, (int)HDR_POS.DataLength) + hdr[(int)HDR_POS.KeyLen];
+        //            isdeleted = isDeleted(hdr);
+        //        }
 
-                return next;
-            }
-        }
+        //        return next;
+        //    }
+        //}
         #endregion
 
         public int WriteData(T key, byte[] data, bool deleted)
         {
-            byte[] k = _T.GetBytes(key);
-            int kl = k.Length;
+            lock (_lock)
+            {
+                byte[] k = _T.GetBytes(key);
+                int kl = k.Length;
 
-            // seek end of file
-            long offset = _lastWriteOffset;
-            byte[] hdr = CreateRowHeader(kl, (data == null ? 0 : data.Length));
-            if (deleted)
-                hdr[(int)HDR_POS.Flags] = (byte)1;
-            // write header info
-            _datawrite.Write(hdr, 0, hdr.Length);
-            // write key
-            _datawrite.Write(k, 0, kl);
-            if (data != null)
-            {
-                // write data block
-                _datawrite.Write(data, 0, data.Length);
-                _lastWriteOffset += data.Length;
+                // seek end of file
+                long offset = _lastWriteOffset;
+                byte[] hdr = CreateRowHeader(kl, (data == null ? 0 : data.Length));
+                if (deleted)
+                    hdr[(int)HDR_POS.Flags] = (byte)1;
+                // write header info
+                _data.Write(hdr, 0, hdr.Length);
+                // write key
+                _data.Write(k, 0, kl);
+                if (data != null)
+                {
+                    // write data block
+                    _data.Write(data, 0, data.Length);
+                    _lastWriteOffset += data.Length;
+                    //if (Global.FlushStorageFileImmetiatley)
+                    //    _data.Flush();
+                }
+                // update pointer
+                _lastWriteOffset += hdr.Length;
+                _lastWriteOffset += kl;
+                // return starting offset -> recno
+                int recno = _lastRecordNum++;
+                _recs.Write(Helper.GetBytes(offset, false), 0, 8);
                 if (Global.FlushStorageFileImmetiatley)
-                    _datawrite.Flush();
+                {
+                    _data.Flush();
+                    _recs.Flush();
+                }
+                else
+                    _dirty = true;
+                return recno;
             }
-            // update pointer
-            _lastWriteOffset += hdr.Length;
-            _lastWriteOffset += kl;
-            // return starting offset -> recno
-            int recno = _lastRecordNum++;
-            _recfilewrite.Write(Helper.GetBytes(offset, false), 0, 8);
-            if (Global.FlushStorageFileImmetiatley)
-            {
-                _datawrite.Flush();
-                _recfilewrite.Flush();
-            }
-            return recno;
         }
 
         private byte[] CreateRowHeader(int keylen, int datalen)
@@ -174,50 +180,73 @@ namespace RaptorDB
             return rh;
         }
 
+        private object _lock = new object();
         public byte[] ReadData(int recnum)
         {
-            if (_BackgroundWrites == false) // kludge
+            lock (_lock)
             {
-                _datawrite.Flush();
-                _recfilewrite.Flush();
+                //if (_BackgroundWrites == false) // kludge
+                DirtyCheck();
+                long off = recnum * 8L;
+                //if (_recfileread == null)
+                //    _recfileread = new FileStream(_recfilename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                byte[] b = new byte[8];
+
+                _recs.Seek(off, SeekOrigin.Begin);//_recfileread
+                _recs.Read(b, 0, 8);
+                off = Helper.ToInt64(b, 0);
+                //if (_dataread == null)
+                //    _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                //return internalReadData(off);
+                
+                // seek offset in file
+                byte[] hdr = new byte[_rowheader.Length];
+                _data.Seek(off, System.IO.SeekOrigin.Begin); // _dataread
+                // read header
+                _data.Read(hdr, 0, _rowheader.Length);
+                // check header
+                if (CheckHeader(hdr))
+                {
+                    // skip key bytes
+                    _data.Seek(hdr[(int)HDR_POS.KeyLen], System.IO.SeekOrigin.Current);
+                    int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
+                    byte[] data = new byte[dl];
+                    // read data block
+                    _data.Read(data, 0, dl);
+                    return data;
+                }
+                else
+                    throw new Exception("data header error at offset : " + off + " data file size = " + _data.Length);//_dataread
+
             }
-            long off = recnum * 8;
-            if (_recfileread == null)
-                _recfileread = new FileStream(_recfilename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-            byte[] b = new byte[8];
-
-            _recfileread.Seek(off, SeekOrigin.Begin);
-            _recfileread.Read(b, 0, 8);
-            off = Helper.ToInt64(b, 0);
-
-            return internalReadData(off);
         }
 
-        private byte[] internalReadData(long offset)
-        {
-            if (_dataread == null)
-                _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        //private byte[] internalReadData(long offset)
+        //{
+        //    //if (_dataread == null)
+        //    //    _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-            // seek offset in file
-            byte[] hdr = new byte[_rowheader.Length];
-            _dataread.Seek(offset, System.IO.SeekOrigin.Begin);
-            // read header
-            _dataread.Read(hdr, 0, _rowheader.Length);
-            // check header
-            if (CheckHeader(hdr))
-            {
-                // skip key bytes
-                _dataread.Seek(hdr[(int)HDR_POS.KeyLen], System.IO.SeekOrigin.Current);
-                int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
-                byte[] data = new byte[dl];
-                // read data block
-                _dataread.Read(data, 0, dl);
-                return data;
-            }
-            else
-                throw new Exception("data header error at offset : " + offset + " data file size = " + _dataread.Length);
-        }
+        //    // seek offset in file
+        //    byte[] hdr = new byte[_rowheader.Length];
+        //    _data.Seek(offset, System.IO.SeekOrigin.Begin); // _dataread
+        //    // read header
+        //    _data.Read(hdr, 0, _rowheader.Length);
+        //    // check header
+        //    if (CheckHeader(hdr))
+        //    {
+        //        // skip key bytes
+        //        _data.Seek(hdr[(int)HDR_POS.KeyLen], System.IO.SeekOrigin.Current);
+        //        int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
+        //        byte[] data = new byte[dl];
+        //        // read data block
+        //        _data.Read(data, 0, dl);
+        //        return data;
+        //    }
+        //    else
+        //        throw new Exception("data header error at offset : " + offset + " data file size = " + _data.Length);//_dataread
+        //}
 
         private bool CheckHeader(byte[] hdr)
         {
@@ -228,15 +257,15 @@ namespace RaptorDB
 
         public void Shutdown()
         {
-            FlushClose(_dataread);
-            FlushClose(_recfileread);
-            FlushClose(_recfilewrite);
-            FlushClose(_datawrite);
+            //FlushClose(_dataread);
+            //FlushClose(_recfileread);
+            FlushClose(_recs);
+            FlushClose(_data);
 
-            _dataread = null;
-            _recfileread = null;
-            _recfilewrite = null;
-            _datawrite = null;
+            //_dataread = null;
+            //_recfileread = null;
+            _recs = null;
+            _data = null;
         }
 
         private void FlushClose(FileStream st)
@@ -250,37 +279,51 @@ namespace RaptorDB
 
         internal T GetKey(int recnum, out bool deleted)
         {
-            deleted = false;
-            long off = recnum * 8;
-            if (_recfileread == null)
-                _recfileread = new FileStream(_recfilename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-            byte[] b = new byte[8];
-
-            _recfileread.Seek(off, SeekOrigin.Begin);
-            _recfileread.Read(b, 0, 8);
-            off = Helper.ToInt64(b, 0);
-
-            if (_dataread == null)
-                _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-            // seek offset in file
-            byte[] hdr = new byte[_rowheader.Length];
-            _dataread.Seek(off, System.IO.SeekOrigin.Begin);
-            // read header
-            _dataread.Read(hdr, 0, _rowheader.Length);
-
-            if (CheckHeader(hdr))
+            lock (_lock)
             {
-                deleted = isDeleted(hdr);
-                byte kl = hdr[3];
-                byte[] kbyte = new byte[kl];
+                DirtyCheck();
+                deleted = false;
+                long off = recnum * 8L;
+                //if (_recfileread == null)
+                //    _recfileread = new FileStream(_recfilename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-                _dataread.Read(kbyte, 0, kl);
-                return _T.GetObject(kbyte, 0, kl);
+                byte[] b = new byte[8];
+
+                _recs.Seek(off, SeekOrigin.Begin); //_recfileread
+                _recs.Read(b, 0, 8);
+                off = Helper.ToInt64(b, 0);
+
+                //if (_dataread == null)
+                //    _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                // seek offset in file
+                byte[] hdr = new byte[_rowheader.Length];
+                _data.Seek(off, System.IO.SeekOrigin.Begin);//_dataread
+                // read header
+                _data.Read(hdr, 0, _rowheader.Length);
+
+                if (CheckHeader(hdr))
+                {
+                    deleted = isDeleted(hdr);
+                    byte kl = hdr[3];
+                    byte[] kbyte = new byte[kl];
+
+                    _data.Read(kbyte, 0, kl);
+                    return _T.GetObject(kbyte, 0, kl);
+                }
+
+                return default(T);
             }
+        }
 
-            return default(T);
+        private void DirtyCheck()
+        {
+            if (_dirty)
+            {
+                _dirty = false;
+                _data.Flush();
+                _recs.Flush();
+            }
         }
 
         private bool isDeleted(byte[] hdr)

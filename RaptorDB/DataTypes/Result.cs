@@ -5,6 +5,11 @@ using System.Text;
 
 namespace RaptorDB
 {
+    /// <summary>
+    /// Result of queries
+    ///    OK : T = Query with data,  F = EX has the exception
+    ///    Rows : query rows
+    /// </summary>
     public class Result
     {
         public Result()
@@ -25,5 +30,7 @@ namespace RaptorDB
         public int TotalCount { get; set; }
         public int Count { get; set; }
         public List<object[]> Rows { get; set; }
+
+        // FIX : add schema for rows
     }
 }

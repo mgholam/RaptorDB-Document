@@ -127,7 +127,7 @@ namespace RaptorDB
             if (exp == RDBExpression.Equal || exp == RDBExpression.NotEqual)
                 return doEqualOp(exp, key);
 
-            // FEATURE : optimize invert search if page count less for the inverted pages
+            // FEATURE : optimize complement search if page count less for the complement pages
 
             if (exp == RDBExpression.Less || exp == RDBExpression.LessEqual)
                 return doLessOp(exp, key);
@@ -308,32 +308,32 @@ namespace RaptorDB
             _index.BitmapFlush();
         }
 
-        // FEATURE : bool includeDuplices, int start, int count)
-        public IEnumerable<KeyValuePair<T, int>> Enumerate(T fromkey)
-        {
-            List<KeyValuePair<T, int>> list = new List<KeyValuePair<T, int>>();
-            // enumerate
-            PageInfo pi;
-            Page<T> page = LoadPage(fromkey, out pi);
-            T[] keys = page.tree.Keys();
-            Array.Sort<T>(keys);
+        //// FEATURE : bool includeDuplices, int start, int count)
+        //public IEnumerable<KeyValuePair<T, int>> Enumerate(T fromkey)
+        //{
+        //    List<KeyValuePair<T, int>> list = new List<KeyValuePair<T, int>>();
+        //    // enumerate
+        //    PageInfo pi;
+        //    Page<T> page = LoadPage(fromkey, out pi);
+        //    T[] keys = page.tree.Keys();
+        //    Array.Sort<T>(keys);
 
-            int p = Array.BinarySearch<T>(keys, fromkey);
-            for (int i = p; i < keys.Length; i++)
-                list.Add(new KeyValuePair<T, int>(keys[i], page.tree[keys[i]].RecordNumber));
+        //    int p = Array.BinarySearch<T>(keys, fromkey);
+        //    for (int i = p; i < keys.Length; i++)
+        //        list.Add(new KeyValuePair<T, int>(keys[i], page.tree[keys[i]].RecordNumber));
 
-            while (page.RightPageNumber != -1)
-            {
-                page = LoadPage(page.RightPageNumber);
-                keys = page.tree.Keys();
-                Array.Sort<T>(keys);
+        //    while (page.RightPageNumber != -1)
+        //    {
+        //        page = LoadPage(page.RightPageNumber);
+        //        keys = page.tree.Keys();
+        //        Array.Sort<T>(keys);
 
-                foreach (var k in keys)
-                    list.Add(new KeyValuePair<T, int>(k, page.tree[k].RecordNumber));
-            }
+        //        foreach (var k in keys)
+        //            list.Add(new KeyValuePair<T, int>(k, page.tree[k].RecordNumber));
+        //    }
 
-            return list;
-        }
+        //    return list;
+        //}
 
         public IEnumerable<int> GetDuplicates(T key)
         {

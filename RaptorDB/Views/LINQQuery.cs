@@ -7,20 +7,23 @@ using System.Reflection;
 
 namespace RaptorDB.Views
 {
-    delegate WAHBitArray QueryFromTo(string colname, object from, object to);
+    //FEATURE : handle Contains, StartsWith, Between predicates
+ 
+    //delegate WAHBitArray QueryFromTo(string colname, object from, object to);
     delegate WAHBitArray QueryExpression(string colname, RDBExpression exp, object from);
 
     internal class QueryVisitor : ExpressionVisitor
     {
-        public QueryVisitor(QueryFromTo fromto, QueryExpression express)
+        public QueryVisitor(//QueryFromTo fromto, 
+            QueryExpression express)
         {
-            qfromto = fromto;
+            //qfromto = fromto;
             qexpression = express;
         }
         //public StringBuilder sb = new StringBuilder();
         public Stack<object> _stack = new Stack<object>();
         public Stack<object> _bitmap = new Stack<object>();
-        QueryFromTo qfromto;
+        //QueryFromTo qfromto;
         QueryExpression qexpression;
 
         protected override Expression VisitBinary(BinaryExpression b)

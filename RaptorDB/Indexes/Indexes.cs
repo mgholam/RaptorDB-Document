@@ -20,10 +20,10 @@ namespace RaptorDB
             base.Set((T)key, recnum);
         }
 
-        public WAHBitArray Query(object fromkey, object tokey)
-        {
-            return base.Query((T)fromkey, (T)tokey);
-        }
+        //public WAHBitArray Query(object fromkey, object tokey)
+        //{
+        //    return base.Query((T)fromkey, (T)tokey);
+        //}
 
         public WAHBitArray Query(RDBExpression ex, object from)
         {
@@ -64,7 +64,7 @@ namespace RaptorDB
                 ReadFile();
         }
 
-        private WAHBitArray _bits = new WAHBitArray();
+        internal WAHBitArray _bits = new WAHBitArray();
         private string _filename;
         private string _path;
 
@@ -73,14 +73,14 @@ namespace RaptorDB
             _bits.Set(recnum, (bool)key);
         }
 
-        public WAHBitArray Query(object fromkey, object tokey)
-        {
-            bool b = (bool)fromkey;
-            if (b)
-                return _bits;
-            else
-                return _bits.Not();
-        }
+        //public WAHBitArray Query(object fromkey, object tokey)
+        //{
+        //    bool b = (bool)fromkey;
+        //    if (b)
+        //        return _bits;
+        //    else
+        //        return _bits.Not();
+        //}
 
         public WAHBitArray Query(RDBExpression ex, object from)
         {
@@ -129,6 +129,11 @@ namespace RaptorDB
         {
             byte[] b = File.ReadAllBytes(_path + _filename);
         }
+
+        internal WAHBitArray Not()
+        {
+            return _bits.Not();
+        }
     }
     #endregion
 
@@ -146,10 +151,10 @@ namespace RaptorDB
             base.Index(recnum, (string)key);
         }
 
-        public WAHBitArray Query(object fromkey, object tokey)
-        {
-            return base.Query("" + fromkey);
-        }
+        //public WAHBitArray Query(object fromkey, object tokey)
+        //{
+        //    return base.Query("" + fromkey);
+        //}
 
         public WAHBitArray Query(RDBExpression ex, object from)
         {

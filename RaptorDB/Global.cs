@@ -6,28 +6,39 @@ namespace RaptorDB
 {
     internal class Global
     {
-        public static bool FreeMemoryOnCommit = false;
-
+        /// <summary>
+        /// Store bitmap as int offsets then switch over to bitarray
+        /// </summary>
         public static int BitmapOffsetSwitchOverCount = 10;
-
-        public static int NodeDepthCheckingCount = 30;
-
-        public static bool SyncSaves = true; 
+        /// <summary>
+        /// True = Save to other views in process , False = background save to other views
+        /// </summary>
+        public static bool BackgroundSaveToOtherViews = true; 
 
         public static byte DefaultStringKeySize = 60; 
 
         public static bool FreeBitmapMemoryOnSave = false;
         
         public static ushort PageItemCount = 10000;
-        
-        public static int SaveTimerSeconds = 60;
-        
+        /// <summary>
+        /// KeyStore save to disk timer
+        /// </summary>
+        public static int SaveIndexToDiskTimerSeconds = 60;
+        /// <summary>
+        /// Flush the StorageFile stream immediatley
+        /// </summary>
         public static bool FlushStorageFileImmetiatley = false;
-
+        /// <summary>
+        /// Save doc as binary json
+        /// </summary>
         public static bool SaveAsBinaryJSON = true;
-
+        /// <summary>
+        /// Remove completed tasks timer
+        /// </summary>
         public static int TaskCleanupTimerSeconds = 30;
-
-        //public static bool BackgroundIndexing = true;
+        /// <summary>
+        /// Save to other views timer seconds if enabled 
+        /// </summary>
+        public static int BackgroundSaveViewTimer = 1;
     }
 }

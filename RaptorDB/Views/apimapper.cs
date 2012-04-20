@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using RaptorDB.Mapping;
 using System.Linq.Expressions;
 
 namespace RaptorDB.Views
@@ -23,14 +22,14 @@ namespace RaptorDB.Views
             _log.Debug(message);
         }
 
-        public Result Query<T>(string ViewName, Expression<Predicate<T>> Filter, int start, int count)
+        public Result Query<T>(string ViewName, Expression<Predicate<T>> Filter)//, int start, int count)
         {
-            return _viewmanager.Query(ViewName, Filter, start, count);
+            return _viewmanager.Query(ViewName, Filter);//, start, count);
         }
 
-        public Result Query<T>(Type View, Expression<Predicate<T>> Filter, int start, int count)
+        public Result Query<T>(Type View, Expression<Predicate<T>> Filter)//, int start, int count)
         {
-            return _viewmanager.Query(View, Filter, start, count);
+            return _viewmanager.Query(View, Filter);//, start, count);
         }
 
         public object Fetch(Guid guid)

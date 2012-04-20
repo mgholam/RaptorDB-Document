@@ -8,7 +8,7 @@ namespace RaptorDB
     internal class SafeDictionary<TKey, TValue>
     {
         private readonly object _Padlock = new object();
-        private readonly Dictionary<TKey, TValue> _Dictionary ;//= new Dictionary<TKey, TValue>();
+        private readonly Dictionary<TKey, TValue> _Dictionary;
 
         public SafeDictionary(int capacity)
         {
@@ -22,24 +22,27 @@ namespace RaptorDB
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            return _Dictionary.TryGetValue(key, out value);
+            lock (_Padlock)
+                return _Dictionary.TryGetValue(key, out value);
         }
 
         public TValue this[TKey key]
         {
             get
             {
-                return _Dictionary[key];
+                lock (_Padlock)
+                    return _Dictionary[key];
             }
             set
             {
-                _Dictionary[key] = value;
+                lock (_Padlock)
+                    _Dictionary[key] = value;
             }
         }
 
         public int Count
         {
-            get { return _Dictionary.Count; }
+            get { lock (_Padlock) return _Dictionary.Count; }
         }
 
         public ICollection<KeyValuePair<TKey, TValue>> GetList()

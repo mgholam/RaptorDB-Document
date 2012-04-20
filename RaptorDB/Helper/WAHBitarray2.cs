@@ -127,30 +127,44 @@ namespace RaptorDB
         {
             lock (_lock)
             {
-                uint[] ints;
-                uint[] uncomp;
-                prelogic(op, out ints, out uncomp);
+                uint[] left;
+                uint[] right;
+                prelogic(op, out left, out right);
 
-                for (int i = 0; i < ints.Length; i++)
-                    ints[i] &= uncomp[i];
+                for (int i = 0; i < left.Length; i++)
+                    left[i] &= right[i];
 
-                return new WAHBitArray(TYPE.Uncompressed_WAH, ints);
+                return new WAHBitArray(TYPE.Uncompressed_WAH, left);
             }
         }
 
+        public WAHBitArray AndNot(WAHBitArray op)
+        {
+            lock (_lock)
+            {
+                uint[] left;
+                uint[] right;
+                prelogic(op, out left, out right);
+
+                for (int i = 0; i < left.Length; i++)
+                    left[i] &= ~right[i];
+
+                return new WAHBitArray(TYPE.Uncompressed_WAH, left);
+            }
+        }
 
         public WAHBitArray Or(WAHBitArray op)
         {
             lock (_lock)
             {
-                uint[] ints;
-                uint[] uncomp;
-                prelogic(op, out ints, out uncomp);
+                uint[] left;
+                uint[] right;
+                prelogic(op, out left, out right);
 
-                for (int i = 0; i < ints.Length; i++)
-                    ints[i] |= uncomp[i];
+                for (int i = 0; i < left.Length; i++)
+                    left[i] |= right[i];
 
-                return new WAHBitArray(TYPE.Uncompressed_WAH, ints);
+                return new WAHBitArray(TYPE.Uncompressed_WAH, left);
             }
         }
 
@@ -160,12 +174,12 @@ namespace RaptorDB
             {
                 this.CheckBitArray();
 
-                uint[] ints = this.GetUncompressed();
+                uint[] left = this.GetUncompressed();
 
-                for (int i = 0; i < ints.Length; i++)
-                    ints[i] = ~ints[i];
+                for (int i = 0; i < left.Length; i++)
+                    left[i] = ~left[i];
 
-                return new WAHBitArray(TYPE.Uncompressed_WAH, ints);
+                return new WAHBitArray(TYPE.Uncompressed_WAH, left);
             }
         }
 
@@ -173,14 +187,14 @@ namespace RaptorDB
         {
             lock (_lock)
             {
-                uint[] ints;
-                uint[] uncomp;
-                prelogic(op, out ints, out uncomp);
+                uint[] left;
+                uint[] right;
+                prelogic(op, out left, out right);
 
-                for (int i = 0; i < ints.Length; i++)
-                    ints[i] ^= uncomp[i];
+                for (int i = 0; i < left.Length; i++)
+                    left[i] ^= right[i];
 
-                return new WAHBitArray(TYPE.Uncompressed_WAH, ints);
+                return new WAHBitArray(TYPE.Uncompressed_WAH, left);
             }
         }
 
@@ -292,25 +306,25 @@ namespace RaptorDB
 
         #region [  P R I V A T E  ]
 
-        private void prelogic(WAHBitArray op, out uint[] ints, out uint[] uncomp)
+        private void prelogic(WAHBitArray op, out uint[] left, out uint[] right)
         {
             this.CheckBitArray();
 
-            ints = op.GetUncompressed();
-            uncomp = this.GetUncompressed();
-            int ic = ints.Length;
-            int uc = uncomp.Length;
+            left = this.GetUncompressed();
+            right = op.GetUncompressed();
+            int ic = left.Length;
+            int uc = right.Length;
             if (ic > uc)
             {
                 uint[] ar = new uint[ic];
-                uncomp.CopyTo(ar, 0);
-                uncomp = ar;
+                right.CopyTo(ar, 0);
+                right = ar;
             }
             else if (ic < uc)
             {
                 uint[] ar = new uint[uc];
-                ints.CopyTo(ar, 0);
-                ints = ar;
+                left.CopyTo(ar, 0);
+                left = ar;
             }
 
             //FixLengths(ints, uncomp);

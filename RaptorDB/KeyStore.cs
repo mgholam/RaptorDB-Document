@@ -193,7 +193,7 @@ namespace RaptorDB
             return false;
         }
 
-        public long Count(bool includeDuplicates)
+        public int Count(bool includeDuplicates)
         {
             return _db.Count(includeDuplicates);
         }
@@ -234,6 +234,11 @@ namespace RaptorDB
             UnpackData(buffer, out val, out key);
             docid = new Guid(key);
             return val;
+        }
+
+        internal int RecordCount()
+        {
+            return _db.RecordCount();
         }
     }
     #endregion
@@ -293,38 +298,11 @@ namespace RaptorDB
 
         public byte[] FetchRecordBytes(int record)
         {
-            return _archive.ReadData(record);
+            //lock (_lock)
+                return _archive.ReadData(record);
         }
 
-        public string FetchRecordString(int record)
-        {
-            byte[] b = _archive.ReadData(record);
-
-            return Encoding.Unicode.GetString(b);
-        }
-
-        public IEnumerable<KeyValuePair<T, byte[]>> EnumerateStorageFile()
-        {
-            return _archive.Traverse();
-        }
-
-        public IEnumerable<KeyValuePair<T,int>> Enumerate(T fromkey)//, bool includeDuplicates, int start, int count)
-        {
-            lock (_lock)
-            {
-                // generate a list from the start key using forward only pages
-                return _index.Enumerate(fromkey);//, includeDuplicates, start, count);
-            }
-        }
-
-        public bool RemoveKey(T key)
-        {
-            // remove and store key in storage file
-            _archive.WriteData(key, null, true);
-            return _index.RemoveKey(key);
-        }
-
-        public long Count(bool includeDuplicates)
+        public int Count(bool includeDuplicates)
         {
             return _index.Count(includeDuplicates);
         }
@@ -344,7 +322,7 @@ namespace RaptorDB
             int off;
             val = null;
             T k = key;
-            lock (_lock)
+            //lock (_lock)
             {
                 // search index
                 if (_index.Get(k, out off))
@@ -361,11 +339,11 @@ namespace RaptorDB
             return Set(key, Encoding.Unicode.GetBytes(data));
         }
 
-        private object _lock = new object();
+        //private object _lock = new object();
         public int Set(T key, byte[] data)
         {
             int recno = -1;
-            lock (_lock)
+            //lock (_lock)
             {
                 // save to storage
                 recno = _archive.WriteData(key, data, false);
@@ -400,10 +378,40 @@ namespace RaptorDB
             }
         }
 
-        public Statistics GetStatistics()
-        {
-            return _index.GetStatistics();
-        }
+        #region [  removed  ]
+        //public Statistics GetStatistics()
+        //{
+        //    return _index.GetStatistics();
+        //}
+
+        //public string FetchRecordString(int record)
+        //{
+        //    byte[] b = _archive.ReadData(record);
+
+        //    return Encoding.Unicode.GetString(b);
+        //}
+
+        //public IEnumerable<KeyValuePair<T, byte[]>> EnumerateStorageFile()
+        //{
+        //    return _archive.Traverse();
+        //}
+
+        //public IEnumerable<KeyValuePair<T,int>> Enumerate(T fromkey)//, bool includeDuplicates, int start, int count)
+        //{
+        //    lock (_lock)
+        //    {
+        //        // generate a list from the start key using forward only pages
+        //        return _index.Enumerate(fromkey);//, includeDuplicates, start, count);
+        //    }
+        //}
+
+        //public bool RemoveKey(T key)
+        //{
+        //    // remove and store key in storage file
+        //    _archive.WriteData(key, null, true);
+        //    return _index.RemoveKey(key);
+        //}
+        #endregion
 
         #region [            P R I V A T E     M E T H O D S              ]
         private void SaveLastRecord()
@@ -425,7 +433,7 @@ namespace RaptorDB
 
             _index = new MGIndex<T>(_Path, _FileName + _idxExtension, _MaxKeySize, Global.PageItemCount, AllowDuplicateKeys);
 
-            _archive = new StorageFile<T>(db, false);//, _MaxKeySize);
+            _archive = new StorageFile<T>(db);//, false);//, _MaxKeySize);
 
             _archive.SkipDateTime = true;
 
@@ -436,7 +444,7 @@ namespace RaptorDB
             log.Debug("Starting save timer");
             _savetimer = new System.Timers.Timer();
             _savetimer.Elapsed += new System.Timers.ElapsedEventHandler(_savetimer_Elapsed);
-            _savetimer.Interval = Global.SaveTimerSeconds * 1000;
+            _savetimer.Interval = Global.SaveIndexToDiskTimerSeconds * 1000;
             _savetimer.AutoReset = true;
             _savetimer.Start();
 
@@ -480,6 +488,11 @@ namespace RaptorDB
         public void Dispose()
         {
             Shutdown();
+        }
+
+        internal int RecordCount()
+        {
+            return _archive.Count();
         }
     }
 }

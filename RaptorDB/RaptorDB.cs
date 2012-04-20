@@ -7,6 +7,7 @@ using System.Collections;
 using RaptorDB.Views;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace RaptorDB
 {
@@ -24,11 +25,12 @@ namespace RaptorDB
 
         private ILog _log = LogManager.GetLogger(typeof(RaptorDB));
         private Views.ViewManager _viewManager;
-
         private KeyStoreGuid _objStore;
         private KeyStoreGuid _fileStore;
         private string _Path = "";
-        private int _LastRecordNumberProcessed = -1;
+        private int _LastRecordNumberProcessed = -1; // used by background saver
+        private int _CurrentRecordNumber = -1;
+        private System.Timers.Timer _saveTimer;
 
         public void SaveBytes(Guid docID, byte[] bytes)
         {
@@ -46,22 +48,42 @@ namespace RaptorDB
             }
 
             int recnum = SaveData(docid, data);
+            _CurrentRecordNumber = recnum;
 
             SaveInPrimaryView(viewname, docid, data);
 
-            SaveInOtherViews(docid, data, recnum);
+            if (Global.BackgroundSaveToOtherViews == false)
+            {
+                SaveInOtherViews(docid, data);
+                _LastRecordNumberProcessed = recnum;
+            }
 
             return true;
         }
-
-        public Result Query<T>(string viewname, Expression<Predicate<T>> filter)//, int start, int count)
+        // FEATURE : add null predicate query -> show all
+        // FEATURE : add paging to queries -> start, count
+        /// <summary>
+        /// Query any view
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="viewname">view name</param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public Result Query<T>(string viewname, Expression<Predicate<T>> filter)
         {
-            return _viewManager.Query(viewname, filter, 0, 0);
+            return _viewManager.Query(viewname, filter);//, 0, 0);
         }
 
-        public Result Query<T>(Type view, Expression<Predicate<T>> filter)//, int start, int count)
+        /// <summary>
+        /// Query a primary view
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="view">primary view type</param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public Result Query<T>(Type view, Expression<Predicate<T>> filter)
         {
-            return _viewManager.Query(view, filter, 0, 0);
+            return _viewManager.Query(view, filter);//, 0, 0);
         }
 
         public object Fetch(Guid docID)
@@ -75,20 +97,11 @@ namespace RaptorDB
                 return null;
         }
 
-        private object CreateObject(byte[] b)
-        {
-            if (b[0] < 32)
-                return fastBinaryJSON.BJSON.Instance.ToObject(b);
-            else
-                return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
-        }
-
-        public object Fetch(int recnumber, out Guid docid)
-        {
-            byte[] b = _objStore.Get(recnumber, out docid);
-
-            return CreateObject(b);
-        }
+        //public object Fetch(int recnumber, out Guid docid)
+        //{
+        //    byte[] b = _objStore.Get(recnumber, out docid);
+        //    return CreateObject(b);
+        //}
 
         public byte[] FetchBytes(Guid fileID)
         {
@@ -106,21 +119,39 @@ namespace RaptorDB
             return _viewManager.RegisterView(view);
         }
 
-        #region [            P R I V A T E     M E T H O D S              ]
-        private void SaveInOtherViews(Guid docid, object data, int recordnumber)
+        private void Shutdown()
         {
-            if (Global.SyncSaves)
-            {
-                List<string> list = _viewManager.GetOtherViewsList(data.GetType());
-                if (list != null)
-                {
-                    foreach (string name in list)
-                    {
-                        _viewManager.Insert(name, docid, data);
-                        _LastRecordNumberProcessed = recordnumber;
-                    }
-                }
-            }
+            // save _LastRecordNumberProcessed here
+            File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
+            _log.Debug("Shutting down");
+            _saveTimer.Stop();
+            _objStore.Shutdown();
+            _fileStore.Shutdown();
+            _viewManager.ShutDown();
+            LogManager.Shutdown();
+        }
+
+        public void Dispose()
+        {
+            Shutdown();
+        }
+
+        #region [            P R I V A T E     M E T H O D S              ]
+
+        private object CreateObject(byte[] b)
+        {
+            if (b[0] < 32)
+                return fastBinaryJSON.BJSON.Instance.ToObject(b);
+            else
+                return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
+        }
+
+        private void SaveInOtherViews<T>(Guid docid, T data)
+        {
+            List<string> list = _viewManager.GetOtherViewsList(data.GetType());
+            if (list != null)
+                foreach (string name in list)
+                    _viewManager.Insert(name, docid, data);
         }
 
         private void SaveInPrimaryView<T>(string viewname, Guid docid, T data)
@@ -162,25 +193,57 @@ namespace RaptorDB
 
             _objStore = new KeyStoreGuid(_Path + "Data\\data");
             _fileStore = new KeyStoreGuid(_Path + "Data\\files");
-            
+
             _viewManager = new Views.ViewManager(_Path + "Views", _objStore);
 
-            // FEATURE : start backround indexer
+            // load _LastRecordNumberProcessed 
+            if (File.Exists(_Path + "Data\\_lastrecord.rec"))
+            {
+                byte[] b = File.ReadAllBytes(_Path + "Data\\_lastrecord.rec");
+                _LastRecordNumberProcessed = Helper.ToInt32(b, 0, false);
+            }
+            _CurrentRecordNumber = _objStore.RecordCount();
 
+            otherviews = this.GetType().GetMethod("SaveInOtherViews", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            // start backround save to views
+            _saveTimer = new System.Timers.Timer(Global.BackgroundSaveViewTimer * 1000);
+            _saveTimer.Elapsed += new System.Timers.ElapsedEventHandler(_saveTimer_Elapsed);
+            _saveTimer.Enabled = true;
+            _saveTimer.AutoReset = true;
+            _saveTimer.Start();
+        }
+
+        private object _slock = new object();
+        MethodInfo otherviews = null;
+        private void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (Global.BackgroundSaveToOtherViews == false)
+                return;
+
+            if (_CurrentRecordNumber == _LastRecordNumberProcessed)
+                return;
+
+            lock (_slock)
+            {
+                int batch = 1000;
+                //_log.Debug("background save timer");
+                while (batch > 0)
+                {
+                    if (_CurrentRecordNumber == _LastRecordNumberProcessed)
+                        return;   
+                    _LastRecordNumberProcessed++;
+                    Guid docid;
+                    byte[] b = _objStore.Get(_LastRecordNumberProcessed, out docid);
+                    object obj = CreateObject(b);
+
+                    var m = otherviews.MakeGenericMethod(new Type[] { obj.GetType() });
+                    m.Invoke(this, new object[] { docid, obj });
+
+                    batch--;
+                }
+            }
         }
         #endregion
-        private void Shutdown()
-        {
-            _log.Debug("Shutting down");
-            _objStore.Shutdown();
-            _fileStore.Shutdown();
-            _viewManager.ShutDown();
-            LogManager.Shutdown();
-        }
-
-        public void Dispose()
-        {
-            Shutdown();
-        }
     }
 }

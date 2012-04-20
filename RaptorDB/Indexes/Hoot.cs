@@ -34,6 +34,7 @@ namespace RaptorDB
         private string _FileName = "words";
         private string _Path = "";
         private SafeDictionary<string, Cache> _index = new SafeDictionary<string, Cache>();
+        // FEATURE : remove _internalOP & sleeps
         private bool _internalOP = false;
         private object _lock = new object();
         private FileStream _bitmapFile;
