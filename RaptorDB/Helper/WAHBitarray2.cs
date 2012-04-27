@@ -5,7 +5,7 @@ using System.Collections;
 
 namespace RaptorDB
 {
-    internal class WAHBitArray
+    public class WAHBitArray
     {
         public enum TYPE
         {
@@ -44,7 +44,16 @@ namespace RaptorDB
         private uint _curMax = 0;
         public bool isDirty = false;
 
-        public bool UsingIndexes { get { return _usingIndexes; } }
+        //public bool UsingIndexes { get { return _usingIndexes; } }
+
+        public WAHBitArray Copy()
+        {
+            lock (_lock)
+            {
+                uint[] i = GetUncompressed();
+                return new WAHBitArray(TYPE.Uncompressed_WAH, i);
+            }
+        }
 
         public bool Get(int index)
         {
@@ -123,6 +132,7 @@ namespace RaptorDB
             }
         }
 
+        #region [  B I T    O P E R T A I O N S  ]
         public WAHBitArray And(WAHBitArray op)
         {
             lock (_lock)
@@ -197,6 +207,7 @@ namespace RaptorDB
                 return new WAHBitArray(TYPE.Uncompressed_WAH, left);
             }
         }
+        #endregion
 
         public long CountOnes()
         {
@@ -222,14 +233,6 @@ namespace RaptorDB
                     }
                 }
             }
-
-            //int count = _uncompressed.Length << 5;
-
-            //for (int i = 0; i < count; i++)
-            //{
-            //    if (internalGet(i))
-            //        c++;
-            //}
             return c;
         }
 
@@ -243,41 +246,32 @@ namespace RaptorDB
                 return l - ones;
             }
 
-            //long c = 0;
             CheckBitArray();
             int count = _uncompressed.Length << 5;
             long cc = CountOnes();
 
-            //for (int i = 0; i < count; i++)
-            //{
-            //    if (internalGet(i) == false)
-            //        c++;
-            //}
             return count - cc;
         }
 
         public void FreeMemory()
         {
             if (_uncompressed != null)
-                Compress();
+                Compress(_uncompressed);
             _uncompressed = null;
         }
 
-        public uint[] GetCompressed()
+        public uint[] GetCompressed()//out bool usingindexes)
         {
+            uint[] data = _uncompressed;
             if (_usingIndexes)
-            {
-                return _offsets.ToArray();
-            }
-
-            if (_uncompressed == null)
+                data = UnpackOffsets(); 
+            else if (_uncompressed == null)
                 return new uint[] { 0 };
-
-            Compress();
+            Compress(data);
             return _compressed;
         }
 
-        public IEnumerable<int> GetBitIndexes(bool ones)
+        public IEnumerable<int> GetBitIndexes()//bool ones)
         {
             if (_usingIndexes)
             {
@@ -287,16 +281,16 @@ namespace RaptorDB
             else
             {
                 CheckBitArray();
-                int count = _uncompressed.Length;//<< 5;
+                int count = _uncompressed.Length;
 
                 for (int i = 0; i < count; i++)
                 {
-                    if (_uncompressed[i] > 0 && ones == true)
+                    if (_uncompressed[i] > 0)//&& ones == true)
                     {
                         for (int j = 0; j < 32; j++)
                         {
                             bool b = internalGet((i << 5) + j);
-                            if (b == ones)
+                            if (b == true)// ones)
                                 yield return (i << 5) + j;
                         }
                     }
@@ -330,53 +324,41 @@ namespace RaptorDB
             //FixLengths(ints, uncomp);
         }
 
-        //private void FixLengths(uint[] ar1, uint[] ar2)
-        //{
-        //    int ic = ar1.Length;
-        //    int uc = ar2.Length;
-        //    if (ic > uc)
-        //    {
-        //        uint[] ar = new uint[ic];
-        //        ar2.CopyTo(ar, 0);
-        //        ar2 = ar;
-        //    }
-        //    else if (ic < uc)
-        //    {
-        //        uint[] ar = new uint[uc];
-        //        ar1.CopyTo(ar, 0);
-        //        ar1 = ar;
-        //    }
-        //}
-
-        protected uint[] GetUncompressed()
+        private uint[] GetUncompressed()
         {
-            if (_usingIndexes)
+            lock (_lock)
             {
-                // return bitmap uints 
-                uint max = 0;
-                foreach (uint i in _offsets)
-                    if (i > max)
-                        max = i;
+                if (_usingIndexes)
+                    return UnpackOffsets();
 
-                uint[] ints = new uint[(max >> 5) + 1];
+                this.CheckBitArray();
+                uint[] ui = new uint[_uncompressed.Length];
+                _uncompressed.CopyTo(ui, 0);
 
-                foreach (uint index in _offsets)
-                {
-                    int pointer = ((int)index) >> 5;
-                    uint mask = (uint)1 << (31 - // high order bit set
-                        ((int)index % 32));
+                return ui;
+            }
+        }
 
-                    ints[pointer] |= mask;
-                }
+        private uint[] UnpackOffsets()
+        {
+            // return bitmap uints 
+            uint max = 0;
+            foreach (uint i in _offsets)
+                if (i > max)
+                    max = i;
 
-                return ints;
+            uint[] ints = new uint[(max >> 5) + 1];
+
+            foreach (uint index in _offsets)
+            {
+                int pointer = ((int)index) >> 5;
+                uint mask = (uint)1 << (31 - // high order bit set
+                    ((int)index % 32));
+
+                ints[pointer] |= mask;
             }
 
-            this.CheckBitArray();
-            uint[] ui = new uint[_uncompressed.Length];
-            _uncompressed.CopyTo(ui, 0);
-
-            return ui;
+            return ints;
         }
 
         private void ChangeTypeIfNeeded()
@@ -405,8 +387,7 @@ namespace RaptorDB
             c++;
             if (c > _uncompressed.Length)
             {
-                //int j = ((c >> 11)+1 )<< 11;
-                uint[] ar = new uint[c]; // j
+                uint[] ar = new uint[c];
                 _uncompressed.CopyTo(ar, 0);
                 _uncompressed = ar;
             }
@@ -461,19 +442,20 @@ namespace RaptorDB
                 Uncompress();
         }
 
-        private uint Take31Bits(int index)
+        #region compress / uncompress
+        private uint Take31Bits(uint[] data, int index)
         {
-            long l1 = 0;
-            long l2 = 0;
-            long l = 0;
-            long ret = 0;
+            ulong l1 = 0;
+            ulong l2 = 0;
+            ulong l = 0;
+            ulong ret = 0;
             int off = (index % 32);
             int pointer = index >> 5;
 
-            l1 = _uncompressed[pointer];
+            l1 = data[pointer];
             pointer++;
-            if (pointer < _uncompressed.Length)
-                l2 = _uncompressed[pointer];
+            if (pointer < data.Length)
+                l2 = data[pointer];
 
             l = (l1 << 32) + l2;
             ret = (l >> (33 - off)) & 0x7fffffff;
@@ -481,27 +463,27 @@ namespace RaptorDB
             return (uint)ret;
         }
 
-        private void Compress()
+        private void Compress(uint[] data)
         {
             List<uint> compressed = new List<uint>();
             uint zeros = 0;
             uint ones = 0;
-            int count = _uncompressed.Length << 5;
+            int count = data.Length << 5;
             for (int i = 0; i < count; )
             {
-                uint num = Take31Bits(i);
+                uint num = Take31Bits(data, i);
                 i += 31;
-                if (num == 0)
+                if (num == 0) // all zero
                 {
                     zeros += 31;
                     FlushOnes(compressed, ref ones);
                 }
-                else if (num == 0x7fffffff)
+                else if (num == 0x7fffffff) // all ones
                 {
                     ones += 31;
                     FlushZeros(compressed, ref zeros);
                 }
-                else
+                else // literal
                 {
                     FlushOnes(compressed, ref ones);
                     FlushZeros(compressed, ref zeros);
@@ -517,7 +499,7 @@ namespace RaptorDB
         {
             if (ones > 0)
             {
-                uint n = 0xc0000000 + ones;
+                uint n = 0xc0000000 + ones; 
                 ones = 0;
                 compressed.Add(n);
             }
@@ -539,46 +521,40 @@ namespace RaptorDB
 
             int off = (index % 32);
             int pointer = index >> 5;
-            if (off > 0)
-            {
-                list[pointer] |= val >> (off - 1);
-                if (pointer >= list.Count - 1)
-                    list.Add(0);
-                list[pointer + 1] |= val << (33 - off);
-            }
-            else
-                list[pointer] |= val << 1;
+
+            if (pointer >= list.Count - 1)
+                list.Add(0);
+
+            ulong l = ((ulong)list[pointer] << 32) + list[pointer + 1];
+            l |= (ulong)val << (33 - off);
+
+            list[pointer] = (uint)(l >> 32);
+            list[pointer + 1] = (uint)(l & 0xffffffff);
         }
 
-        private void WriteBits(List<uint> list, int index, uint count)
+        private void WriteOnes(List<uint> list, int index, uint count)
         {
             this.ResizeAsNeeded(list, index);
 
-            int bit = index % 32;
+            int off = index % 32;
             int pointer = index >> 5;
             int cc = (int)count;
+            int x = 32 - off;
 
             if (pointer >= list.Count)
                 list.Add(0);
 
-            if (bit > 0)
+            if (cc > x) //current pointer
             {
-                list[pointer] |= ~(uint)((0xffffffff << (32 - bit)));
-                cc -= (32 - bit);
+                list[pointer] |= (uint)((0xffffffff >> off));
+                cc -= (32 - off);
             }
             else
             {
-                if (cc >= 32)
-                {
-                    list[pointer] = 0xffffffff;
-                    cc -= 32;
-                }
-                else
-                {
-                    list[pointer] |= 0xffffffff << (32 - cc);
-                    cc = 0;
-                }
+                list[pointer] |= (uint)((0xffffffff <<cc) >> off);
+                cc = 0;
             }
+
             while (cc >= 32)//full ints
             {
                 list.Add(0xffffffff);
@@ -599,21 +575,23 @@ namespace RaptorDB
             {
                 if ((ci & 0x80000000) == 0) // literal
                 {
-                    this.Write31Bits(list, index, ci & 0x7fffffff);
+                    Write31Bits(list, index, ci);
                     index += 31;
                 }
                 else
                 {
-                    uint c = ci & 0x3fffffff;
+                    uint count = ci & 0x3fffffff;
                     if ((ci & 0x40000000) > 0) // ones count
-                        this.WriteBits(list, index, c);
+                        WriteOnes(list, index, count);
 
-                    index += (int)c;
+                    index += (int)count;
                 }
             }
-            this.ResizeAsNeeded(list, index);
+            ResizeAsNeeded(list, index);
             _uncompressed = list.ToArray();
         }
+        #endregion
+
         #endregion
     }
 }

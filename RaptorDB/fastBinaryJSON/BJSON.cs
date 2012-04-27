@@ -50,7 +50,7 @@ namespace fastBinaryJSON
     //public delegate string Serialize(object data);
     //public delegate object Deserialize(string data);
 
-    internal class BJSON
+    public class BJSON
     {
         public readonly static BJSON Instance = new BJSON();
 

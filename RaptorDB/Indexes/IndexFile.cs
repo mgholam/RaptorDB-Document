@@ -83,12 +83,12 @@ namespace RaptorDB
 
         public IEnumerable<int> GetDuplicatesRecordNumbers(int recno)
         {
-            return GetDuplicateBitmap(recno).GetBitIndexes(true);
+            return GetDuplicateBitmap(recno).GetBitIndexes();
         }
 
         public WAHBitArray GetDuplicateBitmap(int recno)
         {
-            return _bitmap.GetBitmapNoCache(recno);
+            return _bitmap.GetBitmap(recno);
         }
 
         private int NodeHeaderCount(int nextpage, ref long c)
@@ -299,7 +299,7 @@ namespace RaptorDB
             if (b[0] == _BlockHeader[0] && b[1] == _BlockHeader[1] && b[2] == _BlockHeader[2] && b[3] == _BlockHeader[3])
             {
                 // create node here
-                Page<T> page = new Page<T>(false);
+                Page<T> page = new Page<T>();
 
                 short count = Helper.ToInt16(b, 5);
                 if (count > _PageNodeCount)

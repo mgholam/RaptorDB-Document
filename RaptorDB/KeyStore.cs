@@ -228,6 +228,7 @@ namespace RaptorDB
         {
             docid = Guid.Empty;
             byte[] buffer = _db.FetchRecordBytes(recnumber);
+            if (buffer == null) return null;
             byte[] key;
             byte[] val;
             // unpack data
@@ -298,8 +299,7 @@ namespace RaptorDB
 
         public byte[] FetchRecordBytes(int record)
         {
-            //lock (_lock)
-                return _archive.ReadData(record);
+            return _archive.ReadData(record);
         }
 
         public int Count(bool includeDuplicates)
@@ -322,16 +322,13 @@ namespace RaptorDB
             int off;
             val = null;
             T k = key;
-            //lock (_lock)
+            // search index
+            if (_index.Get(k, out off))
             {
-                // search index
-                if (_index.Get(k, out off))
-                {
-                    val = _archive.ReadData(off);
-                    return true;
-                }
-                return false;
+                val = _archive.ReadData(off);
+                return true;
             }
+            return false;
         }
 
         public int Set(T key, string data)
@@ -339,19 +336,14 @@ namespace RaptorDB
             return Set(key, Encoding.Unicode.GetBytes(data));
         }
 
-        //private object _lock = new object();
         public int Set(T key, byte[] data)
         {
             int recno = -1;
-            //lock (_lock)
-            {
-                // save to storage
-                recno = _archive.WriteData(key, data, false);
-                // save to index
-                _index.Set(key, recno);
+            // save to storage
+            recno = _archive.WriteData(key, data, false);
+            // save to index
+            _index.Set(key, recno);
 
-                //_Count++;
-            }
             return recno;
         }
 
@@ -378,41 +370,6 @@ namespace RaptorDB
             }
         }
 
-        #region [  removed  ]
-        //public Statistics GetStatistics()
-        //{
-        //    return _index.GetStatistics();
-        //}
-
-        //public string FetchRecordString(int record)
-        //{
-        //    byte[] b = _archive.ReadData(record);
-
-        //    return Encoding.Unicode.GetString(b);
-        //}
-
-        //public IEnumerable<KeyValuePair<T, byte[]>> EnumerateStorageFile()
-        //{
-        //    return _archive.Traverse();
-        //}
-
-        //public IEnumerable<KeyValuePair<T,int>> Enumerate(T fromkey)//, bool includeDuplicates, int start, int count)
-        //{
-        //    lock (_lock)
-        //    {
-        //        // generate a list from the start key using forward only pages
-        //        return _index.Enumerate(fromkey);//, includeDuplicates, start, count);
-        //    }
-        //}
-
-        //public bool RemoveKey(T key)
-        //{
-        //    // remove and store key in storage file
-        //    _archive.WriteData(key, null, true);
-        //    return _index.RemoveKey(key);
-        //}
-        #endregion
-
         #region [            P R I V A T E     M E T H O D S              ]
         private void SaveLastRecord()
         {
@@ -433,7 +390,7 @@ namespace RaptorDB
 
             _index = new MGIndex<T>(_Path, _FileName + _idxExtension, _MaxKeySize, Global.PageItemCount, AllowDuplicateKeys);
 
-            _archive = new StorageFile<T>(db);//, false);//, _MaxKeySize);
+            _archive = new StorageFile<T>(db);
 
             _archive.SkipDateTime = true;
 

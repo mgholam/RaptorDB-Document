@@ -36,7 +36,7 @@ namespace RaptorDB
 
     internal class Page<T>
     {
-        public Page(bool b) // kludge so the compiler doesn't complain
+        public Page() // kludge so the compiler doesn't complain
         {
             DiskPageNumber = -1;
             RightPageNumber = -1;
@@ -85,7 +85,7 @@ namespace RaptorDB
             _index.GetPageList(_pageListDiskPages, _pageList, out _LastIndexedRecordNumber);
             if (_pageList.Count == 0)
             {
-                Page<T> page = new Page<T>(false);
+                Page<T> page = new Page<T>();
                 page.FirstKey = (T)RDBDataType<T>.GetEmpty();
                 page.DiskPageNumber = _index.GetNewPageNumber();
                 page.isDirty = true;
@@ -384,7 +384,7 @@ namespace RaptorDB
             // split the page
             DateTime dt = FastDateTime.Now;
 
-            Page<T> newpage = new Page<T>(false);
+            Page<T> newpage = new Page<T>();
             newpage.DiskPageNumber = _index.GetNewPageNumber();
             newpage.RightPageNumber = page.RightPageNumber;
             newpage.isDirty = true;

@@ -35,7 +35,7 @@ namespace RaptorDB
         /// <summary>
         /// Remove completed tasks timer
         /// </summary>
-        public static int TaskCleanupTimerSeconds = 30;
+        public static int TaskCleanupTimerSeconds = 3;
         /// <summary>
         /// Save to other views timer seconds if enabled 
         /// </summary>

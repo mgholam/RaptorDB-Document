@@ -28,9 +28,9 @@ namespace RaptorDB
         public WAHBitArray Query(RDBExpression ex, object from)
         {
             T f = default(T);
-            if(typeof(T).Equals(from.GetType()) == false )
+            if (typeof(T).Equals(from.GetType()) == false)
             {
-                f = (T) Convert.ChangeType(from, typeof(T));
+                f = (T)Convert.ChangeType(from, typeof(T));
             }
             else
                 f = (T)from;
@@ -64,23 +64,20 @@ namespace RaptorDB
                 ReadFile();
         }
 
-        internal WAHBitArray _bits = new WAHBitArray();
+        private WAHBitArray _bits = new WAHBitArray();
         private string _filename;
         private string _path;
+        private object _lock = new object();
+
+        public WAHBitArray GetBits()
+        {
+            return _bits.Copy();
+        }
 
         public void Set(object key, int recnum)
         {
             _bits.Set(recnum, (bool)key);
         }
-
-        //public WAHBitArray Query(object fromkey, object tokey)
-        //{
-        //    bool b = (bool)fromkey;
-        //    if (b)
-        //        return _bits;
-        //    else
-        //        return _bits.Not();
-        //}
 
         public WAHBitArray Query(RDBExpression ex, object from)
         {
@@ -112,7 +109,7 @@ namespace RaptorDB
         {
             _bits = _bits.Or(left);
         }
-        
+
         private void WriteFile()
         {
             uint[] ints = _bits.GetCompressed();

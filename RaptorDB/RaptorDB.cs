@@ -31,39 +31,65 @@ namespace RaptorDB
         private int _LastRecordNumberProcessed = -1; // used by background saver
         private int _CurrentRecordNumber = -1;
         private System.Timers.Timer _saveTimer;
+        private bool _shuttingdown = false;
+        private bool disposed = false;
 
         public void SaveBytes(Guid docID, byte[] bytes)
         {
             // save files in storage
             _fileStore.Set(docID, bytes);
         }
-
+        //private object _lock = new object();
         public bool Save<T>(Guid docid, T data)
         {
-            string viewname = _viewManager.GetPrimaryViewForType(data.GetType());
-            if (viewname == "")
+            //lock (_lock)
             {
-                _log.Debug("Primary View not defined for object : " + data.GetType());
-                return false;
+                string viewname = _viewManager.GetPrimaryViewForType(data.GetType());
+                if (viewname == "")
+                {
+                    _log.Debug("Primary View not defined for object : " + data.GetType());
+                    return false;
+                }
+
+                int recnum = SaveData(docid, data);
+                _CurrentRecordNumber = recnum;
+
+                SaveInPrimaryView(viewname, docid, data);
+
+                if (Global.BackgroundSaveToOtherViews == false)
+                {
+                    SaveInOtherViews(docid, data);
+                    _LastRecordNumberProcessed = recnum;
+                }
+                return true;
             }
-
-            int recnum = SaveData(docid, data);
-            _CurrentRecordNumber = recnum;
-
-            SaveInPrimaryView(viewname, docid, data);
-
-            if (Global.BackgroundSaveToOtherViews == false)
-            {
-                SaveInOtherViews(docid, data);
-                _LastRecordNumberProcessed = recnum;
-            }
-
-            return true;
         }
-        // FEATURE : add null predicate query -> show all
+
+        /// <summary>
+        /// Query any view -> get all rows
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="viewname"></param>
+        /// <returns></returns>
+        public Result Query(string viewname)
+        {
+            return _viewManager.Query(viewname);
+        }
+
+        /// <summary>
+        /// Query a primary view -> get all rows
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="view"></param>
+        /// <returns></returns>
+        public Result Query(Type view)
+        {
+            return _viewManager.Query(view);
+        }
+
         // FEATURE : add paging to queries -> start, count
         /// <summary>
-        /// Query any view
+        /// Query any view with filters
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="viewname">view name</param>
@@ -71,19 +97,19 @@ namespace RaptorDB
         /// <returns></returns>
         public Result Query<T>(string viewname, Expression<Predicate<T>> filter)
         {
-            return _viewManager.Query(viewname, filter);//, 0, 0);
+            return _viewManager.Query(viewname, filter);
         }
 
         /// <summary>
-        /// Query a primary view
+        /// Query a view with filters
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="view">primary view type</param>
+        /// <param name="view">base entity type, or typeof the view </param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result Query<T>(Type view, Expression<Predicate<T>> filter)
+        public Result Query<T>(Type type, Expression<Predicate<T>> filter)
         {
-            return _viewManager.Query(view, filter);//, 0, 0);
+            return _viewManager.Query(type, filter);
         }
 
         public object Fetch(Guid docID)
@@ -96,12 +122,6 @@ namespace RaptorDB
             else
                 return null;
         }
-
-        //public object Fetch(int recnumber, out Guid docid)
-        //{
-        //    byte[] b = _objStore.Get(recnumber, out docid);
-        //    return CreateObject(b);
-        //}
 
         public byte[] FetchBytes(Guid fileID)
         {
@@ -119,15 +139,19 @@ namespace RaptorDB
             return _viewManager.RegisterView(view);
         }
 
-        private void Shutdown()
+        public void Shutdown()
         {
+            if (_shuttingdown == true)
+                return;
+
+            _shuttingdown = true;
             // save _LastRecordNumberProcessed here
             File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
             _log.Debug("Shutting down");
+            _viewManager.ShutDown();
             _saveTimer.Stop();
             _objStore.Shutdown();
             _fileStore.Shutdown();
-            _viewManager.ShutDown();
             LogManager.Shutdown();
         }
 
@@ -174,6 +198,7 @@ namespace RaptorDB
 
         private void Initialize(string foldername)
         {
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
             // create folders 
             Directory.CreateDirectory(foldername);
             foldername = Path.GetFullPath(foldername);
@@ -214,6 +239,11 @@ namespace RaptorDB
             _saveTimer.Start();
         }
 
+        private void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        {
+            Shutdown();
+        }
+
         private object _slock = new object();
         MethodInfo otherviews = null;
         private void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -221,20 +251,31 @@ namespace RaptorDB
             if (Global.BackgroundSaveToOtherViews == false)
                 return;
 
+            if (_CurrentRecordNumber == 0)
+                return;
+            //return;
             if (_CurrentRecordNumber == _LastRecordNumberProcessed)
                 return;
 
             lock (_slock)
             {
-                int batch = 1000;
-                //_log.Debug("background save timer");
+                int batch = 1000000;
                 while (batch > 0)
                 {
+                    if (_shuttingdown)
+                        return;
                     if (_CurrentRecordNumber == _LastRecordNumberProcessed)
-                        return;   
+                        return;
                     _LastRecordNumberProcessed++;
                     Guid docid;
                     byte[] b = _objStore.Get(_LastRecordNumberProcessed, out docid);
+                    if (b == null)
+                    {
+                        _log.Debug("byte[] is null");
+                        _log.Debug("curr rec = " + _CurrentRecordNumber);
+                        _log.Debug("last rec = " + _LastRecordNumberProcessed);
+                        continue;
+                    }
                     object obj = CreateObject(b);
 
                     var m = otherviews.MakeGenericMethod(new Type[] { obj.GetType() });

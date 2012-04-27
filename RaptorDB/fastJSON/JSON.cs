@@ -18,7 +18,7 @@ namespace fastJSON
     internal delegate string Serialize(object data);
     internal delegate object Deserialize(string data);
 
-    internal class JSON
+    public class JSON
     {
         public readonly static JSON Instance = new JSON();
 

@@ -33,7 +33,7 @@ namespace RaptorDB
         private FileStream _recordFileWrite;
         private long _lastBitmapOffset = 0;
         private int _lastRecordNumber = 0;
-        private object _lock = new object();
+        //private object _lock = new object();
         private SafeDictionary<int, WAHBitArray> _cache = new SafeDictionary<int, WAHBitArray>();
         private SafeDictionary<int, long> _offsetCache = new SafeDictionary<int, long>();
         ILog log = LogManager.GetLogger(typeof(BitmapIndex));
@@ -109,13 +109,13 @@ namespace RaptorDB
 
         public WAHBitArray GetBitmap(int recno)
         {
-            return internalGetBitmap(recno, true);
+            return internalGetBitmap(recno);//, true);
         }
 
-        public WAHBitArray GetBitmapNoCache(int recno)
-        {
-            return internalGetBitmap(recno, false);
-        }
+        //public WAHBitArray GetBitmapNoCache(int recno)
+        //{
+        //    return internalGetBitmap(recno, true); //  is false needed ??
+        //}
 
         //public void OptimizeIndex()
         //{
@@ -164,7 +164,7 @@ namespace RaptorDB
 
         #region [  P R I V A T E  ]
 
-        private WAHBitArray internalGetBitmap(int recno, bool usecache)
+        private WAHBitArray internalGetBitmap(int recno)//, bool usecache)
         {
             WAHBitArray ba = new WAHBitArray();
             if (recno == -1)
@@ -187,8 +187,8 @@ namespace RaptorDB
                     _offsetCache.Add(recno, offset);
                 }
                 ba = LoadBitmap(offset);
-                if (usecache)
-                    _cache.Add(recno, ba);
+                //if (usecache)
+                _cache.Add(recno, ba);
 
                 return ba;
             }
@@ -229,7 +229,7 @@ namespace RaptorDB
             b[0] = ((byte)'B');
             b[1] = ((byte)'M');
             Buffer.BlockCopy(Helper.GetBytes(bits.Length, false), 0, b, 2, 4);
-            b[6] = (byte)(bmp.UsingIndexes == true ? 0 : 1);
+            b[6] = (byte)(1);// (byte)(bmp.UsingIndexes == true ? 0 : 1);
             b[7] = (byte)(0);
 
             for (int i = 0; i < bits.Length; i++)

@@ -27,24 +27,51 @@ namespace RaptorDB.Views
         private SafeDictionary<Type, List<string>> _otherViews = new SafeDictionary<Type, List<string>>();
         private TaskQueue _que = new TaskQueue();
 
-        internal Result Query<T>(Type objtype, Expression<Predicate<T>> filter)//, int start, int count)
+        internal Result Query<T>(Type objtype, Expression<Predicate<T>> filter)
         {
             string viewname = null;
             // find view from name
             if (_primaryView.TryGetValue(objtype, out viewname))
-                return Query(viewname, filter);//, start, count);
+                return Query(viewname, filter);
+
+            // FIX : add search for viewtype here
+
             
             _log.Error("view not found", viewname);
             return new Result(false, new Exception("view not found : "+ viewname));
         }
 
-        internal Result Query<T>(string viewname, Expression<Predicate<T>> filter)//, int start, int count)
+        internal Result Query<T>(string viewname, Expression<Predicate<T>> filter)
         {
             ViewHandler view = null;
             // find view from name
             if (_views.TryGetValue(viewname, out view))
-                return view.Query(filter);//, start, count);
+                return view.Query(filter);
             
+            _log.Error("view not found", viewname);
+            return new Result(false, new Exception("view not found : " + viewname));
+        }
+
+        internal Result Query(string viewname)
+        {
+            ViewHandler view = null;
+            // find view from name
+            if (_views.TryGetValue(viewname, out view))
+                return view.Query();
+
+            _log.Error("view not found", viewname);
+            return new Result(false, new Exception("view not found : " + viewname));
+        }
+
+        internal Result Query(Type view)
+        {
+            string viewname = null;
+            // find view from name
+            if (_primaryView.TryGetValue(view, out viewname))
+                return Query(viewname);
+
+            // FIX : add search for viewtype here
+
             _log.Error("view not found", viewname);
             return new Result(false, new Exception("view not found : " + viewname));
         }
@@ -154,7 +181,10 @@ namespace RaptorDB.Views
             _que.Shutdown();
             // shutdown views
             foreach (var v in _views)
+            {
+                _log.Debug(" shutting down : " + v.Value._view.Name);
                 v.Value.Shutdown();
+            }
         }
     }
 }

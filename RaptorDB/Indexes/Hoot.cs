@@ -92,7 +92,7 @@ namespace RaptorDB
         public IEnumerable<int> FindRows(string filter)
         {
             // enumerate records
-            return Query(filter).GetBitIndexes(true);
+            return Query(filter).GetBitIndexes();
         }
 
         public void OptimizeIndex()

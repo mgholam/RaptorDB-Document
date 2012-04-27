@@ -15,7 +15,7 @@ using System.Collections.ObjectModel;
 
 namespace testing
 {
-    #region [  class definition  ]
+    #region [  class definitions  ]
     public class LineItem
     {
         public decimal QTY { get; set; }
@@ -37,100 +37,112 @@ namespace testing
         public DateTime Date { get; set; }
         public int Serial { get; set; }
         public byte Status { get; set; }
-    } 
+    }
+    #endregion
+
+    #region [  views  ]
+    public class SalesInvoiceView : View<SalesInvoice>
+    {
+        public class RowSchema
+        {
+            public NormalString CustomerName;
+            public DateTime InvoiceDate;
+            public string Address;
+            public int Serial;
+            public byte Status;
+        }
+
+        public SalesInvoiceView()
+        {
+            this.Name = "SalesInvoice";
+            this.Description = "A primary view for SalesInvoices";
+            this.isPrimaryList = true;
+            this.isActive = true;
+            this.BackgroundIndexing = true;
+
+            this.Schema = typeof(SalesInvoiceView.RowSchema);
+
+            this.AddFireOnTypes(typeof(SalesInvoice));
+
+            this.Mapper = (api, docid, doc) =>
+            {
+                api.Emit(docid, doc.CustomerName, doc.Date, doc.Address, doc.Serial, doc.Status);
+            };
+        }
+    }
+
+    public class SalesItemRowsView : View<SalesInvoice>
+    {
+        public class RowSchema
+        {
+            public NormalString Product;
+            public decimal QTY;
+            public decimal Price;
+            public decimal Discount;
+        }
+
+        public SalesItemRowsView()
+        {
+            this.Name = "SalesItemRows";
+            this.Description = "";
+            this.isPrimaryList = false;
+            this.isActive = true;
+            this.BackgroundIndexing = true;
+
+            this.Schema = typeof(SalesItemRowsView.RowSchema);
+
+            this.AddFireOnTypes(typeof(SalesInvoice));
+
+            this.Mapper = (api, docid, doc) =>
+                {
+                    if (doc.Status == 3 && doc.Items != null)
+                        foreach (var i in doc.Items)
+                            api.Emit(docid, i.Product, i.QTY, i.Price, i.Discount);
+                };
+        }
+    }
     #endregion
 
     public class program
     {
-        public class SalesInvoiceView : View<SalesInvoice>
-        {
-            public class RowSchema
-            {
-                public NormalString CustomerName;
-                public DateTime InvoiceDate;
-                public string Address;
-                public int Serial;
-                public byte Status;
-            }
-
-            public SalesInvoiceView()
-            {
-                this.Name = "SalesInvoice";
-                this.Description = "A primary view for SalesInvoices";
-                this.isPrimaryList = true;
-                this.isActive = true;
-                this.BackgroundIndexing = true;
-
-                this.Schema = typeof(SalesInvoiceView.RowSchema);
-
-                this.AddFireOnTypes(typeof(SalesInvoice));
-
-                this.Mapper = (api, docid, doc) =>
-                {
-                    api.Emit(docid, doc.CustomerName, doc.Date, doc.Address, doc.Serial, doc.Status);
-                };
-            }
-        }
-
-        public class SalesItemRowsView : View<SalesInvoice>
-        {
-            public class RowSchema
-            {
-                public NormalString Product;
-                public decimal QTY;
-                public decimal Price;
-                public decimal Discount;
-            }
-
-            public SalesItemRowsView()
-            {
-                this.Name = "SalesItemRows";
-                this.Description = "";
-                this.isPrimaryList = false;
-                this.isActive = true;
-                this.BackgroundIndexing = true;
-
-                this.Schema = typeof(SalesItemRowsView.RowSchema);
-
-                this.AddFireOnTypes(typeof(SalesInvoice));
-
-                this.Mapper = (api, docid, doc) =>
-                    {
-                        if (doc.Status == 3 && doc.Items != null)
-                            foreach (var i in doc.Items)
-                            {
-                                api.Emit(docid, i.Product, i.QTY, i.Price, i.Discount);
-                            }
-                    };
-            }
-        }
-
         public static void Main()
         {
-            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
+            //WAHBitArray ba = new WAHBitArray();
+            //Random r = new Random();
+            //for (int i = 0; i < 1000; i++)
+            //{
+            //    //if (i > 5000)
+            //    //    ba.Set(i, true);
+            //    ba.Set(r.Next(100000), true);
+            //}
+            //uint[] iiii = ba.GetCompressed();
 
+            //WAHBitArray ba2 = new WAHBitArray(WAHBitArray.TYPE.Compressed_WAH, iiii);
+
+            //var result = ba2.Xor(ba);
+
+            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
 
             RaptorDB.RaptorDB rap = RaptorDB.RaptorDB.Open("RaptorDB");
 
-            SalesInvoiceView v = new SalesInvoiceView();
-
-            if (rap.RegisterView(v).OK == false)
+            if (rap.RegisterView(new SalesInvoiceView()).OK == false)
             {
                 Console.WriteLine("Error registering view");
                 return;
             }
 
-            SalesItemRowsView v2 = new SalesItemRowsView();
-
-            if (rap.RegisterView(v2).OK == false)
+            if (rap.RegisterView(new SalesItemRowsView()).OK == false)
             {
                 Console.WriteLine("Error registering view");
                 return;
             }
+
             DateTime dt = FastDateTime.Now;
-            var q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "asdas 1" || l.Product == "asdas 3"));
+            var q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
             Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
-            
+            Console.WriteLine("query count = " + q.Count);
+            //File.WriteAllText("pp.json", fastJSON.JSON.Instance.ToJSON(q).Replace("],", "],\r\n"));
+
             dt = FastDateTime.Now;
 
             for (int i = 0; i < 100000; i++)
@@ -145,34 +157,34 @@ namespace testing
                 };
                 inv.Items = new List<LineItem>();
                 for (int k = 0; k < 5; k++)
-                {
-                    inv.Items.Add(new LineItem() { Product = "asdas " + k, Discount = 0, Price = 10 + k, QTY = 1 + k });
-                }
+                    inv.Items.Add(new LineItem() { Product = "prod " + k, Discount = 0, Price = 10 + k, QTY = 1 + k });
+
                 rap.Save(inv.ID, inv);
             }
 
             Console.WriteLine("insert time secs = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("Press (R) for redo query");
-        //Thread.Sleep(4000);
         redo:
             dt = FastDateTime.Now;
-            //q = rap.Query("SalesItemRows", (LineItem l) => (l.Price == 10));
             int j = 100;
             var res = rap.Query(//"SalesInvoice",
                 typeof(SalesInvoice),
                 (SalesInvoice s) => (s.Serial < j) && (s.Status == 1 || s.Status == 3));
 
             if (res.OK)
-            {
                 Console.WriteLine("count = " + res.Count);
-            }
+
             Console.WriteLine("query time secs = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+
             dt = FastDateTime.Now;
-            q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "asdas 1" || l.Product == "asdas 3"));
+            q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
             Console.WriteLine("Count = " + q.Count);
             Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+
+            //File.WriteAllText("ppp.json", fastJSON.JSON.Instance.ToJSON(q).Replace("],", "],\r\n"));
+
             if (Console.ReadKey().Key == ConsoleKey.R) { Console.WriteLine("edo"); goto redo; }
-            rap.Dispose();
+            //rap.Shutdown();
             return;
         }
 

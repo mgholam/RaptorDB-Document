@@ -6,11 +6,10 @@ using System.Text;
 namespace RaptorDB
 {
     /// <summary>
-    /// Used for the indexer -> normal indexing of the string instead of hOOt full text indexing
+    /// Used for the schema definition and indexer -> normal indexing of the string instead of hOOt full text indexing
     /// </summary>
     public class NormalString
     {
-        //public string str;
     }
 
     internal interface IGetBytes<T>
@@ -98,11 +97,12 @@ namespace RaptorDB
         }
     }
 
+    #region [  handlers  ]
     internal class bytehandler<T> : IGetBytes<byte>
     {
         public byte[] GetBytes(byte obj)
         {
-            return new byte[1]{obj};
+            return new byte[1] { obj };
         }
 
         public byte GetObject(byte[] buffer, int offset, int count)
@@ -130,7 +130,7 @@ namespace RaptorDB
         {
             byte[] b = new byte[16];
             var bb = decimal.GetBits(obj);
-            int index =0;
+            int index = 0;
             foreach (var d in bb)
             {
                 byte[] db = Helper.GetBytes(d, false);
@@ -251,4 +251,5 @@ namespace RaptorDB
             return new DateTime(ticks);
         }
     }
+    #endregion
 }

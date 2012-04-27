@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace RaptorDB.Views
 {
+    // FIX : background save indexes to disk
     internal class ViewHandler
     {
         private ILog _log = LogManager.GetLogger(typeof(ViewHandler));
@@ -45,7 +46,7 @@ namespace RaptorDB.Views
 
             LoadDeletedRowsBitmap();
 
-            _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat");//, view.BackgroundIndexing);//, 1);
+            _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat");
             _viewData.SkipDateTime = true;
         }
 
@@ -57,7 +58,6 @@ namespace RaptorDB.Views
             _deletedRows.FreeMemory();
         }
 
-        private object _lock = new object();
         public void Insert<T>(Guid guid, T doc)
         {
             apimapper api = new apimapper(_viewmanager);
@@ -78,42 +78,80 @@ namespace RaptorDB.Views
 
         }
 
-        public Result Query<T>(Expression<Predicate<T>> filter)//, int start, int count)
+        internal Result Query<T>(Expression<Predicate<T>> filter)
         {
             DateTime dt = FastDateTime.Now;
             // FEATURE : add query caching here
             Result ret = new Result();
             WAHBitArray ba = new WAHBitArray();
             List<object[]> rows = new List<object[]>();
-            try// FIX : remove try when the concurrency problem is found 
-            {
-                QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
-                qv.Visit(filter);
-                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows._bits);
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex);
-                return new Result(false, ex);
-            }
+
+            QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
+            qv.Visit(filter);
+            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            foreach (int i in ba.GetBitIndexes(true))
+            return RetrunRows(ba);
+        }
+
+        private Result RetrunRows(WAHBitArray ba)
+        {
+            DateTime dt = FastDateTime.Now;
+            List<object[]> rows = new List<object[]>();
+            Result ret = new Result();
+            foreach (int i in ba.GetBitIndexes())
             {
-                try// FIX : remove try when the concurrency problem is found 
-                {
+                //try
+                //{
                     byte[] b = _viewData.ReadData(i);
+                    if (b == null) continue;
                     rows.Add(
                         ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray()
                         );
-                }
-                catch (Exception ex)
-                {
-                    _log.Error(ex);
-                }
+                //}
+                //catch (Exception ex)
+                //{
+                //    _log.Error(ex);
+                //}
             }
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            _log.Debug("query rows count : " + rows.Count);
+            ret.OK = true;
+            ret.Count = rows.Count;
+            ret.TotalCount = rows.Count;
+            ret.Rows = rows;
+            return ret;
+        }
+
+        internal Result Query()
+        {
+            // no filter query -> just show all the data
+            DateTime dt = FastDateTime.Now;
+            int count = _viewData.Count();
+            List<object[]> rows = new List<object[]>();
+            Result ret = new Result();
+
+            for (int i = 0; i < count; i++)
+            {
+                if (_deletedRows.GetBits().Get(i) == true)
+                    continue;
+                //try
+                //{
+                    byte[] b = _viewData.ReadData(i);
+                    if (b == null) continue;
+                    rows.Add(
+                        ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray()
+                        );
+                //}
+                //catch (Exception ex)
+                //{
+                //    _log.Error(ex);
+                //}
+            }
+            _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            _log.Debug("query rows count : " + rows.Count);
             ret.OK = true;
             ret.Count = rows.Count;
             ret.TotalCount = rows.Count;
@@ -171,20 +209,16 @@ namespace RaptorDB.Views
 
         private void InsertRowsWithIndexUpdate(Guid guid, List<object[]> rows)
         {
-            lock (_lock)
+            foreach (var row in rows)
             {
-                //return;
-                foreach (var row in rows)
-                {
-                    object[] r = new object[row.Length + 1];
-                    r[0] = guid;
-                    Array.Copy(row, 0, r, 1, row.Length);
-                    byte[] b = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
+                object[] r = new object[row.Length + 1];
+                r[0] = guid;
+                Array.Copy(row, 0, r, 1, row.Length);
+                byte[] b = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
 
-                    int rownum = _viewData.WriteData(guid, b, false);
+                int rownum = _viewData.WriteData(guid, b, false);
 
-                    IndexRow(guid, row, rownum);
-                }
+                IndexRow(guid, row, rownum);
             }
         }
 
