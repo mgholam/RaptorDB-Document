@@ -147,9 +147,9 @@ namespace RaptorDB
             _shuttingdown = true;
             // save _LastRecordNumberProcessed here
             File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
-            _log.Debug("Shutting down");
-            _viewManager.ShutDown();
+            _log.Debug("Shutting down");   
             _saveTimer.Stop();
+            _viewManager.ShutDown();
             _objStore.Shutdown();
             _fileStore.Shutdown();
             LogManager.Shutdown();
