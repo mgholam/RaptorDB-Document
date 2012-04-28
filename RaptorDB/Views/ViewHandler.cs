@@ -103,18 +103,11 @@ namespace RaptorDB.Views
             Result ret = new Result();
             foreach (int i in ba.GetBitIndexes())
             {
-                //try
-                //{
-                    byte[] b = _viewData.ReadData(i);
-                    if (b == null) continue;
-                    rows.Add(
-                        ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray()
-                        );
-                //}
-                //catch (Exception ex)
-                //{
-                //    _log.Error(ex);
-                //}
+                byte[] b = _viewData.ReadData(i);
+                if (b == null) continue;
+                rows.Add(
+                    ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray()
+                    );
             }
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             _log.Debug("query rows count : " + rows.Count);
@@ -137,18 +130,11 @@ namespace RaptorDB.Views
             {
                 if (_deletedRows.GetBits().Get(i) == true)
                     continue;
-                //try
-                //{
-                    byte[] b = _viewData.ReadData(i);
-                    if (b == null) continue;
-                    rows.Add(
-                        ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray()
-                        );
-                //}
-                //catch (Exception ex)
-                //{
-                //    _log.Error(ex);
-                //}
+                byte[] b = _viewData.ReadData(i);
+                if (b == null) continue;
+                rows.Add(
+                    ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray()
+                    );
             }
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             _log.Debug("query rows count : " + rows.Count);
@@ -257,11 +243,6 @@ namespace RaptorDB.Views
             WAHBitArray gc = QueryColumnExpression(_docid, RDBExpression.Equal, guid);
             _deletedRows.InPlaceOR(gc);
         }
-
-        //private WAHBitArray QueryColumnFromTo(string colname, object from, object to)
-        //{
-        //    return _indexes[colname].Query(from, to);
-        //}
 
         private WAHBitArray QueryColumnExpression(string colname, RDBExpression exp, object from)
         {

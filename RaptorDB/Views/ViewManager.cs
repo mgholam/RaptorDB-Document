@@ -97,11 +97,6 @@ namespace RaptorDB.Views
             _log.Error("view not found", viewname);
         }
 
-        //public DataList CallMapFunction(string viewname, Guid docid, object data)
-        //{
-        //    return _mapengine.Execute(_Path + viewname + "\\" + viewname + ".dll", docid, data);
-        //}
-
         public object Fetch(Guid guid)
         {
             byte[] b = null;

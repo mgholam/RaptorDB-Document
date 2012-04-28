@@ -8,16 +8,14 @@ using System.Reflection;
 namespace RaptorDB.Views
 {
     //FEATURE : handle Contains, StartsWith, Between predicates
- 
+
     //delegate WAHBitArray QueryFromTo(string colname, object from, object to);
     delegate WAHBitArray QueryExpression(string colname, RDBExpression exp, object from);
 
     internal class QueryVisitor : ExpressionVisitor
     {
-        public QueryVisitor(//QueryFromTo fromto, 
-            QueryExpression express)
+        public QueryVisitor(QueryExpression express)
         {
-            //qfromto = fromto;
             qexpression = express;
         }
         //public StringBuilder sb = new StringBuilder();
@@ -90,9 +88,9 @@ namespace RaptorDB.Views
                 object ln = _stack.Pop();
                 RDBExpression exp = RDBExpression.Equal;
                 // FEATURE : add contains , between, startswith
-                if (lo == ExpressionType.LessThan)                exp = RDBExpression.Less;
-                else if (lo == ExpressionType.LessThanOrEqual)    exp = RDBExpression.LessEqual;
-                else if (lo == ExpressionType.GreaterThan)        exp = RDBExpression.Greater;
+                if (lo == ExpressionType.LessThan) exp = RDBExpression.Less;
+                else if (lo == ExpressionType.LessThanOrEqual) exp = RDBExpression.LessEqual;
+                else if (lo == ExpressionType.GreaterThan) exp = RDBExpression.Greater;
                 else if (lo == ExpressionType.GreaterThanOrEqual) exp = RDBExpression.GreaterEqual;
 
                 _bitmap.Push(qexpression("" + ln, exp, lv));
