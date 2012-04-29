@@ -70,6 +70,7 @@ namespace RaptorDB
 
         public void ShutDown()
         {
+            _saveTimer.Enabled = false;
             WriteData();
             if (_output != null)
             {

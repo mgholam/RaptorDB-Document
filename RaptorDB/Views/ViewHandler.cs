@@ -147,13 +147,17 @@ namespace RaptorDB.Views
 
         internal void Shutdown()
         {
+            _log.Debug("Shutting down Viewhandler");
             // save deletedbitmap
             _deletedRows.Shutdown();
 
             _viewData.Shutdown();
             // shutdown indexes
             foreach (var v in _indexes)
+            {
+                _log.Debug("Shutting down view index : " + v.Key);
                 v.Value.Shutdown();
+            }
         }
 
         #region [  private methods  ]

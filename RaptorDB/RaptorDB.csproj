@@ -121,7 +121,7 @@
     <Compile Include="Indexes\IndexFile.cs" />
     <Compile Include="Indexes\MGIndex.cs" />
     <Compile Include="Indexes\MurMurHash2.cs" />
-    <Compile Include="KeyStore.cs" />
+    <Compile Include="Storage\KeyStore.cs" />
     <Compile Include="Mapping\IMapAPI.cs" />
     <Compile Include="Helper\Logger.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
@@ -178,8 +178,5 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup />
-  <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
-  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

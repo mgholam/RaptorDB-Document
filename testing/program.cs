@@ -102,25 +102,11 @@ namespace testing
         }
     }
     #endregion
-
+    
     public class program
     {
         public static void Main()
         {
-            //WAHBitArray ba = new WAHBitArray();
-            //Random r = new Random();
-            //for (int i = 0; i < 1000; i++)
-            //{
-            //    //if (i > 5000)
-            //    //    ba.Set(i, true);
-            //    ba.Set(r.Next(100000), true);
-            //}
-            //uint[] iiii = ba.GetCompressed();
-
-            //WAHBitArray ba2 = new WAHBitArray(WAHBitArray.TYPE.Compressed_WAH, iiii);
-
-            //var result = ba2.Xor(ba);
-
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
 
             RaptorDB.RaptorDB rap = RaptorDB.RaptorDB.Open("RaptorDB");
@@ -141,6 +127,7 @@ namespace testing
             var q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
             Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("query count = " + q.Count);
+            Console.WriteLine();
             //File.WriteAllText("pp.json", fastJSON.JSON.Instance.ToJSON(q).Replace("],", "],\r\n"));
 
             dt = FastDateTime.Now;
@@ -164,6 +151,7 @@ namespace testing
 
             Console.WriteLine("insert time secs = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("Press (R) for redo query");
+            Console.WriteLine();
         redo:
             dt = FastDateTime.Now;
             int j = 100;
@@ -180,11 +168,10 @@ namespace testing
             q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
             Console.WriteLine("Count = " + q.Count);
             Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
-
+            Console.WriteLine();
             //File.WriteAllText("ppp.json", fastJSON.JSON.Instance.ToJSON(q).Replace("],", "],\r\n"));
 
             if (Console.ReadKey().Key == ConsoleKey.R) { Console.WriteLine("edo"); goto redo; }
-            //rap.Shutdown();
             return;
         }
 

@@ -20,11 +20,6 @@ namespace RaptorDB
             base.Set((T)key, recnum);
         }
 
-        //public WAHBitArray Query(object fromkey, object tokey)
-        //{
-        //    return base.Query((T)fromkey, (T)tokey);
-        //}
-
         public WAHBitArray Query(RDBExpression ex, object from)
         {
             T f = default(T);
@@ -147,11 +142,6 @@ namespace RaptorDB
         {
             base.Index(recnum, (string)key);
         }
-
-        //public WAHBitArray Query(object fromkey, object tokey)
-        //{
-        //    return base.Query("" + fromkey);
-        //}
 
         public WAHBitArray Query(RDBExpression ex, object from)
         {
