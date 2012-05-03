@@ -32,7 +32,7 @@ namespace RaptorDB
         private int _CurrentRecordNumber = -1;
         private System.Timers.Timer _saveTimer;
         private bool _shuttingdown = false;
-        private bool disposed = false;
+        //private bool disposed = false;
 
         public void SaveBytes(Guid docID, byte[] bytes)
         {
@@ -87,6 +87,11 @@ namespace RaptorDB
             return _viewManager.Query(view);
         }
 
+        public Result Query(string viewname, string filter)
+        {
+            return _viewManager.Query(viewname, filter);
+        }
+
         // FEATURE : add paging to queries -> start, count
         /// <summary>
         /// Query any view with filters
@@ -139,21 +144,28 @@ namespace RaptorDB
             return _viewManager.RegisterView(view);
         }
 
+        private object _sh = new object();
         public void Shutdown()
         {
+
             if (_shuttingdown == true)
                 return;
 
-            _shuttingdown = true;
-            // save _LastRecordNumberProcessed here
-            _log.Debug("last record = " + _LastRecordNumberProcessed);
-            File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
-            _log.Debug("Shutting down");   
-            _saveTimer.Stop();
-            _viewManager.ShutDown();
-            _objStore.Shutdown();
-            _fileStore.Shutdown();
-            LogManager.Shutdown();
+            lock (_sh)
+            {
+
+                _shuttingdown = true;
+                // save _LastRecordNumberProcessed here
+                _log.Debug("last record = " + _LastRecordNumberProcessed);
+                File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
+                _log.Debug("Shutting down");
+                _saveTimer.Stop();
+                _viewManager.ShutDown();
+                Thread.Sleep(2000);
+                _objStore.Shutdown();
+                _fileStore.Shutdown();
+                LogManager.Shutdown();
+            }
         }
 
         public void Dispose()

@@ -78,6 +78,26 @@ namespace RaptorDB.Views
 
         }
 
+        internal Result Query(string filter)
+        {
+            DateTime dt = FastDateTime.Now;
+            // FEATURE : add query caching here
+            Result ret = new Result();
+            WAHBitArray ba = new WAHBitArray();
+            List<object[]> rows = new List<object[]>();
+
+            var e = System.Linq.Dynamic.DynamicExpression.ParseLambda(_view.Schema, typeof(bool), filter, null);
+
+            QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
+            qv.Visit(e.Body);
+            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+
+            _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            dt = FastDateTime.Now;
+            // exec query return rows
+            return RetrunRows(ba);
+        }
+
         internal Result Query<T>(Expression<Predicate<T>> filter)
         {
             DateTime dt = FastDateTime.Now;
@@ -183,10 +203,20 @@ namespace RaptorDB.Views
             _view.SchemaColumns.Name = _view.Name;
 
             foreach (var p in _view.Schema.GetProperties())
-                _view.SchemaColumns.Add(p.Name, p.PropertyType);
+            {
+                Type t = p.PropertyType;
+                if (p.GetCustomAttributes(typeof(FullTextAttribute), true).Length > 0)
+                    t = typeof(FullTextString);
+                _view.SchemaColumns.Add(p.Name, t);
+            }
 
             foreach (var f in _view.Schema.GetFields())
-                _view.SchemaColumns.Add(f.Name, f.FieldType);
+            {
+                Type t = f.FieldType;
+                if (f.GetCustomAttributes(typeof(FullTextAttribute), true).Length > 0)
+                    t = typeof(FullTextString);
+                _view.SchemaColumns.Add(f.Name, t);
+            }
 
             foreach (var s in _view.SchemaColumns.Columns)
                 _colnames.Add(s.Key);
@@ -224,21 +254,19 @@ namespace RaptorDB.Views
 
         private IIndex CreateIndex(string name, Type type)
         {
-            if (type != typeof(string))
-            {
-                if (type == typeof(NormalString))
-                    return new TypeIndexes<string>(_Path, name, Global.DefaultStringKeySize);
-
-                else if (type == typeof(bool))
-                    return new BoolIndex(_Path, name);
-
-                else
-                    return (IIndex)Activator.CreateInstance(
-                        typeof(TypeIndexes<>).MakeGenericType(type),
-                        new object[] { _Path, name, Global.DefaultStringKeySize });
-            }
-            else
+            if (type == typeof(FullTextString))
                 return new FullTextIndex(_Path, name);
+
+            else if (type == typeof(string))
+                return new TypeIndexes<string>(_Path, name, Global.DefaultStringKeySize);
+
+            else if (type == typeof(bool))
+                return new BoolIndex(_Path, name);
+
+            else
+                return (IIndex)Activator.CreateInstance(
+                    typeof(TypeIndexes<>).MakeGenericType(type),
+                    new object[] { _Path, name, Global.DefaultStringKeySize });
         }
 
         private void DeleteRowsWith(Guid guid)

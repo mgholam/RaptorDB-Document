@@ -45,7 +45,8 @@ namespace testing
     {
         public class RowSchema
         {
-            public NormalString CustomerName;
+            [FullText]
+            public string CustomerName;
             public DateTime InvoiceDate;
             public string Address;
             public int Serial;
@@ -75,7 +76,8 @@ namespace testing
     {
         public class RowSchema
         {
-            public NormalString Product;
+            //[FullText]
+            public string Product;
             public decimal QTY;
             public decimal Price;
             public decimal Discount;
@@ -123,7 +125,10 @@ namespace testing
                 return;
             }
 
+            var qq = rap.Query("SalesItemRows", "product == \"prod 1\" || Product == \"prod 3\"");
+            
             DateTime dt = FastDateTime.Now;
+
             var q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
             Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("query count = " + q.Count);
@@ -155,7 +160,8 @@ namespace testing
         redo:
             dt = FastDateTime.Now;
             int j = 100;
-            var res = rap.Query(//"SalesInvoice",
+            var res = rap.Query(
+                //"SalesInvoice",
                 typeof(SalesInvoice),
                 (SalesInvoice s) => (s.Serial < j) && (s.Status == 1 || s.Status == 3));
 
@@ -163,7 +169,7 @@ namespace testing
                 Console.WriteLine("count = " + res.Count);
 
             Console.WriteLine("query time secs = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
-
+            
             dt = FastDateTime.Now;
             q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
             Console.WriteLine("Count = " + q.Count);

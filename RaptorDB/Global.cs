@@ -13,7 +13,7 @@ namespace RaptorDB
         /// <summary>
         /// True = Save to other views in process , False = background save to other views
         /// </summary>
-        public static bool BackgroundSaveToOtherViews = false; 
+        public static bool BackgroundSaveToOtherViews = true; 
 
         public static byte DefaultStringKeySize = 60; 
 

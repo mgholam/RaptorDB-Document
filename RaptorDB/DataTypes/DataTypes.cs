@@ -4,12 +4,19 @@ using System.Linq;
 using System.Text;
 
 namespace RaptorDB
-{
+{    
     /// <summary>
-    /// Used for the schema definition and indexer -> normal indexing of the string instead of hOOt full text indexing
+    /// Used for the indexer -> hOOt full text indexing
     /// </summary>
-    public class NormalString
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public class FullTextAttribute : Attribute
     {
+        //public bool has;
+    }
+
+    internal class FullTextString 
+    {
+
     }
 
     internal interface IGetBytes<T>
