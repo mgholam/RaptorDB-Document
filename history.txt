@@ -8,3 +8,6 @@ v1.1
 - string query parser 
 - fix shutdown flusing indexes to disk
 - rudementary console application
+- lowercase viewnames for string queries
+- fulltext search defaults to AND if + - characters not present in query
+- Query now works when suppling the view type

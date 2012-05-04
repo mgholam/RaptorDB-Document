@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace System.Linq.Dynamic
 {
-    // FIX : cleanup unused code here
+    // FEATURE : cleanup unused code here
 
     #region [  Classes  ]
     public abstract class DynamicClass

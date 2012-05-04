@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 
 namespace RaptorDB
 {
-    internal class Hoot 
+    internal class Hoot
     {
         private string _bmpext = ".mgbmp";
 
@@ -129,7 +129,7 @@ namespace RaptorDB
                 _bitmapFile.Flush();
                 _bitmapFile.Close();
                 File.Delete(_Path + _FileName + _bmpext);
-                File.Move(_Path + _FileName + _bmpext +"$", _Path + _FileName + _bmpext);
+                File.Move(_Path + _FileName + _bmpext + "$", _Path + _FileName + _bmpext);
                 // reload everything
                 _bitmapFile = new FileStream(_Path + _FileName + _bmpext, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
                 _lastBitmapOffset = _bitmapFile.Seek(0L, SeekOrigin.End);
@@ -146,6 +146,9 @@ namespace RaptorDB
             DateTime dt = FastDateTime.Now;
             // query indexes
             string[] words = filter.Split(' ');
+            bool defaulttoand = true;
+            if (filter.IndexOfAny(new char[] { '+', '-' }, 0) > 0)
+                defaulttoand = false;
 
             WAHBitArray bits = null;
 
@@ -156,17 +159,19 @@ namespace RaptorDB
                 if (s == "") continue;
 
                 Cache.OPERATION op = Cache.OPERATION.OR;
+                if (defaulttoand)
+                    op = Cache.OPERATION.AND; 
 
                 if (s.StartsWith("+"))
                 {
                     op = Cache.OPERATION.AND;
-                    word = s.Replace("+","");
+                    word = s.Replace("+", "");
                 }
 
                 if (s.StartsWith("-"))
                 {
                     op = Cache.OPERATION.ANDNOT;
-                    word = s.Replace("-","");
+                    word = s.Replace("-", "");
                 }
 
                 if (s.Contains("*") || s.Contains("?"))

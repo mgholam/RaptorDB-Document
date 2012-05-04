@@ -23,6 +23,7 @@ namespace RaptorDB.Views
         private SafeDictionary<string, ViewHandler> _views = new SafeDictionary<string, ViewHandler>();
         // primary view list
         private SafeDictionary<Type, string> _primaryView = new SafeDictionary<Type, string>();
+        private SafeDictionary<Type, string> _otherViewTypes = new SafeDictionary<Type, string>();
         // other views type->list of view names to call
         private SafeDictionary<Type, List<string>> _otherViews = new SafeDictionary<Type, List<string>>();
         private TaskQueue _que = new TaskQueue();
@@ -34,8 +35,9 @@ namespace RaptorDB.Views
             if (_primaryView.TryGetValue(objtype, out viewname))
                 return Query(viewname, filter);
 
-            // FIX : add search for viewtype here
-
+            // search for viewtype here
+            if (_otherViewTypes.TryGetValue(objtype, out viewname))
+                return Query(viewname, filter);
             
             _log.Error("view not found", viewname);
             return new Result(false, new Exception("view not found : "+ viewname));
@@ -81,7 +83,9 @@ namespace RaptorDB.Views
             if (_primaryView.TryGetValue(view, out viewname))
                 return Query(viewname);
 
-            // FIX : add search for viewtype here
+            // search for viewtype here
+            if (_otherViewTypes.TryGetValue(view, out viewname))
+                return Query(viewname);
 
             _log.Error("view not found", viewname);
             return new Result(false, new Exception("view not found : " + viewname));
@@ -152,6 +156,8 @@ namespace RaptorDB.Views
                 vh = new ViewHandler(_Path, this);
                 vh.SetView(view);
                 _views.Add(view.Name.ToLower(), vh);
+                _otherViewTypes.Add(view.GetType(), view.Name.ToLower());
+
                 if (view.isPrimaryList)
                 {
                     foreach (string tn in view.FireOnTypes)

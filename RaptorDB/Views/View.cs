@@ -23,21 +23,21 @@ namespace RaptorDB.Views
 
     public abstract class ViewBase
     {
-        //public Guid DocID { get; set; }
+        /// <summary>
+        /// Increment this when you change view definitions so the engine can rebuild the contents
+        /// </summary>
+        public int Version { get; set; }
+        
         /// <summary>
         /// Name of the view will be used for foldernames and filename and generated code
         /// </summary>
         public string Name { get; set;}
+        
         /// <summary>
         /// A text for describing this views purpose for other developers 
         /// </summary>
         public string Description { get; set; }
-
-        ///// <summary>
-        ///// C# code for the mapper function
-        ///// </summary>
-        //public string MapFunctionCode { get; set; }
-
+        
         /// <summary>
         /// Column definitions for the view storage 
         /// </summary>
@@ -50,36 +50,31 @@ namespace RaptorDB.Views
         /// Use AddFireOnTypes() to add to this list
         /// </summary>
         public List<string> FireOnTypes { get; set; }
-
-        ///// <summary>
-        ///// List of Views used for code generation in the mapper function
-        ///// </summary>
-        //public List<ViewRowDefinition> ViewsUsed { get; set; }
-
+        
         /// <summary>
         /// Is this the primary list and will be populated synchronously
         /// </summary>
         public bool isPrimaryList { get; set; }
-
+        
         /// <summary>
         /// Is this view active and will recieve data
         /// </summary>
         public bool isActive { get; set; }
-
+        
         /// <summary>
         /// Delete items on DocID before inserting new rows (default = true)
         /// </summary>
         public bool DeleteBeforeInsert { get; set; }
 
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        //public bool RebuildIndexesOnSchemaChange { get; set; }
-
         /// <summary>
         /// Index in the background : better performance but reads might not have all the data
         /// </summary>
         public bool BackgroundIndexing { get; set; }
+
+        ///// <summary>
+        ///// Save documents to this concurrently
+        ///// </summary>
+        //public bool ConcurrentSaveToThisView { get; set; }
 
         /// <summary>
         /// Fire the mapper on these types

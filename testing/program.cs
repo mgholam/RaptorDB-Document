@@ -160,16 +160,20 @@ namespace testing
             Console.WriteLine("Enter you query in the following format :  viewname , query");
             string[] s = Console.ReadLine().Split(',');
             DateTime dt = FastDateTime.Now;
-            var q = rap.Query(s[0].Trim(), s[1].Trim());
-            Console.WriteLine("query time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
-            Console.WriteLine("query count = " + q.Count);
-            Console.WriteLine();
+            try
+            {
+                var q = rap.Query(s[0].Trim(), s[1].Trim());
+                Console.WriteLine("query time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+                Console.WriteLine("query count = " + q.Count);
+                Console.WriteLine();
+            }
+            catch { Console.WriteLine("error in query."); }
         }
 
         private static void predefinedquery(RaptorDB.RaptorDB rap)
         {
             DateTime dt = FastDateTime.Now;
-            var q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
+            var q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
             Console.WriteLine("query lineitems time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("query count = " + q.Count);
             Console.WriteLine();

@@ -11,7 +11,6 @@ using System.Reflection;
 
 namespace RaptorDB
 {
-    // FIX : shutdown flush to disk bug
     public class RaptorDB : IDisposable
     {
         private RaptorDB(string FolderPath)
@@ -33,37 +32,33 @@ namespace RaptorDB
         private int _CurrentRecordNumber = -1;
         private System.Timers.Timer _saveTimer;
         private bool _shuttingdown = false;
-        //private bool disposed = false;
 
         public void SaveBytes(Guid docID, byte[] bytes)
         {
             // save files in storage
             _fileStore.Set(docID, bytes);
         }
-        //private object _lock = new object();
+
         public bool Save<T>(Guid docid, T data)
         {
-            //lock (_lock)
+            string viewname = _viewManager.GetPrimaryViewForType(data.GetType());
+            if (viewname == "")
             {
-                string viewname = _viewManager.GetPrimaryViewForType(data.GetType());
-                if (viewname == "")
-                {
-                    _log.Debug("Primary View not defined for object : " + data.GetType());
-                    return false;
-                }
-
-                int recnum = SaveData(docid, data);
-                _CurrentRecordNumber = recnum;
-
-                SaveInPrimaryView(viewname, docid, data);
-
-                if (Global.BackgroundSaveToOtherViews == false)
-                {
-                    SaveInOtherViews(docid, data);
-                    _LastRecordNumberProcessed = recnum;
-                }
-                return true;
+                _log.Debug("Primary View not defined for object : " + data.GetType());
+                return false;
             }
+
+            int recnum = SaveData(docid, data);
+            _CurrentRecordNumber = recnum;
+
+            SaveInPrimaryView(viewname, docid, data);
+
+            if (Global.BackgroundSaveToOtherViews == false)
+            {
+                SaveInOtherViews(docid, data);
+                _LastRecordNumberProcessed = recnum;
+            }
+            return true;
         }
 
         /// <summary>
@@ -96,6 +91,9 @@ namespace RaptorDB
         /// <returns></returns>
         public Result Query(string viewname, string filter)
         {
+            if (filter == "")
+                return _viewManager.Query(viewname);
+
             return _viewManager.Query(viewname, filter);
         }
 

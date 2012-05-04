@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RaptorDB.Views
 {
-    // FIX : background save indexes to disk
+    // FEATURE : background save indexes to disk
     internal class ViewHandler
     {
         private ILog _log = LogManager.GetLogger(typeof(ViewHandler));
