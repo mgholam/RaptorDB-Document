@@ -32,6 +32,7 @@ namespace RaptorDB
         private int _CurrentRecordNumber = -1;
         private System.Timers.Timer _saveTimer;
         private bool _shuttingdown = false;
+        private bool _pauseindexer = false;
 
         public void SaveBytes(Guid docID, byte[] bytes)
         {
@@ -41,6 +42,7 @@ namespace RaptorDB
 
         public bool Save<T>(Guid docid, T data)
         {
+            _pauseindexer = true;
             string viewname = _viewManager.GetPrimaryViewForType(data.GetType());
             if (viewname == "")
             {
@@ -58,6 +60,7 @@ namespace RaptorDB
                 SaveInOtherViews(docid, data);
                 _LastRecordNumberProcessed = recnum;
             }
+            _pauseindexer = false;
             return true;
         }
 
@@ -289,6 +292,7 @@ namespace RaptorDB
                 {
                     if (_shuttingdown)
                         return;
+                    while (_pauseindexer) Thread.Sleep(1);
                     if (_CurrentRecordNumber == _LastRecordNumberProcessed)
                         return;
                     _LastRecordNumberProcessed++;

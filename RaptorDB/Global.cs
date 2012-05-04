@@ -39,6 +39,6 @@ namespace RaptorDB
         /// <summary>
         /// Save to other views timer seconds if enabled 
         /// </summary>
-        public static int BackgroundSaveViewTimer = 5;
+        public static int BackgroundSaveViewTimer = 1;
     }
 }
