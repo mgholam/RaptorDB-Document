@@ -7,3 +7,4 @@ v1.1
 - fulltext indexing via attribute
 - string query parser 
 - fix shutdown flusing indexes to disk
+- rudementary console application

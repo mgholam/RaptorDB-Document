@@ -45,7 +45,7 @@ namespace RaptorDB.Views
         {
             ViewHandler view = null;
             // find view from name
-            if (_views.TryGetValue(viewname, out view))
+            if (_views.TryGetValue(viewname.ToLower(), out view))
                 return view.Query(filter);
 
             _log.Error("view not found", viewname);
@@ -56,7 +56,7 @@ namespace RaptorDB.Views
         {
             ViewHandler view = null;
             // find view from name
-            if (_views.TryGetValue(viewname, out view))
+            if (_views.TryGetValue(viewname.ToLower(), out view))
                 return view.Query(filter);
             
             _log.Error("view not found", viewname);
@@ -67,7 +67,7 @@ namespace RaptorDB.Views
         {
             ViewHandler view = null;
             // find view from name
-            if (_views.TryGetValue(viewname, out view))
+            if (_views.TryGetValue(viewname.ToLower(), out view))
                 return view.Query();
 
             _log.Error("view not found", viewname);
@@ -91,7 +91,7 @@ namespace RaptorDB.Views
         {
             ViewHandler vman = null;
             // find view from name
-            if (_views.TryGetValue(viewname, out vman))
+            if (_views.TryGetValue(viewname.ToLower(), out vman))
             {
                 if (vman._view.isActive == false)
                 {
@@ -142,7 +142,7 @@ namespace RaptorDB.Views
             if (ret.OK == false) return ret;
 
             ViewHandler vh = null;
-            if (_views.TryGetValue(view.Name, out vh))
+            if (_views.TryGetValue(view.Name.ToLower(), out vh))
             {
                 // FEATURE : already exists -> replace? regen?
                 _log.Error("View already added and exists : " + view.Name);
@@ -151,11 +151,11 @@ namespace RaptorDB.Views
             {
                 vh = new ViewHandler(_Path, this);
                 vh.SetView(view);
-                _views.Add(view.Name, vh);
+                _views.Add(view.Name.ToLower(), vh);
                 if (view.isPrimaryList)
                 {
                     foreach (string tn in view.FireOnTypes)
-                        _primaryView.Add(Type.GetType(tn), view.Name);
+                        _primaryView.Add(Type.GetType(tn), view.Name.ToLower());
                 }
                 else
                 {

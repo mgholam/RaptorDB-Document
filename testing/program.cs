@@ -103,7 +103,7 @@ namespace testing
         }
     }
     #endregion
-    
+
     public class program
     {
         public static void Main()
@@ -124,19 +124,60 @@ namespace testing
                 return;
             }
 
+            bool end = false;
+
+            Console.WriteLine("Press (P)redifined query, (I)nsert 100,000 docs, (S)tring query, (Q)uit");
+
+        redo:
+            ConsoleKey key = Console.ReadKey().Key;
+            Console.WriteLine();
+
+            switch (key)
+            {
+                case ConsoleKey.P:
+                    predefinedquery(rap);
+                    break;
+                case ConsoleKey.I:
+                    insertdata(rap);
+                    break;
+                case ConsoleKey.S:
+                    stringquery(rap);
+                    break;
+                case ConsoleKey.Q:
+                    end = true;
+                    break;
+                default:
+                    Console.WriteLine("Press (P)redifined query, (I)nsert 100,000 docs, (S)tring query, (Q)uit");
+                    break;
+            }
+            if (!end)
+                goto redo;
+            rap.Shutdown();
+        }
+
+        private static void stringquery(RaptorDB.RaptorDB rap)
+        {
+            Console.WriteLine("Enter you query in the following format :  viewname , query");
+            string[] s = Console.ReadLine().Split(',');
             DateTime dt = FastDateTime.Now;
-
-            var qq = rap.Query("SalesItemRows", "product == \"prod 1\" || Product == \"prod 3\"");
-            Console.WriteLine("string query = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
-
-
-            var q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
-            Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+            var q = rap.Query(s[0].Trim(), s[1].Trim());
+            Console.WriteLine("query time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("query count = " + q.Count);
             Console.WriteLine();
-            //File.WriteAllText("pp.json", fastJSON.JSON.Instance.ToJSON(q).Replace("],", "],\r\n"));
+        }
 
-            dt = FastDateTime.Now;
+        private static void predefinedquery(RaptorDB.RaptorDB rap)
+        {
+            DateTime dt = FastDateTime.Now;
+            var q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
+            Console.WriteLine("query lineitems time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+            Console.WriteLine("query count = " + q.Count);
+            Console.WriteLine();
+        }
+
+        private static void insertdata(RaptorDB.RaptorDB rap)
+        {
+            DateTime dt = FastDateTime.Now;
 
             for (int i = 0; i < 100000; i++)
             {
@@ -151,38 +192,12 @@ namespace testing
                 inv.Items = new List<LineItem>();
                 for (int k = 0; k < 5; k++)
                     inv.Items.Add(new LineItem() { Product = "prod " + k, Discount = 0, Price = 10 + k, QTY = 1 + k });
-
+                if (i % 5000 == 0)
+                    Console.Write(".");
                 rap.Save(inv.ID, inv);
             }
-
+            Console.WriteLine();
             Console.WriteLine("insert time secs = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
-            Console.WriteLine("Press (R) for redo query");
-            Console.WriteLine();
-        redo:
-            dt = FastDateTime.Now;
-            int j = 100;
-            var res = rap.Query(
-                //"SalesInvoice",
-                typeof(SalesInvoice),
-                (SalesInvoice s) => (s.Serial < j) && (s.Status == 1 || s.Status == 3));
-
-            if (res.OK)
-                Console.WriteLine("count = " + res.Count);
-
-            Console.WriteLine("query time secs = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
-            
-            dt = FastDateTime.Now;
-            q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
-            Console.WriteLine("Count = " + q.Count);
-            Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
-            Console.WriteLine();
-            //File.WriteAllText("ppp.json", fastJSON.JSON.Instance.ToJSON(q).Replace("],", "],\r\n"));
-            dt = FastDateTime.Now;
-            qq = rap.Query("SalesItemRows", "product == \"prod 1\" || Product == \"prod 3\"");
-            Console.WriteLine("Count = " + qq.Count);
-            Console.WriteLine("string query = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
-            Console.WriteLine();
-            if (Console.ReadKey().Key == ConsoleKey.R) { Console.WriteLine("edo"); goto redo; }
         }
 
         static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
