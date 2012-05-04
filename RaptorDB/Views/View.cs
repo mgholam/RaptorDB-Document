@@ -116,7 +116,7 @@ namespace RaptorDB.Views
             if (Schema == null) return new Result(false, new Exception("Schema must be defined"));
             if (Mapper == null) return new Result(false, new Exception("A map function must be defined"));
             if (FireOnTypes.Count == 0) return new Result(false, new Exception("No types have been defined to fire on"));
-            // FIX : add more verifications
+            // FEATURE : add more verifications
             return new Result(true);
         }
     }

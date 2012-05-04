@@ -2,3 +2,8 @@ v1.0
 ----
 - initial release
 
+v1.1
+----
+- fulltext indexing via attribute
+- string query parser 
+- fix shutdown flusing indexes to disk

@@ -34,8 +34,6 @@ namespace RaptorDB
         private string _FileName = "words";
         private string _Path = "";
         private SafeDictionary<string, Cache> _index = new SafeDictionary<string, Cache>();
-        // FEATURE : remove _internalOP & sleeps
-        private bool _internalOP = false;
         private object _lock = new object();
         private FileStream _bitmapFile;
         private long _lastBitmapOffset = 0;
@@ -45,7 +43,7 @@ namespace RaptorDB
         {
             lock (_lock)
             {
-                _internalOP = true;
+                //_internalOP = true;
                 _log.Debug("freeing memory");
 
                 // free bitmap memory
@@ -61,7 +59,7 @@ namespace RaptorDB
                     else
                         v.Value.FreeMemory(false);
                 }
-                _internalOP = false;
+                //_internalOP = false;
             }
         }
 
@@ -69,22 +67,22 @@ namespace RaptorDB
         {
             lock (_lock)
             {
-                _internalOP = true;
+                //_internalOP = true;
                 InternalSave();
-                _internalOP = false;
+                //_internalOP = false;
             }
         }
 
         public void Index(int recordnumber, string text)
         {
-            while (_internalOP) Thread.Sleep(50);
+            //while (_internalOP) Thread.Sleep(50);
 
             AddtoIndex(recordnumber, text);
         }
 
         public WAHBitArray Query(string filter)
         {
-            while (_internalOP) Thread.Sleep(50);
+            //while (_internalOP) Thread.Sleep(50);
 
             return ExecutionPlan(filter);
         }
@@ -99,7 +97,7 @@ namespace RaptorDB
         {
             lock (_lock)
             {
-                _internalOP = true;
+                //_internalOP = true;
                 InternalSave();
                 _log.Debug("optimizing index..");
                 DateTime dt = FastDateTime.Now;
@@ -136,7 +134,7 @@ namespace RaptorDB
                 _bitmapFile = new FileStream(_Path + _FileName + _bmpext, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
                 _lastBitmapOffset = _bitmapFile.Seek(0L, SeekOrigin.End);
                 _log.Debug("optimizing index done = " + DateTime.Now.Subtract(dt).TotalSeconds + " sec");
-                _internalOP = false;
+                //_internalOP = false;
             }
         }
 

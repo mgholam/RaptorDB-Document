@@ -188,7 +188,7 @@ namespace RaptorDB.Views
             // shutdown views
             foreach (var v in _views)
             {
-                _log.Debug(" shutting down : " + v.Value._view.Name);
+                _log.Debug(" shutting down view : " + v.Value._view.Name);
                 v.Value.Shutdown();
             }
         }

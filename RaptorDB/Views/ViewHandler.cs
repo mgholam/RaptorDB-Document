@@ -81,6 +81,7 @@ namespace RaptorDB.Views
         internal Result Query(string filter)
         {
             DateTime dt = FastDateTime.Now;
+            _log.Debug("query : " + filter);
             // FEATURE : add query caching here
             Result ret = new Result();
             WAHBitArray ba = new WAHBitArray();
@@ -168,16 +169,16 @@ namespace RaptorDB.Views
         internal void Shutdown()
         {
             _log.Debug("Shutting down Viewhandler");
-            // save deletedbitmap
-            _deletedRows.Shutdown();
-
-            _viewData.Shutdown();
             // shutdown indexes
             foreach (var v in _indexes)
             {
                 _log.Debug("Shutting down view index : " + v.Key);
                 v.Value.Shutdown();
             }
+            // save deletedbitmap
+            _deletedRows.Shutdown();
+
+            _viewData.Shutdown();
         }
 
         #region [  private methods  ]

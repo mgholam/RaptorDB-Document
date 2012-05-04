@@ -50,7 +50,8 @@ namespace RaptorDB.Views
 
         public void AddTask(Action action)
         {
-            _que.Enqueue(Task.Factory.StartNew(action));
+            if (_shuttingdown == false)
+                _que.Enqueue(Task.Factory.StartNew(action));
         }
 
         public void Shutdown()

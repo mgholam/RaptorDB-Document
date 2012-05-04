@@ -11,6 +11,7 @@ using System.Reflection;
 
 namespace RaptorDB
 {
+    // FIX : shutdown flush to disk bug
     public class RaptorDB : IDisposable
     {
         private RaptorDB(string FolderPath)
@@ -87,6 +88,12 @@ namespace RaptorDB
             return _viewManager.Query(view);
         }
 
+        /// <summary>
+        /// Query a view using a string filter
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public Result Query(string viewname, string filter)
         {
             return _viewManager.Query(viewname, filter);
@@ -153,15 +160,14 @@ namespace RaptorDB
 
             lock (_sh)
             {
-
                 _shuttingdown = true;
-                // save _LastRecordNumberProcessed here
+                // save _LastRecordNumberProcessed 
                 _log.Debug("last record = " + _LastRecordNumberProcessed);
                 File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
                 _log.Debug("Shutting down");
                 _saveTimer.Stop();
                 _viewManager.ShutDown();
-                Thread.Sleep(2000);
+                //Thread.Sleep(1000);
                 _objStore.Shutdown();
                 _fileStore.Shutdown();
                 LogManager.Shutdown();
@@ -170,7 +176,9 @@ namespace RaptorDB
 
         public void Dispose()
         {
+            _log.Debug("dispose called");
             Shutdown();
+            GC.SuppressFinalize(this);
         }
 
         #region [            P R I V A T E     M E T H O D S              ]
@@ -212,6 +220,7 @@ namespace RaptorDB
         private void Initialize(string foldername)
         {
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
+
             // create folders 
             Directory.CreateDirectory(foldername);
             foldername = Path.GetFullPath(foldername);
@@ -254,19 +263,24 @@ namespace RaptorDB
 
         private void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
+            _log.Debug("appdomain closing");
             Shutdown();
+            GC.SuppressFinalize(this);
         }
 
         private object _slock = new object();
         MethodInfo otherviews = null;
         private void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
+            if (_shuttingdown)
+                return;
+
             if (Global.BackgroundSaveToOtherViews == false)
                 return;
 
             if (_CurrentRecordNumber == 0)
                 return;
-            //return;
+
             if (_CurrentRecordNumber == _LastRecordNumberProcessed)
                 return;
 

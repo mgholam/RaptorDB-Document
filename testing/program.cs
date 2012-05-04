@@ -76,7 +76,6 @@ namespace testing
     {
         public class RowSchema
         {
-            //[FullText]
             public string Product;
             public decimal QTY;
             public decimal Price;
@@ -125,9 +124,11 @@ namespace testing
                 return;
             }
 
-            var qq = rap.Query("SalesItemRows", "product == \"prod 1\" || Product == \"prod 3\"");
-            
             DateTime dt = FastDateTime.Now;
+
+            var qq = rap.Query("SalesItemRows", "product == \"prod 1\" || Product == \"prod 3\"");
+            Console.WriteLine("string query = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+
 
             var q = rap.Query("SalesItemRows", (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
             Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
@@ -176,9 +177,12 @@ namespace testing
             Console.WriteLine("query lineitems = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine();
             //File.WriteAllText("ppp.json", fastJSON.JSON.Instance.ToJSON(q).Replace("],", "],\r\n"));
-
+            dt = FastDateTime.Now;
+            qq = rap.Query("SalesItemRows", "product == \"prod 1\" || Product == \"prod 3\"");
+            Console.WriteLine("Count = " + qq.Count);
+            Console.WriteLine("string query = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+            Console.WriteLine();
             if (Console.ReadKey().Key == ConsoleKey.R) { Console.WriteLine("edo"); goto redo; }
-            return;
         }
 
         static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
