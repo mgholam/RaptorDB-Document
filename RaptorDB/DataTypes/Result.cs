@@ -37,6 +37,9 @@ namespace RaptorDB
         ///// </summary>
         //public bool DataPending { get; set; }
 
-        // FIX : add schema for rows
+        /// <summary>
+        /// Schema for the rows returned (column names)
+        /// </summary>
+        public List<string> Columns { get; set; }
     }
 }

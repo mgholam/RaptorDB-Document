@@ -166,6 +166,10 @@ namespace RaptorDB.Views
             ret.Count = rows.Count;
             ret.TotalCount = rows.Count;
             ret.Rows = rows;
+            List<string> cols = new List<string>();
+            cols.Add("docid");
+            cols.AddRange(_colnames);
+            ret.Columns = cols;
             return ret;
         }
 
@@ -208,6 +212,10 @@ namespace RaptorDB.Views
             ret.Count = rows.Count;
             ret.TotalCount = rows.Count;
             ret.Rows = rows;
+            List<string> cols = new List<string>();
+            cols.Add("docid");
+            cols.AddRange(_colnames);
+            ret.Columns = cols;
             return ret;
         }
 
