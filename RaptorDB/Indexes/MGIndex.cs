@@ -114,11 +114,11 @@ namespace RaptorDB
             return _LastIndexedRecordNumber;
         }
 
-        public WAHBitArray Query(T from, T to)
-        {
-            // FEATURE : add code here
-            return new WAHBitArray();
-        }
+        //public WAHBitArray Query(T from, T to)
+        //{
+        //    // FEATURE : add code here
+        //    return new WAHBitArray();
+        //}
 
 
         public WAHBitArray Query(RDBExpression exp, T from)

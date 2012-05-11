@@ -72,9 +72,9 @@ namespace RaptorDB.Views
         public bool BackgroundIndexing { get; set; }
 
         ///// <summary>
-        ///// Save documents to this concurrently
+        ///// Save documents to this view in the save process, like primary views
         ///// </summary>
-        //public bool ConcurrentSaveToThisView { get; set; }
+        //public bool ConsistentSaveToThisView { get; set; }
 
         /// <summary>
         /// Fire the mapper on these types

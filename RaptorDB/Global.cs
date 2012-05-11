@@ -13,12 +13,12 @@ namespace RaptorDB
         /// <summary>
         /// True = Save to other views in process , False = background save to other views
         /// </summary>
-        public static bool BackgroundSaveToOtherViews = true; 
+        public static bool BackgroundSaveToOtherViews = true;
 
-        public static byte DefaultStringKeySize = 60; 
+        public static byte DefaultStringKeySize = 60;
 
         public static bool FreeBitmapMemoryOnSave = false;
-        
+
         public static ushort PageItemCount = 10000;
         /// <summary>
         /// KeyStore save to disk timer
@@ -40,5 +40,9 @@ namespace RaptorDB
         /// Save to other views timer seconds if enabled 
         /// </summary>
         public static int BackgroundSaveViewTimer = 1;
+        /// <summary>
+        /// How many items to process in a background view save event
+        /// </summary>
+        public static int BackgroundViewSaveBatchSize = 1000000;
     }
 }

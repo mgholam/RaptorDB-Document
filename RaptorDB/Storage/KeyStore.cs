@@ -7,7 +7,6 @@ using System.Collections;
 
 namespace RaptorDB
 {
-    // FEATURE : add fetchrecord, enumerate, getduplicates
     #region [   KeyStoreString   ]
     internal class KeyStoreString : IDisposable
     {
@@ -86,10 +85,10 @@ namespace RaptorDB
             return false;
         }
 
-        public long Count(bool includeDuplicates)
-        {
-            return _db.Count(includeDuplicates);
-        }
+        //public long Count(bool includeDuplicates)
+        //{
+        //    return _db.Count(includeDuplicates);
+        //}
 
         public void SaveIndex()
         {
@@ -119,7 +118,6 @@ namespace RaptorDB
     }
     #endregion
 
-    // FEATURE : add fetchrecord, enumerate, getduplicates
     #region [   KeyStoreGuid   ]
     internal class KeyStoreGuid : IDisposable
     {
@@ -193,10 +191,10 @@ namespace RaptorDB
             return false;
         }
 
-        public int Count(bool includeDuplicates)
-        {
-            return _db.Count(includeDuplicates);
-        }
+        //public int Count(bool includeDuplicates)
+        //{
+        //    return _db.Count(includeDuplicates);
+        //}
 
         public void SaveIndex()
         {
@@ -211,6 +209,11 @@ namespace RaptorDB
         public void Dispose()
         {
             _db.Shutdown();
+        }
+
+        public byte[] FetchRecordBytes(int record)
+        {
+            return _db.FetchRecordBytes(record);
         }
 
         private bool UnpackData(byte[] buffer, out byte[] val, out byte[] key)
@@ -302,10 +305,10 @@ namespace RaptorDB
             return _archive.ReadData(record);
         }
 
-        public int Count(bool includeDuplicates)
-        {
-            return _index.Count(includeDuplicates);
-        }
+        //public int Count(bool includeDuplicates)
+        //{
+        //    return _index.Count(includeDuplicates);
+        //}
 
         public bool Get(T key, out string val)
         {
@@ -394,7 +397,7 @@ namespace RaptorDB
 
             _archive.SkipDateTime = true;
 
-            log.Debug("Current Count = " + Count(false).ToString("#,0"));
+            log.Debug("Current Count = " + RecordCount().ToString("#,0"));
 
             CheckIndexState();
 

@@ -31,6 +31,12 @@ namespace RaptorDB
         public int Count { get; set; }
         public List<object[]> Rows { get; set; }
 
+        // FEATURE : data pending in results
+        ///// <summary>
+        ///// Data is being indexed, so results will not reflect all documents
+        ///// </summary>
+        //public bool DataPending { get; set; }
+
         // FIX : add schema for rows
     }
 }

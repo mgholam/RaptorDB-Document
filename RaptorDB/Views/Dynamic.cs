@@ -510,6 +510,57 @@ namespace System.Linq.Dynamic
 
         #region [   gunk   ]
 
+
+        //// *, /, %, mod operators
+        //Expression ParseMultiplicative()
+        //{
+        //    Expression left = ParseUnary();
+        //    //while (token.id == TokenId.Asterisk || token.id == TokenId.Slash ||
+        //    //    token.id == TokenId.Percent || TokenIdentifierIs("mod"))
+        //    //{
+        //    //    Token op = token;
+        //    //    NextToken();
+        //    //    Expression right = ParseUnary();
+        //    //    CheckAndPromoteOperands(typeof(IArithmeticSignatures), op.text, ref left, ref right, op.pos);
+        //    //    switch (op.id)
+        //    //    {
+        //    //        case TokenId.Asterisk:
+        //    //            left = Expression.Multiply(left, right);
+        //    //            break;
+        //    //        case TokenId.Slash:
+        //    //            left = Expression.Divide(left, right);
+        //    //            break;
+        //    //        case TokenId.Percent:
+        //    //        case TokenId.Identifier:
+        //    //            left = Expression.Modulo(left, right);
+        //    //            break;
+        //    //    }
+        //    //}
+        //    return left;
+        //}
+
+        //Expression GenerateAdd(Expression left, Expression right)
+        //{
+        //    if (left.Type == typeof(string) && right.Type == typeof(string))
+        //    {
+        //        return GenerateStaticMethodCall("Concat", left, right);
+        //    }
+        //    return Expression.Add(left, right);
+        //}
+
+        //Expression GenerateSubtract(Expression left, Expression right)
+        //{
+        //    return Expression.Subtract(left, right);
+        //}
+
+        //Expression GenerateStringConcat(Expression left, Expression right)
+        //{
+        //    return Expression.Call(
+        //        null,
+        //        typeof(string).GetMethod("Concat", new[] { typeof(object), typeof(object) }),
+        //        new[] { left, right });
+        //}
+
 #pragma warning disable 0219
         //public IEnumerable<DynamicOrdering> ParseOrdering()
         //{
@@ -987,58 +1038,30 @@ namespace System.Linq.Dynamic
         // +, -, & operators
         Expression ParseAdditive()
         {
-            Expression left = ParseMultiplicative();
-            while (token.id == TokenId.Plus || token.id == TokenId.Minus ||
-                token.id == TokenId.Amphersand)
-            {
-                Token op = token;
-                NextToken();
-                Expression right = ParseMultiplicative();
-                switch (op.id)
-                {
-                    case TokenId.Plus:
-                        if (left.Type == typeof(string) || right.Type == typeof(string))
-                            goto case TokenId.Amphersand;
-                        CheckAndPromoteOperands(typeof(IAddSignatures), op.text, ref left, ref right, op.pos);
-                        left = GenerateAdd(left, right);
-                        break;
-                    case TokenId.Minus:
-                        CheckAndPromoteOperands(typeof(ISubtractSignatures), op.text, ref left, ref right, op.pos);
-                        left = GenerateSubtract(left, right);
-                        break;
-                    case TokenId.Amphersand:
-                        left = GenerateStringConcat(left, right);
-                        break;
-                }
-            }
-            return left;
-        }
-
-        // *, /, %, mod operators
-        Expression ParseMultiplicative()
-        {
-            Expression left = ParseUnary();
-            while (token.id == TokenId.Asterisk || token.id == TokenId.Slash ||
-                token.id == TokenId.Percent || TokenIdentifierIs("mod"))
-            {
-                Token op = token;
-                NextToken();
-                Expression right = ParseUnary();
-                CheckAndPromoteOperands(typeof(IArithmeticSignatures), op.text, ref left, ref right, op.pos);
-                switch (op.id)
-                {
-                    case TokenId.Asterisk:
-                        left = Expression.Multiply(left, right);
-                        break;
-                    case TokenId.Slash:
-                        left = Expression.Divide(left, right);
-                        break;
-                    case TokenId.Percent:
-                    case TokenId.Identifier:
-                        left = Expression.Modulo(left, right);
-                        break;
-                }
-            }
+            Expression left = ParseUnary();// ParseMultiplicative();
+            //while (token.id == TokenId.Plus || token.id == TokenId.Minus ||
+            //    token.id == TokenId.Amphersand)
+            //{
+            //    Token op = token;
+            //    NextToken();
+            //    Expression right = ParseMultiplicative();
+            //    switch (op.id)
+            //    {
+            //        case TokenId.Plus:
+            //            if (left.Type == typeof(string) || right.Type == typeof(string))
+            //                goto case TokenId.Amphersand;
+            //            CheckAndPromoteOperands(typeof(IAddSignatures), op.text, ref left, ref right, op.pos);
+            //            left = GenerateAdd(left, right);
+            //            break;
+            //        case TokenId.Minus:
+            //            CheckAndPromoteOperands(typeof(ISubtractSignatures), op.text, ref left, ref right, op.pos);
+            //            left = GenerateSubtract(left, right);
+            //            break;
+            //        case TokenId.Amphersand:
+            //            left = GenerateStringConcat(left, right);
+            //            break;
+            //    }
+            //}
             return left;
         }
 
@@ -1842,28 +1865,6 @@ namespace System.Linq.Dynamic
                 );
             }
             return Expression.LessThanOrEqual(left, right);
-        }
-
-        Expression GenerateAdd(Expression left, Expression right)
-        {
-            if (left.Type == typeof(string) && right.Type == typeof(string))
-            {
-                return GenerateStaticMethodCall("Concat", left, right);
-            }
-            return Expression.Add(left, right);
-        }
-
-        Expression GenerateSubtract(Expression left, Expression right)
-        {
-            return Expression.Subtract(left, right);
-        }
-
-        Expression GenerateStringConcat(Expression left, Expression right)
-        {
-            return Expression.Call(
-                null,
-                typeof(string).GetMethod("Concat", new[] { typeof(object), typeof(object) }),
-                new[] { left, right });
         }
 
         MethodInfo GetStaticMethod(string methodName, Expression left, Expression right)

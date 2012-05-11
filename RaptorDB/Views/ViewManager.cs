@@ -23,6 +23,7 @@ namespace RaptorDB.Views
         private SafeDictionary<string, ViewHandler> _views = new SafeDictionary<string, ViewHandler>();
         // primary view list
         private SafeDictionary<Type, string> _primaryView = new SafeDictionary<Type, string>();
+        // like primary view list 
         private SafeDictionary<Type, string> _otherViewTypes = new SafeDictionary<Type, string>();
         // other views type->list of view names to call
         private SafeDictionary<Type, List<string>> _otherViews = new SafeDictionary<Type, List<string>>();
@@ -38,9 +39,9 @@ namespace RaptorDB.Views
             // search for viewtype here
             if (_otherViewTypes.TryGetValue(objtype, out viewname))
                 return Query(viewname, filter);
-            
+
             _log.Error("view not found", viewname);
-            return new Result(false, new Exception("view not found : "+ viewname));
+            return new Result(false, new Exception("view not found : " + viewname));
         }
 
         internal Result Query(string viewname, string filter)
@@ -60,7 +61,7 @@ namespace RaptorDB.Views
             // find view from name
             if (_views.TryGetValue(viewname.ToLower(), out view))
                 return view.Query(filter);
-            
+
             _log.Error("view not found", viewname);
             return new Result(false, new Exception("view not found : " + viewname));
         }
@@ -102,7 +103,7 @@ namespace RaptorDB.Views
                     _log.Debug("view is not active, skipping insert : " + viewname);
                     return;
                 }
-                if (vman._view.BackgroundIndexing) 
+                if (vman._view.BackgroundIndexing)
                     _que.AddTask(() => vman.Insert<T>(docid, data));
                 else
                     vman.Insert<T>(docid, data);
@@ -112,12 +113,12 @@ namespace RaptorDB.Views
             _log.Error("view not found", viewname);
         }
 
-        public object Fetch(Guid guid)
+        internal object Fetch(Guid guid)
         {
             byte[] b = null;
             if (_objectStore.Get(guid, out b))
                 return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
-            
+
             return null;
         }
 
@@ -148,13 +149,13 @@ namespace RaptorDB.Views
             ViewHandler vh = null;
             if (_views.TryGetValue(view.Name.ToLower(), out vh))
             {
-                // FEATURE : already exists -> replace? regen?
                 _log.Error("View already added and exists : " + view.Name);
+                //vh.RebuildExisting(_objectStore, view);
             }
             else
             {
                 vh = new ViewHandler(_Path, this);
-                vh.SetView(view);
+                vh.SetView(view , _objectStore);
                 _views.Add(view.Name.ToLower(), vh);
                 _otherViewTypes.Add(view.GetType(), view.Name.ToLower());
 
@@ -181,8 +182,6 @@ namespace RaptorDB.Views
                     }
                 }
             }
-
-            // FEATURE : add existing data to this view
 
             return new Result(true);
         }

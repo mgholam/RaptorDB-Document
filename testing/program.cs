@@ -102,6 +102,38 @@ namespace testing
                 };
         }
     }
+
+    public class newview : View<SalesInvoice>
+    {
+        public class RowSchema
+        {
+            public string Product;
+            public decimal QTY;
+            public decimal Price;
+            public decimal Discount;
+        }
+
+        public newview()
+        {
+            this.Name = "newview";
+            this.Description = "";
+            this.isPrimaryList = false;
+            this.isActive = true;
+            this.BackgroundIndexing = true;
+            this.Version = 1;
+
+            this.Schema = typeof(SalesItemRowsView.RowSchema);
+
+            this.AddFireOnTypes(typeof(SalesInvoice));
+
+            this.Mapper = (api, docid, doc) =>
+            {
+                if (doc.Status == 3 && doc.Items != null)
+                    foreach (var i in doc.Items)
+                        api.Emit(docid, i.Product, i.QTY, i.Price, i.Discount);
+            };
+        }
+    }
     #endregion
 
     public class program
@@ -109,7 +141,6 @@ namespace testing
         public static void Main()
         {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
-
             RaptorDB.RaptorDB rap = RaptorDB.RaptorDB.Open("RaptorDB");
 
             if (rap.RegisterView(new SalesInvoiceView()).OK == false)
@@ -124,6 +155,11 @@ namespace testing
                 return;
             }
 
+            if (rap.RegisterView(new newview()).OK == false)
+            {
+                Console.WriteLine("Error registering view");
+                return;
+            } 
             bool end = false;
 
             Console.WriteLine("Press (P)redifined query, (I)nsert 100,000 docs, (S)tring query, (Q)uit");
@@ -173,7 +209,12 @@ namespace testing
         private static void predefinedquery(RaptorDB.RaptorDB rap)
         {
             DateTime dt = FastDateTime.Now;
-            var q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
+            int j = 100;
+            var q = rap.Query(typeof(SalesInvoice), (SalesInvoice l) => (l.Serial == j));
+            Console.WriteLine("query SalesInvoice time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+            Console.WriteLine("query count = " + q.Count);
+                
+            q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
             Console.WriteLine("query lineitems time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("query count = " + q.Count);
             Console.WriteLine();

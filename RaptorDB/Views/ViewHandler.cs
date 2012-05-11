@@ -6,10 +6,11 @@ using System.IO;
 using System.Collections;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace RaptorDB.Views
 {
-    // FEATURE : background save indexes to disk
+    // FEATURE : background save indexes to disk on timer
     internal class ViewHandler
     {
         private ILog _log = LogManager.GetLogger(typeof(ViewHandler));
@@ -29,17 +30,37 @@ namespace RaptorDB.Views
         private string _docid = "docid";
         private List<string> _colnames = new List<string>();
 
-        public void SetView<T>(View<T> view)
+        internal void SetView<T>(View<T> view, KeyStoreGuid docs)
         {
+            bool rebuild = false;
             _view = view;
             // generate schemacolumns from schema
             GenerateSchemaColumns(_view);
 
             if (_Path.EndsWith("\\") == false) _Path += "\\";
             _Path += view.Name + "\\";
-            Directory.CreateDirectory(_Path);
-            // FIX : correct the following for column types and check for changes 
-            //File.WriteAllBytes(_Path + view.Name + ".bjson",  fastBinaryJSON.BJSON.Instance.ToBJSON(Activator.CreateInstance( _view.Schema)));
+            if (Directory.Exists(_Path) == false)
+            {
+                Directory.CreateDirectory(_Path);
+                rebuild = true;
+            }
+            else
+            {
+                // read version file and check with view
+                int version = 0;
+                if (File.Exists(_Path + "version_.dat"))
+                {
+                    version = Helper.ToInt32(File.ReadAllBytes(_Path + "version_.dat"), 0);
+                    if (version < view.Version)
+                    {
+                        _log.Debug("Newer view version detected");
+                        _log.Debug("Deleting view = " + view.Name);
+                        Directory.Delete(_Path, true);
+                        Directory.CreateDirectory(_Path);
+                        rebuild = true;
+                    }
+                }
+            }
 
             // load indexes here
             CreateLoadIndexes(_view.SchemaColumns);
@@ -48,9 +69,12 @@ namespace RaptorDB.Views
 
             _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat");
             _viewData.SkipDateTime = true;
+
+            if(rebuild)
+                RebuildFromScratch(docs);
         }
 
-        public void FreeMemory()
+        internal void FreeMemory()
         {
             foreach (var i in _indexes)
                 i.Value.FreeMemory();
@@ -58,7 +82,7 @@ namespace RaptorDB.Views
             _deletedRows.FreeMemory();
         }
 
-        public void Insert<T>(Guid guid, T doc)
+        internal void Insert<T>(Guid guid, T doc)
         {
             apimapper api = new apimapper(_viewmanager);
             View<T> view = (View<T>)_view;
@@ -117,28 +141,6 @@ namespace RaptorDB.Views
             return RetrunRows(ba);
         }
 
-        private Result RetrunRows(WAHBitArray ba)
-        {
-            DateTime dt = FastDateTime.Now;
-            List<object[]> rows = new List<object[]>();
-            Result ret = new Result();
-            foreach (int i in ba.GetBitIndexes())
-            {
-                byte[] b = _viewData.ReadData(i);
-                if (b == null) continue;
-                rows.Add(
-                    ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray()
-                    );
-            }
-            _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
-            _log.Debug("query rows count : " + rows.Count);
-            ret.OK = true;
-            ret.Count = rows.Count;
-            ret.TotalCount = rows.Count;
-            ret.Rows = rows;
-            return ret;
-        }
-
         internal Result Query()
         {
             // no filter query -> just show all the data
@@ -147,9 +149,10 @@ namespace RaptorDB.Views
             List<object[]> rows = new List<object[]>();
             Result ret = new Result();
 
+            WAHBitArray del = _deletedRows.GetBits();
             for (int i = 0; i < count; i++)
             {
-                if (_deletedRows.GetBits().Get(i) == true)
+                if (del.Get(i) == true)
                     continue;
                 byte[] b = _viewData.ReadData(i);
                 if (b == null) continue;
@@ -179,9 +182,73 @@ namespace RaptorDB.Views
             _deletedRows.Shutdown();
 
             _viewData.Shutdown();
+
+            // write view version
+            File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
         }
 
         #region [  private methods  ]
+
+        private Result RetrunRows(WAHBitArray ba)
+        {
+            DateTime dt = FastDateTime.Now;
+            List<object[]> rows = new List<object[]>();
+            Result ret = new Result();
+            foreach (int i in ba.GetBitIndexes())
+            {
+                byte[] b = _viewData.ReadData(i);
+                if (b == null) continue;
+                rows.Add(
+                    ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray()
+                    );
+            }
+            _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            _log.Debug("query rows count : " + rows.Count);
+            ret.OK = true;
+            ret.Count = rows.Count;
+            ret.TotalCount = rows.Count;
+            ret.Rows = rows;
+            return ret;
+        }
+
+        MethodInfo view = null;
+        private void RebuildFromScratch(KeyStoreGuid docs)
+        {
+            view = this.GetType().GetMethod("Insert", BindingFlags.Instance | BindingFlags.Public);
+            _log.Debug("Rebuilding view from scratch...");
+            _log.Debug("View = " + _view.Name);
+            DateTime dt = FastDateTime.Now;
+
+            int c = docs.RecordCount();
+            for (int i = 0; i < c; i++)
+            {
+                Guid docid = Guid.Empty;
+                byte[] b = docs.Get(i, out docid);
+                if (b != null)
+                {
+                    // FEATURE : optimize this by not creating the object if not in FireOnTypes
+                    object obj = CreateObject(b);
+                    Type t = obj.GetType();
+                    if (_view.FireOnTypes.Contains(t.AssemblyQualifiedName))
+                    {
+                        var m = view.MakeGenericMethod(new Type[] { obj.GetType() });
+                        m.Invoke(this, new object[] { docid, obj });
+                    }
+                }
+                else
+                    _log.Error("Doc is null : " + docid);
+            }
+            _log.Debug("rebuild done (s) = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+        }
+
+        private object CreateObject(byte[] b)
+        {
+            if (b[0] < 32)
+                return fastBinaryJSON.BJSON.Instance.ToObject(b);
+            else
+                return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
+        }
+
         private void CreateLoadIndexes(ViewRowDefinition viewRowDefinition)
         {
             int i = 0;

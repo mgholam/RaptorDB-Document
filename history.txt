@@ -12,3 +12,8 @@ v1.1
 - fulltext search defaults to AND if + - characters not present in query
 - Query now works when suppling the view type
 - save pauses indexer for better insert performance ~30% faster
+
+v1.2
+----
+- View versioning and rebuild
+- 

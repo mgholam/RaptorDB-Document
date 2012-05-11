@@ -172,9 +172,11 @@ namespace RaptorDB
             return sb.ToString();
         }
 
+        private object _lock = new object();
         public void Log(string logtype, string type, string meth, string msg, params object[] objs)
         {
-            _que.Enqueue(FormatLog(logtype, type, meth, msg, objs));
+            lock (_lock)
+                _que.Enqueue(FormatLog(logtype, type, meth, msg, objs));
         }
     }
 

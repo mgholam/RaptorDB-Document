@@ -112,11 +112,6 @@ namespace RaptorDB
             return internalGetBitmap(recno);//, true);
         }
 
-        //public WAHBitArray GetBitmapNoCache(int recno)
-        //{
-        //    return internalGetBitmap(recno, true); //  is false needed ??
-        //}
-
         //public void OptimizeIndex()
         //{
         //// FEATURE : optimize index here

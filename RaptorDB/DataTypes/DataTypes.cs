@@ -11,7 +11,6 @@ namespace RaptorDB
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class FullTextAttribute : Attribute
     {
-        //public bool has;
     }
 
     internal class FullTextString 

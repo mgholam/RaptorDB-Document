@@ -39,16 +39,22 @@ namespace RaptorDB
             // save files in storage
             _fileStore.Set(docID, bytes);
         }
-
+        /// <summary>
+        /// Save a document
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="docid"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
         public bool Save<T>(Guid docid, T data)
         {
-            _pauseindexer = true;
             string viewname = _viewManager.GetPrimaryViewForType(data.GetType());
             if (viewname == "")
             {
                 _log.Debug("Primary View not defined for object : " + data.GetType());
                 return false;
             }
+            _pauseindexer = true;
 
             int recnum = SaveData(docid, data);
             _CurrentRecordNumber = recnum;
@@ -129,9 +135,7 @@ namespace RaptorDB
         {
             byte[] b = null;
             if (_objStore.Get(docID, out b))
-            {
                 return CreateObject(b);
-            }
             else
                 return null;
         }
@@ -140,9 +144,7 @@ namespace RaptorDB
         {
             byte[] b = null;
             if (_fileStore.Get(fileID, out b))
-            {
                 return b;
-            }
             else
                 return null;
         }
@@ -152,14 +154,14 @@ namespace RaptorDB
             return _viewManager.RegisterView(view);
         }
 
-        private object _sh = new object();
+        //private object _sh = new object();
         public void Shutdown()
         {
 
             if (_shuttingdown == true)
                 return;
 
-            lock (_sh)
+            //lock (_sh)
             {
                 _shuttingdown = true;
                 // save _LastRecordNumberProcessed 
@@ -168,7 +170,6 @@ namespace RaptorDB
                 _log.Debug("Shutting down");
                 _saveTimer.Stop();
                 _viewManager.ShutDown();
-                //Thread.Sleep(1000);
                 _objStore.Shutdown();
                 _fileStore.Shutdown();
                 LogManager.Shutdown();
@@ -287,7 +288,7 @@ namespace RaptorDB
 
             lock (_slock)
             {
-                int batch = 1000000;
+                int batch = Global.BackgroundViewSaveBatchSize;
                 while (batch > 0)
                 {
                     if (_shuttingdown)
