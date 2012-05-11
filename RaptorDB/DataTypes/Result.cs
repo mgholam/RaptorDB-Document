@@ -25,21 +25,29 @@ namespace RaptorDB
             OK = ok;
             EX = ex;
         }
+        /// <summary>
+        /// T=Values return, F=exceptions occurred 
+        /// </summary>
         public bool OK { get; set; }
         public Exception EX { get; set; }
+        /// <summary>
+        /// Total number of rows of the query
+        /// </summary>
         public int TotalCount { get; set; }
+        /// <summary>
+        /// Rows returned
+        /// </summary>
         public int Count { get; set; }
         public List<object[]> Rows { get; set; }
+        /// <summary>
+        /// Schema for the rows returned (column names)
+        /// </summary>
+        public List<string> Columns { get; set; }
 
         // FEATURE : data pending in results
         ///// <summary>
         ///// Data is being indexed, so results will not reflect all documents
         ///// </summary>
         //public bool DataPending { get; set; }
-
-        /// <summary>
-        /// Schema for the rows returned (column names)
-        /// </summary>
-        public List<string> Columns { get; set; }
     }
 }
