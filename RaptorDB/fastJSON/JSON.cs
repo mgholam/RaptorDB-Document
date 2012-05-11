@@ -56,7 +56,7 @@ namespace fastJSON
                              bool enableOptimizedDatasetSchema,
                              bool serializeNullValues)
         {
-            return new JSONSerializer(enableOptimizedDatasetSchema, enableFastGuid, enableSerializerExtensions, serializeNullValues, IndentOutput).ConvertToJSON(obj);
+            return new JSONSerializer(enableOptimizedDatasetSchema, enableFastGuid, enableSerializerExtensions, serializeNullValues).ConvertToJSON(obj);
         }
 
         public object Parse(string json)

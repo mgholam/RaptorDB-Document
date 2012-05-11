@@ -20,15 +20,13 @@ namespace fastJSON
         readonly bool useExtension = true;
         readonly bool serializeNulls = true;
         readonly int _MAX_DEPTH = 10;
-        bool _Indent = false;
         int _current_depth = 0;
 
-        internal JSONSerializer(bool UseMinimalDataSetSchema, bool UseFastGuid, bool UseExtensions, bool SerializeNulls, bool IndentOutput)
+        internal JSONSerializer(bool UseMinimalDataSetSchema, bool UseFastGuid, bool UseExtensions, bool SerializeNulls)
         {
             this.useMinimalDataSetSchema = UseMinimalDataSetSchema;
             this.fastguid = UseFastGuid;
             this.useExtension = UseExtensions;
-            _Indent = IndentOutput;
             this.serializeNulls = SerializeNulls;
         }
 
@@ -233,7 +231,6 @@ namespace fastJSON
 
         private void WriteObject(object obj)
         {
-            Indent();
             _current_depth++;
             if (_current_depth > _MAX_DEPTH)
                 throw new Exception("Serializer encountered maximum depth of " + _MAX_DEPTH);
@@ -274,31 +271,14 @@ namespace fastJSON
                 WriteStringDictionary(map);
             }
             _current_depth--;
-            Indent();
             _output.Append('}');
             _current_depth--;
-        }
-
-        private void Indent()
-        {
-            Indent(false);
-        }
-
-        private void Indent(bool dec)
-        {
-            if (_Indent)
-            {
-                _output.Append("\r\n");
-                for (int i = 0; i < _current_depth - (dec ? 1 : 0); i++)
-                    _output.Append("\t");
-            }
         }
 
         private void WritePairFast(string name, string value)
         {
             if (value == null && serializeNulls == false)
                 return;
-            Indent();
             WriteStringFast(name);
 
             _output.Append(':');
@@ -310,7 +290,6 @@ namespace fastJSON
         {
             if ((value == null || value is DBNull) && serializeNulls == false)
                 return;
-            Indent();
             WriteStringFast(name);
 
             _output.Append(':');
@@ -320,7 +299,6 @@ namespace fastJSON
 
         private void WriteArray(IEnumerable array)
         {
-            Indent();
             _output.Append('[');
 
             bool pendingSeperator = false;
@@ -333,13 +311,11 @@ namespace fastJSON
 
                 pendingSeperator = true;
             }
-            Indent();
             _output.Append(']');
         }
 
         private void WriteStringDictionary(IDictionary dic)
         {
-            Indent();
             _output.Append('{');
 
             bool pendingSeparator = false;
@@ -352,13 +328,11 @@ namespace fastJSON
 
                 pendingSeparator = true;
             }
-            Indent();
             _output.Append('}');
         }
 
         private void WriteDictionary(IDictionary dic)
         {
-            Indent();
             _output.Append('[');
 
             bool pendingSeparator = false;
@@ -366,17 +340,14 @@ namespace fastJSON
             foreach (DictionaryEntry entry in dic)
             {
                 if (pendingSeparator) _output.Append(',');
-                Indent();
                 _output.Append('{');
                 WritePair("k", entry.Key);
                 _output.Append(",");
                 WritePair("v", entry.Value);
-                Indent();
                 _output.Append('}');
 
                 pendingSeparator = true;
             }
-            Indent();
             _output.Append(']');
         }
 
