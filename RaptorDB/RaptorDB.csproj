@@ -126,11 +126,6 @@
     <Compile Include="Storage\KeyStore.cs" />
     <Compile Include="Mapping\IMapAPI.cs" />
     <Compile Include="Helper\Logger.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
     <Compile Include="RaptorDB.cs" />
     <Compile Include="Helper\SafeDictionary.cs" />
     <Compile Include="Storage\StorageFile.cs" />
@@ -175,11 +170,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
+    <Folder Include="Properties\" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
