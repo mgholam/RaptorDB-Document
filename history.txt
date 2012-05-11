@@ -16,4 +16,4 @@ v1.1
 v1.2
 ----
 - View versioning and rebuild
-- 
+- code cleanup
