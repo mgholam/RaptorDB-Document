@@ -12,6 +12,7 @@ using RaptorDB.Views;
 using System.Linq.Expressions;
 using System.Linq;
 using System.Collections.ObjectModel;
+using System.Dynamic;
 
 namespace testing
 {
@@ -43,7 +44,7 @@ namespace testing
     #region [  views  ]
     public class SalesInvoiceView : View<SalesInvoice>
     {
-        public class RowSchema
+        public class RowSchema : RDBSchema
         {
             [FullText]
             public string CustomerName;
@@ -74,7 +75,7 @@ namespace testing
 
     public class SalesItemRowsView : View<SalesInvoice>
     {
-        public class RowSchema
+        public class RowSchema : RDBSchema
         {
             public string Product;
             public decimal QTY;
@@ -105,7 +106,7 @@ namespace testing
 
     public class newview : View<SalesInvoice>
     {
-        public class RowSchema
+        public class RowSchema : RDBSchema
         {
             public string Product;
             public decimal QTY;
@@ -122,7 +123,7 @@ namespace testing
             this.BackgroundIndexing = true;
             this.Version = 1;
 
-            this.Schema = typeof(SalesItemRowsView.RowSchema);
+            this.Schema = typeof(newview.RowSchema);
 
             this.AddFireOnTypes(typeof(SalesInvoice));
 

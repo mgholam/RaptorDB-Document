@@ -38,11 +38,8 @@ namespace RaptorDB
         /// Rows returned
         /// </summary>
         public int Count { get; set; }
-        public List<object[]> Rows { get; set; }
-        /// <summary>
-        /// Schema for the rows returned (column names)
-        /// </summary>
-        public List<string> Columns { get; set; }
+        public List<object> Rows { get; set; }
+
 
         // FEATURE : data pending in results
         ///// <summary>

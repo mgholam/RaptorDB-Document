@@ -7,6 +7,10 @@ using System.Collections;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Reflection;
+using System.Reflection.Emit;
+using Microsoft.CSharp;
+using System.CodeDom.Compiler;
+using System.ComponentModel;
 
 namespace RaptorDB.Views
 {
@@ -29,6 +33,7 @@ namespace RaptorDB.Views
         private BoolIndex _deletedRows;
         private string _docid = "docid";
         private List<string> _colnames = new List<string>();
+        private IRowFiller _rowfiller;
 
         internal void SetView<T>(View<T> view, KeyStoreGuid docs)
         {
@@ -70,7 +75,9 @@ namespace RaptorDB.Views
             _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat");
             _viewData.SkipDateTime = true;
 
-            if(rebuild)
+            CreateRowFiller();
+
+            if (rebuild)
                 RebuildFromScratch(docs);
         }
 
@@ -99,7 +106,6 @@ namespace RaptorDB.Views
                 // insert new items into view
                 InsertRowsWithIndexUpdate(guid, d.Value);
             }
-
         }
 
         internal Result Query(string filter)
@@ -120,7 +126,7 @@ namespace RaptorDB.Views
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return RetrunRows(ba);
+            return ReturnRows(ba);
         }
 
         internal Result Query<T>(Expression<Predicate<T>> filter)
@@ -138,7 +144,7 @@ namespace RaptorDB.Views
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return RetrunRows(ba);
+            return ReturnRows(ba);
         }
 
         internal Result Query()
@@ -146,7 +152,7 @@ namespace RaptorDB.Views
             // no filter query -> just show all the data
             DateTime dt = FastDateTime.Now;
             int count = _viewData.Count();
-            List<object[]> rows = new List<object[]>();
+            List<object> rows = new List<object>();
             Result ret = new Result();
 
             WAHBitArray del = _deletedRows.GetBits();
@@ -156,9 +162,9 @@ namespace RaptorDB.Views
                     continue;
                 byte[] b = _viewData.ReadData(i);
                 if (b == null) continue;
-                rows.Add(
-                    ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray()
-                    );
+                object o = FastCreateObject(_view.Schema);
+                object[] data = ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray();
+                rows.Add(_rowfiller.FillRow(o, data));
             }
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             _log.Debug("query rows count : " + rows.Count);
@@ -166,10 +172,6 @@ namespace RaptorDB.Views
             ret.Count = rows.Count;
             ret.TotalCount = rows.Count;
             ret.Rows = rows;
-            List<string> cols = new List<string>();
-            cols.Add("docid");
-            cols.AddRange(_colnames);
-            ret.Columns = cols;
             return ret;
         }
 
@@ -193,18 +195,71 @@ namespace RaptorDB.Views
 
         #region [  private methods  ]
 
-        private Result RetrunRows(WAHBitArray ba)
+        private void CreateRowFiller()
+        {
+            // create a row filler class
+            string str = @"using System;
+public class rf : RaptorDB.IRowFiller
+{
+    public object FillRow(object roww, object[] data)
+    {
+        {0} row = ({0}) roww;
+        {1}
+        return row;
+    }
+}";
+            string src = str.Replace("{0}", _view.Schema.FullName.Replace("+", ".")).Replace("{1}", GenerateRowString());
+            CSharpCodeProvider provider = new CSharpCodeProvider();
+            var param = new CompilerParameters();
+            param.GenerateInMemory = true;
+            param.ReferencedAssemblies.Add(this.GetType().Assembly.Location);
+            param.ReferencedAssemblies.Add(_view.Schema.Assembly.Location);
+            param.ReferencedAssemblies.Add(typeof(ICustomTypeDescriptor).Assembly.Location);
+            CompilerResults results = provider.CompileAssemblyFromSource(param, src);
+
+            if (results.Errors.Count > 0)
+                throw new FormatException(results.Errors[0].ErrorText);
+
+            _rowfiller = (IRowFiller)results.CompiledAssembly.CreateInstance("rf");
+
+            // init the row create 
+            _createrow = null;
+            FastCreateObject(_view.Schema);
+        }
+
+        private string GenerateRowString()
+        {
+            StringBuilder sb = new StringBuilder();
+            int i = 0;
+            sb.AppendLine("row.docid = (Guid)data[0];");
+            foreach (var c in _view.SchemaColumns.Columns)
+            {
+                if (c.Key == "docid")
+                    continue;
+                i++;
+                sb.Append("row.");
+                sb.Append(c.Key);
+                sb.Append(" = (");
+                sb.Append(c.Value.Name.Replace("FullTextString", "String"));
+                sb.Append(")data[");
+                sb.Append(i.ToString());
+                sb.AppendLine("];");
+            }
+            return sb.ToString();
+        }
+
+        private Result ReturnRows(WAHBitArray ba)
         {
             DateTime dt = FastDateTime.Now;
-            List<object[]> rows = new List<object[]>();
+            List<object> rows = new List<object>();
             Result ret = new Result();
             foreach (int i in ba.GetBitIndexes())
             {
                 byte[] b = _viewData.ReadData(i);
                 if (b == null) continue;
-                rows.Add(
-                    ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray()
-                    );
+                object o = FastCreateObject(_view.Schema);
+                object[] data = ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray();
+                rows.Add(_rowfiller.FillRow(o, data));
             }
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             _log.Debug("query rows count : " + rows.Count);
@@ -212,11 +267,33 @@ namespace RaptorDB.Views
             ret.Count = rows.Count;
             ret.TotalCount = rows.Count;
             ret.Rows = rows;
-            List<string> cols = new List<string>();
-            cols.Add("docid");
-            cols.AddRange(_colnames);
-            ret.Columns = cols;
             return ret;
+        }
+
+        private CreateRow _createrow = null;
+        private delegate object CreateRow();
+        private object FastCreateObject(Type objtype)
+        {
+            try
+            {
+                if (_createrow != null)
+                    return _createrow();
+                else
+                {
+                    DynamicMethod dynMethod = new DynamicMethod("_", objtype, null);
+                    ILGenerator ilGen = dynMethod.GetILGenerator();
+
+                    ilGen.Emit(OpCodes.Newobj, objtype.GetConstructor(Type.EmptyTypes));
+                    ilGen.Emit(OpCodes.Ret);
+                    _createrow = (CreateRow)dynMethod.CreateDelegate(typeof(CreateRow));
+                    return _createrow();
+                }
+            }
+            catch (Exception exc)
+            {
+                throw new Exception(string.Format("Failed to fast create instance for type '{0}' from assemebly '{1}'",
+                    objtype.FullName, objtype.AssemblyQualifiedName), exc);
+            }
         }
 
         MethodInfo view = null;
@@ -264,6 +341,8 @@ namespace RaptorDB.Views
             // load indexes
             foreach (var c in viewRowDefinition.Columns)
             {
+                if (c.Key == "docid")
+                    continue;
                 _indexes.Add(_view.SchemaColumns.Columns[i].Key,
                           CreateIndex(
                             _view.SchemaColumns.Columns[i].Key,

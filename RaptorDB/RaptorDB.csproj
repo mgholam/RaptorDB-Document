@@ -131,6 +131,7 @@
     <Compile Include="Storage\StorageFile.cs" />
     <Compile Include="Views\apimapper.cs" />
     <Compile Include="Views\Dynamic.cs" />
+    <Compile Include="Views\FieldDescriptor.cs" />
     <Compile Include="Views\LINQQuery.cs" />
     <Compile Include="Views\TaskQueue.cs" />
     <Compile Include="Views\View.cs" />

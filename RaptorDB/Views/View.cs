@@ -109,6 +109,7 @@ namespace RaptorDB.Views
         {
             if (Name == null || Name == "") return new Result(false, new Exception("Name must be given"));
             if (Schema == null) return new Result(false, new Exception("Schema must be defined"));
+            if (Schema.IsSubclassOf(typeof(RDBSchema)) == false) return new Result(false, new Exception("The schema must be derived from RaptorDB.RDBSchema"));
             if (Mapper == null) return new Result(false, new Exception("A map function must be defined"));
             if (FireOnTypes.Count == 0) return new Result(false, new Exception("No types have been defined to fire on"));
             // FEATURE : add more verifications

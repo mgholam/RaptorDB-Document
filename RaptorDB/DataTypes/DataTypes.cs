@@ -18,6 +18,16 @@ namespace RaptorDB
 
     }
 
+    public abstract class RDBSchema : FieldsToPropertiesTypeDescriptor 
+    {
+        public Guid docid;
+    }
+
+    public interface IRowFiller
+    {
+        object FillRow(object row, object[] data); 
+    }
+
     internal interface IGetBytes<T>
     {
         byte[] GetBytes(T obj);

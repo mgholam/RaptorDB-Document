@@ -108,6 +108,7 @@
     <Compile Include="program.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="test.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
