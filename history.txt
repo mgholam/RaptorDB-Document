@@ -7,7 +7,7 @@ v1.1
 - fulltext indexing via attribute
 - string query parser 
 - fix shutdown flusing indexes to disk
-- rudementary console application
+- rudimentary console application
 - lowercase viewnames for string queries
 - fulltext search defaults to AND if + - characters not present in query
 - Query now works when suppling the view type
@@ -19,3 +19,11 @@ v1.2
 - code cleanup
 - removed indent logic from fastJSON
 - added schema of the query to the Result 
+
+v1.3
+----
+- Results.Rows are now schema objects and bindable (even when fields)
+- View.Schema must now derive from RaptorDB.RDBSchema
+- removed columns from Result (not needed anymore)
+- RegisterView throws exceptions instead of returning a Result
+- added a rudimentary query viewer project

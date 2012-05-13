@@ -61,6 +61,8 @@ namespace RaptorDB
 
             SaveInPrimaryView(viewname, docid, data);
 
+            SaveToConsistentViews(docid, data);
+
             if (Global.BackgroundSaveToOtherViews == false)
             {
                 SaveInOtherViews(docid, data);
@@ -149,9 +151,9 @@ namespace RaptorDB
                 return null;
         }
 
-        public Result RegisterView<T>(View<T> view)
+        public void RegisterView<T>(View<T> view)
         {
-            return _viewManager.RegisterView(view);
+            _viewManager.RegisterView(view);
         }
 
         //private object _sh = new object();
@@ -184,6 +186,16 @@ namespace RaptorDB
         }
 
         #region [            P R I V A T E     M E T H O D S              ]
+        private void SaveToConsistentViews<T>(Guid docid, T data)
+        {
+            List<string> list = _viewManager.GetConsistentViews(data.GetType());
+            if (list != null)
+                foreach (string name in list)
+                {
+                    _log.Debug("Saving to consistent view : " + name);
+                    _viewManager.Insert(name, docid, data);
+                }
+        }
 
         private object CreateObject(byte[] b)
         {
@@ -228,7 +240,6 @@ namespace RaptorDB
             foldername = Path.GetFullPath(foldername);
             if (foldername.EndsWith("\\") == false)
                 foldername += "\\";
-
             _Path = foldername;
 
             Directory.CreateDirectory(_Path + "Data");
@@ -239,6 +250,8 @@ namespace RaptorDB
             LogManager.Configure(_Path + "Logs\\log.txt", 500, false);
 
             _log.Debug("RaptorDB starting...");
+            _log.Debug("RaptorDB data folder = " + _Path);
+
 
             _objStore = new KeyStoreGuid(_Path + "Data\\data");
             _fileStore = new KeyStoreGuid(_Path + "Data\\files");

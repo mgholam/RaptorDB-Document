@@ -75,7 +75,7 @@ namespace RaptorDB.Views
             _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat");
             _viewData.SkipDateTime = true;
 
-            CreateRowFiller();
+            CreateResultRowFiller();
 
             if (rebuild)
                 RebuildFromScratch(docs);
@@ -96,8 +96,7 @@ namespace RaptorDB.Views
 
             if (view.Mapper != null)
                 view.Mapper(api, guid, doc);
-            // FEATURE : ELSE -> call map dll 
-
+            
             foreach (var d in api.emit)
             {
                 // delete any items with docid in view
@@ -195,7 +194,7 @@ namespace RaptorDB.Views
 
         #region [  private methods  ]
 
-        private void CreateRowFiller()
+        private void CreateResultRowFiller()
         {
             // create a row filler class
             string str = @"using System;
@@ -212,6 +211,7 @@ public class rf : RaptorDB.IRowFiller
             CSharpCodeProvider provider = new CSharpCodeProvider();
             var param = new CompilerParameters();
             param.GenerateInMemory = true;
+            // FEATURE : load all required assemblies based on the view schema if required
             param.ReferencedAssemblies.Add(this.GetType().Assembly.Location);
             param.ReferencedAssemblies.Add(_view.Schema.Assembly.Location);
             param.ReferencedAssemblies.Add(typeof(ICustomTypeDescriptor).Assembly.Location);

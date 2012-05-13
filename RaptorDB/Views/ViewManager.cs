@@ -25,6 +25,8 @@ namespace RaptorDB.Views
         private SafeDictionary<Type, string> _primaryView = new SafeDictionary<Type, string>();
         // like primary view list 
         private SafeDictionary<Type, string> _otherViewTypes = new SafeDictionary<Type, string>();
+        // consistent views
+        private SafeDictionary<Type, List<string>> _consistentViews = new SafeDictionary<Type, List<string>>();
         // other views type->list of view names to call
         private SafeDictionary<Type, List<string>> _otherViews = new SafeDictionary<Type, List<string>>();
         private TaskQueue _que = new TaskQueue();
@@ -141,10 +143,9 @@ namespace RaptorDB.Views
             return list;
         }
 
-        internal Result RegisterView<T>(View<T> view)
+        internal void RegisterView<T>(View<T> view)
         {
-            Result ret = view.Verify();
-            if (ret.OK == false) return ret;
+            view.Verify();
 
             ViewHandler vh = null;
             if (_views.TryGetValue(view.Name.ToLower(), out vh))
@@ -166,24 +167,12 @@ namespace RaptorDB.Views
                 }
                 else
                 {
-                    foreach (string tn in view.FireOnTypes)
-                    {
-                        // add to other views
-                        List<string> list = null;
-                        Type t = Type.GetType(tn);
-                        if (_otherViews.TryGetValue(t, out list))
-                            list.Add(view.Name);
-                        else
-                        {
-                            list = new List<string>();
-                            list.Add(view.Name);
-                            _otherViews.Add(t, list);
-                        }
-                    }
+                    if (view.ConsistentSaveToThisView)
+                        AddToViewList(_consistentViews, view);
+                    else
+                        AddToViewList(_otherViews, view);
                 }
             }
-
-            return new Result(true);
         }
 
         internal void ShutDown()
@@ -195,6 +184,30 @@ namespace RaptorDB.Views
             {
                 _log.Debug(" shutting down view : " + v.Value._view.Name);
                 v.Value.Shutdown();
+            }
+        }
+
+        internal List<string> GetConsistentViews(Type type)
+        {
+            List<string> list = new List<string>();
+            _consistentViews.TryGetValue(type, out list);
+            return list;
+        }
+
+        private void AddToViewList<T>(SafeDictionary<Type, List<string>> diclist, View<T> view)
+        {
+            foreach (string tn in view.FireOnTypes)
+            {
+                List<string> list = null;
+                Type t = Type.GetType(tn);
+                if (diclist.TryGetValue(t, out list))
+                    list.Add(view.Name);
+                else
+                {
+                    list = new List<string>();
+                    list.Add(view.Name);
+                    diclist.Add(t, list);
+                }
             }
         }
     }

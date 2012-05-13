@@ -18,6 +18,9 @@ namespace RaptorDB
 
     }
 
+    /// <summary>
+    /// Base for row schemas : implements a docid property and is bindable
+    /// </summary>
     public abstract class RDBSchema : FieldsToPropertiesTypeDescriptor 
     {
         public Guid docid;

@@ -142,25 +142,11 @@ namespace testing
         public static void Main()
         {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
-            RaptorDB.RaptorDB rap = RaptorDB.RaptorDB.Open("RaptorDB");
+            RaptorDB.RaptorDB rap = RaptorDB.RaptorDB.Open(@"..\..\..\RaptorDBdata");
 
-            if (rap.RegisterView(new SalesInvoiceView()).OK == false)
-            {
-                Console.WriteLine("Error registering view");
-                return;
-            }
-
-            if (rap.RegisterView(new SalesItemRowsView()).OK == false)
-            {
-                Console.WriteLine("Error registering view");
-                return;
-            }
-
-            if (rap.RegisterView(new newview()).OK == false)
-            {
-                Console.WriteLine("Error registering view");
-                return;
-            } 
+            rap.RegisterView(new SalesInvoiceView());
+            rap.RegisterView(new SalesItemRowsView());
+            rap.RegisterView(new newview());
             bool end = false;
 
             Console.WriteLine("Press (P)redifined query, (I)nsert 100,000 docs, (S)tring query, (Q)uit");
@@ -216,6 +202,9 @@ namespace testing
             Console.WriteLine("query count = " + q.Count);
                 
             q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
+            
+            //List<SalesItemRowsView.RowSchema> qr = q.Rows.Cast<SalesItemRowsView.RowSchema>().ToList();
+
             Console.WriteLine("query lineitems time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("query count = " + q.Count);
             Console.WriteLine();

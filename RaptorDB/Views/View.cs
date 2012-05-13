@@ -71,10 +71,10 @@ namespace RaptorDB.Views
         /// </summary>
         public bool BackgroundIndexing { get; set; }
 
-        ///// <summary>
-        ///// Save documents to this view in the save process, like primary views
-        ///// </summary>
-        //public bool ConsistentSaveToThisView { get; set; }
+        /// <summary>
+        /// Save documents to this view in the save process, like primary views
+        /// </summary>
+        public bool ConsistentSaveToThisView { get; set; }
 
         /// <summary>
         /// Fire the mapper on these types
@@ -107,11 +107,16 @@ namespace RaptorDB.Views
 
         public Result Verify()
         {
-            if (Name == null || Name == "") return new Result(false, new Exception("Name must be given"));
-            if (Schema == null) return new Result(false, new Exception("Schema must be defined"));
-            if (Schema.IsSubclassOf(typeof(RDBSchema)) == false) return new Result(false, new Exception("The schema must be derived from RaptorDB.RDBSchema"));
-            if (Mapper == null) return new Result(false, new Exception("A map function must be defined"));
-            if (FireOnTypes.Count == 0) return new Result(false, new Exception("No types have been defined to fire on"));
+            if (Name == null || Name == "") 
+                throw new Exception("Name must be given");
+            if (Schema == null) 
+                throw new Exception("Schema must be defined");
+            if (Schema.IsSubclassOf(typeof(RDBSchema)) == false) 
+                throw new Exception("The schema must be derived from RaptorDB.RDBSchema");
+            if (Mapper == null) 
+                throw new Exception("A map function must be defined");
+            if (FireOnTypes.Count == 0) 
+                throw new Exception("No types have been defined to fire on");
             // FEATURE : add more verifications
             return new Result(true);
         }
