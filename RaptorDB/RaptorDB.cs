@@ -39,6 +39,19 @@ namespace RaptorDB
             // save files in storage
             _fileStore.Set(docID, bytes);
         }
+
+        //public bool Delete(Guid docid)
+        //{
+        //    // FIX : here
+        //    return false;
+        //}
+
+        //public bool DeleteBytes(Guid bytesid)
+        //{
+        //    // FIX : here
+        //    return false;
+        //}
+
         /// <summary>
         /// Save a document
         /// </summary>
@@ -156,26 +169,22 @@ namespace RaptorDB
             _viewManager.RegisterView(view);
         }
 
-        //private object _sh = new object();
         public void Shutdown()
         {
 
             if (_shuttingdown == true)
                 return;
 
-            //lock (_sh)
-            {
-                _shuttingdown = true;
-                // save _LastRecordNumberProcessed 
-                _log.Debug("last record = " + _LastRecordNumberProcessed);
-                File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
-                _log.Debug("Shutting down");
-                _saveTimer.Stop();
-                _viewManager.ShutDown();
-                _objStore.Shutdown();
-                _fileStore.Shutdown();
-                LogManager.Shutdown();
-            }
+            _shuttingdown = true;
+            // save _LastRecordNumberProcessed 
+            _log.Debug("last record = " + _LastRecordNumberProcessed);
+            File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
+            _log.Debug("Shutting down");
+            _saveTimer.Stop();
+            _viewManager.ShutDown();
+            _objStore.Shutdown();
+            _fileStore.Shutdown();
+            LogManager.Shutdown();
         }
 
         public void Dispose()

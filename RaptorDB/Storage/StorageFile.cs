@@ -88,50 +88,6 @@ namespace RaptorDB
             return (int)(_recfilewrite.Length >> 3);
         }
 
-        #region [  traverse  ]
-        //public IEnumerable<KeyValuePair<T, byte[]>> Traverse()
-        //{
-        //    long offset = 0;
-        //    offset = _fileheader.Length;
-
-        //    while (offset < _datawrite.Length)
-        //    {
-        //        long pointer = offset;
-        //        byte[] key;
-        //        bool deleted = false;
-        //        offset = NextOffset(offset, out key, out deleted);
-        //        KeyValuePair<T, byte[]> kv = new KeyValuePair<T, byte[]>(_T.GetObject(key, 0, key.Length), internalReadData(pointer));
-        //        if (deleted == false)
-        //            yield return kv;
-        //    }
-        //}
-
-        //private long NextOffset(long curroffset, out byte[] key, out bool isdeleted)
-        //{
-        //    isdeleted = false;
-        //    if (_dataread == null)
-        //        _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        //    {
-        //        long next = _dataread.Length;
-        //        // seek offset in file
-        //        byte[] hdr = new byte[_rowheader.Length];
-        //        _dataread.Seek(curroffset, System.IO.SeekOrigin.Begin);
-        //        // read header
-        //        _dataread.Read(hdr, 0, _rowheader.Length);
-        //        key = new byte[hdr[(int)HDR_POS.KeyLen]];
-        //        _dataread.Read(key, 0, hdr[(int)HDR_POS.KeyLen]);
-        //        // check header
-        //        if (CheckHeader(hdr))
-        //        {
-        //            next = curroffset + hdr.Length + Helper.ToInt32(hdr, (int)HDR_POS.DataLength) + hdr[(int)HDR_POS.KeyLen];
-        //            isdeleted = isDeleted(hdr);
-        //        }
-
-        //        return next;
-        //    }
-        //}
-        #endregion
-
         public int WriteData(T key, byte[] data, bool deleted)
         {
             lock (_lock)

@@ -48,7 +48,7 @@ namespace testing
         {
             [FullText]
             public string CustomerName;
-            public DateTime InvoiceDate;
+            public DateTime Date;
             public string Address;
             public int Serial;
             public byte Status;
@@ -68,7 +68,7 @@ namespace testing
 
             this.Mapper = (api, docid, doc) =>
             {
-                api.Emit(docid, doc.CustomerName, doc.Date, doc.Address, doc.Serial, doc.Status);
+                api.EmitObject(docid, doc);//.CustomerName, doc.Date, doc.Address, doc.Serial, doc.Status);
             };
         }
     }
@@ -98,8 +98,8 @@ namespace testing
             this.Mapper = (api, docid, doc) =>
                 {
                     if (doc.Status == 3 && doc.Items != null)
-                        foreach (var i in doc.Items)
-                            api.Emit(docid, i.Product, i.QTY, i.Price, i.Discount);
+                        foreach (var item in doc.Items)
+                            api.EmitObject(docid, item);//.Product, i.QTY, i.Price, i.Discount);
                 };
         }
     }
@@ -131,7 +131,7 @@ namespace testing
             {
                 if (doc.Status == 3 && doc.Items != null)
                     foreach (var i in doc.Items)
-                        api.Emit(docid, i.Product, i.QTY, i.Price, i.Discount);
+                        api.EmitObject(docid, i);//.Product, i.QTY, i.Price, i.Discount);
             };
         }
     }
@@ -203,7 +203,13 @@ namespace testing
                 
             q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
             
-            //List<SalesItemRowsView.RowSchema> qr = q.Rows.Cast<SalesItemRowsView.RowSchema>().ToList();
+            // grouping
+            List<SalesItemRowsView.RowSchema> list = q.Rows.Cast<SalesItemRowsView.RowSchema>().ToList();
+            var e = from item in list group item by item.Product into grouped 
+                    select new { Product = grouped.Key, 
+                                 TotalPrice = grouped.Sum(product => product.Price),
+                                 TotalQTY = grouped.Sum(product => product.QTY)
+                    };
 
             Console.WriteLine("query lineitems time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("query count = " + q.Count);

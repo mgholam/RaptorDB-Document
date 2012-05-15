@@ -16,6 +16,7 @@ namespace RaptorDB.Views
         ViewManager _viewmanager;
         private ILog _log = LogManager.GetLogger(typeof(apimapper));
         internal Dictionary<Guid, List<object[]>> emit = new Dictionary<Guid, List<object[]>>();
+        internal Dictionary<Guid, List<object>> emitobj = new Dictionary<Guid, List<object>>();
 
         public void Log(string message)
         {
@@ -59,6 +60,32 @@ namespace RaptorDB.Views
                     d = new List<object[]>();
                     d.Add(data);
                     emit.Add(docid, d);
+                }
+            }
+        }
+
+        public void EmitObject<T>(Guid docid, T doc)
+        {
+            if (doc == null)
+                return;
+            List<object> d = null;
+            if (emitobj.Count == 0)
+            {
+                d = new List<object>();
+                d.Add(doc);
+                emitobj.Add(docid, d);
+            }
+            else
+            {
+                if (emitobj.TryGetValue(docid, out d))
+                {
+                    d.Add(doc);
+                }
+                else
+                {
+                    d = new List<object>();
+                    d.Add(doc);
+                    emitobj.Add(docid, d);
                 }
             }
         }

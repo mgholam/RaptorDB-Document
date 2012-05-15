@@ -824,16 +824,15 @@ namespace System.Linq.Dynamic
         //    return GetNonNullableType(type).IsEnum;
         //}
 
+        //static readonly string keywordIt = "it";
+        //static readonly string keywordIif = "iif";
+        //static readonly string keywordNew = "new";
 
         #endregion
 
         static readonly Expression trueLiteral = Expression.Constant(true);
         static readonly Expression falseLiteral = Expression.Constant(false);
         static readonly Expression nullLiteral = Expression.Constant(null);
-
-        //static readonly string keywordIt = "it";
-        //static readonly string keywordIif = "iif";
-        //static readonly string keywordNew = "new";
 
         static Dictionary<string, object> keywords;
 

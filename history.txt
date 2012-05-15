@@ -22,8 +22,15 @@ v1.2
 
 v1.3
 ----
-- Results.Rows are now schema objects and bindable (even when fields)
+- Results.Rows are now row schema objects and bindable (even when fields)
 - View.Schema must now derive from RaptorDB.RDBSchema
 - removed columns from Result (not needed anymore)
 - RegisterView throws exceptions instead of returning a Result
 - added a rudimentary query viewer project
+- null values are ignored when indexing
+- bool index filename will end in ".idx"
+- sample apps will create data files in the main soultion folder for easy sharing
+- you can now do aggregate queries on the results on the client side
+- added api.EmitObject for easier mapping (less code to write)
+
+

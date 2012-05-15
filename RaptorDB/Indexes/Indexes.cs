@@ -17,6 +17,8 @@ namespace RaptorDB
 
         public void Set(object key, int recnum)
         {
+            if (key == null) return; // FIX : index null values ??
+
             base.Set((T)key, recnum);
         }
 
@@ -52,6 +54,7 @@ namespace RaptorDB
         {
             // create file
             _filename = filename;
+            if (_filename.Contains(".") == false) _filename += ".idx";
             _path = path;
             if (_path.EndsWith("\\") == false) _path += "\\";
 

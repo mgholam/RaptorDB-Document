@@ -28,7 +28,8 @@ namespace RaptorDB
 
     public interface IRowFiller
     {
-        object FillRow(object row, object[] data); 
+        object FillRow(object row, object[] data);
+        //object[] ExtractRow(object doc);
     }
 
     internal interface IGetBytes<T>

@@ -105,11 +105,21 @@ namespace RaptorDB.Views
                 // insert new items into view
                 InsertRowsWithIndexUpdate(guid, d.Value);
             }
+
+            foreach (var d in api.emitobj)
+            {
+                // delete any items with docid in view
+                if (_view.DeleteBeforeInsert)
+                    DeleteRowsWith(d.Key);
+                // insert new items into view
+                InsertObjRowsWithIndexUpdate(guid, d.Value);
+            }
         }
 
         internal Result Query(string filter)
         {
             DateTime dt = FastDateTime.Now;
+            _log.Debug("query : " + _view.Name);
             _log.Debug("query : " + filter);
             // FEATURE : add query caching here
             Result ret = new Result();
@@ -131,6 +141,7 @@ namespace RaptorDB.Views
         internal Result Query<T>(Expression<Predicate<T>> filter)
         {
             DateTime dt = FastDateTime.Now;
+            _log.Debug("query : " + _view.Name);
             // FEATURE : add query caching here
             Result ret = new Result();
             WAHBitArray ba = new WAHBitArray();
@@ -150,6 +161,7 @@ namespace RaptorDB.Views
         {
             // no filter query -> just show all the data
             DateTime dt = FastDateTime.Now;
+            _log.Debug("query : " + _view.Name);
             int count = _viewData.Count();
             List<object> rows = new List<object>();
             Result ret = new Result();
@@ -397,9 +409,43 @@ public class rf : RaptorDB.IRowFiller
             }
         }
 
+        private void InsertObjRowsWithIndexUpdate(Guid guid, List<object> rows)
+        {
+            // reflection match object properties to the schema row
+
+            int colcount = _view.SchemaColumns.Columns.Count ;
+         
+            foreach (var obj in rows)
+            {
+                object[] r = new object[colcount];
+                r[0] = guid;
+                int i = 1;
+                List<fastJSON.Getters> getters = fastBinaryJSON.BJSON.Instance.GetGetters(obj.GetType());
+                foreach (var c in _view.SchemaColumns.Columns)
+                {
+                    foreach(var g in getters)
+                    {
+                        if (g.Name == c.Key)
+                        {
+                            r[i] = g.Getter(obj);
+                            break;
+                        }
+                    }
+                    i++;
+                }
+                
+                byte[] b = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
+
+                int rownum = _viewData.WriteData(guid, b, false);
+                object[] row = new object[r.Length - 1];
+                Array.Copy(r, 1, row, 0, r.Length - 1);
+
+                IndexRow(guid, row, rownum);
+            }
+        }
+
         private void IndexRow(Guid docid, object[] row, int rownum)
         {
-            //return;
             int i = 0;
             _indexes[_docid].Set(docid, rownum);
             // index the row
