@@ -87,7 +87,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
-	<Reference Include="System.Core" />
+    <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +99,7 @@
     <Compile Include="fastBinaryJSON\BJSON.cs" />
     <Compile Include="fastBinaryJSON\BJsonParser.cs" />
     <Compile Include="fastBinaryJSON\BJsonSerializer.cs" />
+    <Compile Include="fastJSON\Formatter.cs" />
     <Compile Include="fastJSON\Getters.cs" />
     <Compile Include="fastJSON\JSON.cs" />
     <Compile Include="fastJSON\JsonParser.cs" />

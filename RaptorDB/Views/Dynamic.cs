@@ -92,11 +92,11 @@ namespace System.Linq.Dynamic
         }
     }
 
-    internal class DynamicOrdering
-    {
-        public Expression Selector;
-        public bool Ascending;
-    }
+    //internal class DynamicOrdering
+    //{
+    //    public Expression Selector;
+    //    public bool Ascending;
+    //}
 
     internal class Signature : IEquatable<Signature>
     {

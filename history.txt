@@ -32,5 +32,7 @@ v1.3
 - sample apps will create data files in the main soultion folder for easy sharing
 - you can now do aggregate queries on the results on the client side
 - added api.EmitObject for easier mapping (less code to write)
+- upgrade to fastJSON v1.9.8
+- bug fix datetime in fastBinaryJSON
 
 

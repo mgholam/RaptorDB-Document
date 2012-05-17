@@ -211,6 +211,8 @@ namespace testing
                                  TotalQTY = grouped.Sum(product => product.QTY)
                     };
 
+            //string str = fastJSON.JSON.Instance.ToJSON(e.ToList(), new fastJSON.JSONParamters { EnableAnonymousTypes = true });
+
             Console.WriteLine("query lineitems time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             Console.WriteLine("query count = " + q.Count);
             Console.WriteLine();
