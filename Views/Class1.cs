@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using RaptorDB;
-using RaptorDB.Views;
 
-namespace datagridbinding
+
+namespace SampleViews
 {
     #region [  class definitions  ]
     public class LineItem
@@ -31,13 +33,14 @@ namespace datagridbinding
     #endregion
 
     #region [  views  ]
+    [RegisterView]
     public class SalesInvoiceView : View<SalesInvoice>
     {
         public class RowSchema : RDBSchema
         {
             [FullText]
             public string CustomerName;
-            public DateTime InvoiceDate;
+            public DateTime Date;
             public string Address;
             public int Serial;
             public byte Status;
@@ -57,11 +60,12 @@ namespace datagridbinding
 
             this.Mapper = (api, docid, doc) =>
             {
-                api.Emit(docid, doc.CustomerName, doc.Date, doc.Address, doc.Serial, doc.Status);
+                api.EmitObject(docid, doc);//.CustomerName, doc.Date, doc.Address, doc.Serial, doc.Status);
             };
         }
     }
 
+    [RegisterView]
     public class SalesItemRowsView : View<SalesInvoice>
     {
         public class RowSchema : RDBSchema
@@ -85,14 +89,15 @@ namespace datagridbinding
             this.AddFireOnTypes(typeof(SalesInvoice));
 
             this.Mapper = (api, docid, doc) =>
-                {
-                    if (doc.Status == 3 && doc.Items != null)
-                        foreach (var i in doc.Items)
-                            api.Emit(docid, i.Product, i.QTY, i.Price, i.Discount);
-                };
+            {
+                if (doc.Status == 3 && doc.Items != null)
+                    foreach (var item in doc.Items)
+                        api.EmitObject(docid, item);//.Product, i.QTY, i.Price, i.Discount);
+            };
         }
     }
 
+    [RegisterView]
     public class newview : View<SalesInvoice>
     {
         public class RowSchema : RDBSchema
@@ -120,7 +125,7 @@ namespace datagridbinding
             {
                 if (doc.Status == 3 && doc.Items != null)
                     foreach (var i in doc.Items)
-                        api.Emit(docid, i.Product, i.QTY, i.Price, i.Discount);
+                        api.EmitObject(docid, i);//.Product, i.QTY, i.Price, i.Discount);
             };
         }
     }

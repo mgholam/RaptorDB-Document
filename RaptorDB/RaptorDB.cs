@@ -8,6 +8,7 @@ using RaptorDB.Views;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Reflection;
+using RaptorDB.Common;
 
 namespace RaptorDB
 {
@@ -34,6 +35,16 @@ namespace RaptorDB
         private bool _shuttingdown = false;
         private bool _pauseindexer = false;
 
+        internal string GetViewName(Type type)
+        {
+            return _viewManager.GetViewName(type);
+        }
+
+        /// <summary>
+        /// Save files to RaptorDB
+        /// </summary>
+        /// <param name="docID"></param>
+        /// <param name="bytes"></param>
         public void SaveBytes(Guid docID, byte[] bytes)
         {
             // save files in storage
@@ -146,6 +157,11 @@ namespace RaptorDB
             return _viewManager.Query(type, filter);
         }
 
+        /// <summary>
+        /// Fetch a document by it's ID
+        /// </summary>
+        /// <param name="docID"></param>
+        /// <returns></returns>
         public object Fetch(Guid docID)
         {
             byte[] b = null;
@@ -155,6 +171,11 @@ namespace RaptorDB
                 return null;
         }
 
+        /// <summary>
+        /// Fetch file data by it's ID
+        /// </summary>
+        /// <param name="fileID"></param>
+        /// <returns></returns>
         public byte[] FetchBytes(Guid fileID)
         {
             byte[] b = null;
@@ -164,6 +185,11 @@ namespace RaptorDB
                 return null;
         }
 
+        /// <summary>
+        /// Register a view
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="view"></param>
         public void RegisterView<T>(View<T> view)
         {
             _viewManager.RegisterView(view);

@@ -5,6 +5,7 @@ using System.Text;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Threading;
+using RaptorDB.Common;
 
 namespace RaptorDB.Views
 {
@@ -209,6 +210,20 @@ namespace RaptorDB.Views
                     diclist.Add(t, list);
                 }
             }
+        }
+
+        internal string GetViewName(Type type)
+        {
+            string viewname = null;
+            // find view from name
+            if (_primaryView.TryGetValue(type, out viewname))
+                return viewname;
+
+            // search for viewtype here
+            if (_otherViewTypes.TryGetValue(type, out viewname))
+                return viewname;
+
+            return "";
         }
     }
 }

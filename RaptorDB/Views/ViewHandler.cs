@@ -11,9 +11,25 @@ using System.Reflection.Emit;
 using Microsoft.CSharp;
 using System.CodeDom.Compiler;
 using System.ComponentModel;
+using RaptorDB.Common;
 
 namespace RaptorDB.Views
 {
+    internal class ViewRowDefinition
+    {
+        public ViewRowDefinition()
+        {
+            Columns = new List<KeyValuePair<string, Type>>();
+        }
+        public string Name { get; set; }
+        internal List<KeyValuePair<string, Type>> Columns { get; set; }
+
+        public void Add(string name, Type type)
+        {
+            Columns.Add(new KeyValuePair<string, Type>(name, type));
+        }
+    }
+
     // FEATURE : background save indexes to disk on timer
     internal class ViewHandler
     {
@@ -34,6 +50,7 @@ namespace RaptorDB.Views
         private string _docid = "docid";
         private List<string> _colnames = new List<string>();
         private IRowFiller _rowfiller;
+        private ViewRowDefinition _schema;
 
         internal void SetView<T>(View<T> view, KeyStoreGuid docs)
         {
@@ -68,7 +85,7 @@ namespace RaptorDB.Views
             }
 
             // load indexes here
-            CreateLoadIndexes(_view.SchemaColumns);
+            CreateLoadIndexes(_schema);
 
             LoadDeletedRowsBitmap();
 
@@ -225,6 +242,8 @@ public class rf : RaptorDB.IRowFiller
             param.GenerateInMemory = true;
             // FEATURE : load all required assemblies based on the view schema if required
             param.ReferencedAssemblies.Add(this.GetType().Assembly.Location);
+            param.ReferencedAssemblies.Add(typeof(RDBSchema).Assembly.Location);
+            param.ReferencedAssemblies.Add(_view.GetType().Assembly.Location);
             param.ReferencedAssemblies.Add(_view.Schema.Assembly.Location);
             param.ReferencedAssemblies.Add(typeof(ICustomTypeDescriptor).Assembly.Location);
             CompilerResults results = provider.CompileAssemblyFromSource(param, src);
@@ -244,7 +263,7 @@ public class rf : RaptorDB.IRowFiller
             StringBuilder sb = new StringBuilder();
             int i = 0;
             sb.AppendLine("row.docid = (Guid)data[0];");
-            foreach (var c in _view.SchemaColumns.Columns)
+            foreach (var c in _schema.Columns)
             {
                 if (c.Key == "docid")
                     continue;
@@ -355,10 +374,10 @@ public class rf : RaptorDB.IRowFiller
             {
                 if (c.Key == "docid")
                     continue;
-                _indexes.Add(_view.SchemaColumns.Columns[i].Key,
+                _indexes.Add(_schema.Columns[i].Key,
                           CreateIndex(
-                            _view.SchemaColumns.Columns[i].Key,
-                            _view.SchemaColumns.Columns[i].Value));
+                            _schema.Columns[i].Key,
+                            _schema.Columns[i].Value));
                 i++;
             }
         }
@@ -366,15 +385,15 @@ public class rf : RaptorDB.IRowFiller
         private void GenerateSchemaColumns(ViewBase _view)
         {
             // generate schema columns from schema
-            _view.SchemaColumns = new ViewRowDefinition();
-            _view.SchemaColumns.Name = _view.Name;
+            _schema = new ViewRowDefinition();
+            _schema.Name = _view.Name;
 
             foreach (var p in _view.Schema.GetProperties())
             {
                 Type t = p.PropertyType;
                 if (p.GetCustomAttributes(typeof(FullTextAttribute), true).Length > 0)
                     t = typeof(FullTextString);
-                _view.SchemaColumns.Add(p.Name, t);
+                _schema.Add(p.Name, t);
             }
 
             foreach (var f in _view.Schema.GetFields())
@@ -382,10 +401,10 @@ public class rf : RaptorDB.IRowFiller
                 Type t = f.FieldType;
                 if (f.GetCustomAttributes(typeof(FullTextAttribute), true).Length > 0)
                     t = typeof(FullTextString);
-                _view.SchemaColumns.Add(f.Name, t);
+                _schema.Add(f.Name, t);
             }
 
-            foreach (var s in _view.SchemaColumns.Columns)
+            foreach (var s in _schema.Columns)
                 _colnames.Add(s.Key);
         }
 
@@ -413,7 +432,7 @@ public class rf : RaptorDB.IRowFiller
         {
             // reflection match object properties to the schema row
 
-            int colcount = _view.SchemaColumns.Columns.Count ;
+            int colcount = _schema.Columns.Count ;
          
             foreach (var obj in rows)
             {
@@ -421,7 +440,7 @@ public class rf : RaptorDB.IRowFiller
                 r[0] = guid;
                 int i = 1;
                 List<fastJSON.Getters> getters = fastBinaryJSON.BJSON.Instance.GetGetters(obj.GetType());
-                foreach (var c in _view.SchemaColumns.Columns)
+                foreach (var c in _schema.Columns)
                 {
                     foreach(var g in getters)
                     {

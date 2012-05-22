@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using RaptorDB.Common;
 
 namespace RaptorDB
 {

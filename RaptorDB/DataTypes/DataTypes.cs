@@ -2,29 +2,30 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RaptorDB.Common;
 
 namespace RaptorDB
 {    
-    /// <summary>
-    /// Used for the indexer -> hOOt full text indexing
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class FullTextAttribute : Attribute
-    {
-    }
+    ///// <summary>
+    ///// Used for the indexer -> hOOt full text indexing
+    ///// </summary>
+    //[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    //public class FullTextAttribute : Attribute
+    //{
+    //}
 
     internal class FullTextString 
     {
 
     }
 
-    /// <summary>
-    /// Base for row schemas : implements a docid property and is bindable
-    /// </summary>
-    public abstract class RDBSchema : FieldsToPropertiesTypeDescriptor 
-    {
-        public Guid docid;
-    }
+    ///// <summary>
+    ///// Base for row schemas : implements a docid property and is bindable
+    ///// </summary>
+    //public abstract class RDBSchema : FieldsToPropertiesTypeDescriptor 
+    //{
+    //    public Guid docid;
+    //}
 
     public interface IRowFiller
     {

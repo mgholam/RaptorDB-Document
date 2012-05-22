@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Xml;
 using RaptorDB;
+using RaptorDB.Common;
 
 namespace fastJSON
 {
@@ -358,7 +359,7 @@ namespace fastJSON
             return (GenericSetter)setter.CreateDelegate(typeof(GenericSetter));
         }
 
-        internal delegate object GenericGetter(object obj);
+        public delegate object GenericGetter(object obj);
 
         private static GenericGetter CreateGetField(Type type, FieldInfo fieldInfo)
         {

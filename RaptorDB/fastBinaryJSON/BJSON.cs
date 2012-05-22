@@ -12,12 +12,10 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Xml;
 using System.Text;
-using fastJSON;
-using RaptorDB;
 
 namespace fastBinaryJSON
 {
-    internal class TOKENS
+    public class TOKENS
     {
         public const byte DOC_START = 1;
         public const byte DOC_END = 2;
@@ -50,6 +48,30 @@ namespace fastBinaryJSON
     //public delegate string Serialize(object data);
     //public delegate object Deserialize(string data);
 
+    public class BJSONParameters
+    {
+        /// <summary> 
+        /// Optimize the schema for Datasets (default = True)
+        /// </summary>
+        public bool UseOptimizedDatasetSchema = true;
+        /// <summary>
+        /// Serialize readonly properties (default = False)
+        /// </summary>
+        public bool ShowReadOnlyProperties = false;
+        /// <summary>
+        /// Use global types $types for more compact size when using a lot of classes (default = True)
+        /// </summary>
+        public bool UsingGlobalTypes = true;
+        /// <summary>
+        /// Use Unicode strings = T (faster), Use UTF8 strings = F (smaller) (default = True)
+        /// </summary>
+        public bool UseUnicodeStrings = true;
+        /// <summary>
+        /// Serialize Null values to the output (default = False)
+        /// </summary>
+        public bool SerializeNulls = false;
+    }
+
     public class BJSON
     {
         public readonly static BJSON Instance = new BJSON();
@@ -57,27 +79,25 @@ namespace fastBinaryJSON
         private BJSON()
         {
         }
-        public bool UseOptimizedDatasetSchema = true;
-        public bool ShowReadOnlyProperties = false;
-        public bool UsingGlobalTypes = true;
-        public bool UseUnicodeStrings = true;
+        public BJSONParameters Parameters = new BJSONParameters();
         public UnicodeEncoding unicode = new UnicodeEncoding();
         public UTF8Encoding utf8 = new UTF8Encoding();
+        private BJSONParameters _params;
 
         public byte[] ToBJSON(object obj)
         {
-            return ToBJSON(obj, UseOptimizedDatasetSchema, UseUnicodeStrings);
+            _params = Parameters;
+            return ToBJSON(obj, _params);
         }
 
-        public byte[] ToBJSON(object obj,
-                             bool enableOptimizedDatasetSchema,
-                             bool useUnicodeStrings)
+        public byte[] ToBJSON(object obj, BJSONParameters param)
         {
-            return new BJSONSerializer(enableOptimizedDatasetSchema, useUnicodeStrings).ConvertToBJSON(obj);
+            return new BJSONSerializer(param).ConvertToBJSON(obj);
         }
 
         public object Parse(byte[] json)
         {
+            _params = Parameters;
             return new BJsonParser(json).Decode();
         }
 
@@ -93,6 +113,7 @@ namespace fastBinaryJSON
 
         public object ToObject(byte[] json, Type type)
         {
+            _params = Parameters;
             var d = new BJsonParser(json).Decode();
             var ht = d as Dictionary<string, object>;
             if (ht == null) return d;
@@ -196,7 +217,7 @@ namespace fastBinaryJSON
             public bool isDataTable;
             public bool isHashtable;
 #endif
-            public fastJSON.JSON.GenericSetter setter;
+            public GenericSetter setter;
             public bool isEnum;
             public bool isDateTime;
             public Type[] GenericTypes;
@@ -205,7 +226,7 @@ namespace fastBinaryJSON
             //public bool isString;
             //public bool isBool;
             public bool isClass;
-            public fastJSON.JSON.GenericGetter getter;
+            public GenericGetter getter;
             public bool isStringDictionary;
             public string Name;
 #if CUSTOMTYPE
@@ -271,9 +292,10 @@ namespace fastBinaryJSON
             d.isDataSet = t == typeof(DataSet);
             d.isDataTable = t == typeof(DataTable);
 #endif
-            d.isDateTime = t == typeof(DateTime);
+
             d.isEnum = t.IsEnum;
             d.isClass = t.IsClass;
+            d.isDateTime = t == typeof(DateTime);
 
             if (d.isDictionary && d.GenericTypes.Length > 0 && d.GenericTypes[0] == typeof(string))
                 d.isStringDictionary = true;
@@ -285,9 +307,9 @@ namespace fastBinaryJSON
             return d;
         }
 
-        //private delegate void GenericSetter(object target, object value);
+        private delegate void GenericSetter(object target, object value);
 
-        private static fastJSON.JSON.GenericSetter CreateSetMethod(PropertyInfo propertyInfo)
+        private static GenericSetter CreateSetMethod(PropertyInfo propertyInfo)
         {
             MethodInfo setMethod = propertyInfo.GetSetMethod();
             if (setMethod == null)
@@ -310,12 +332,12 @@ namespace fastBinaryJSON
             il.EmitCall(OpCodes.Callvirt, setMethod, null);
             il.Emit(OpCodes.Ret);
 
-            return (fastJSON.JSON.GenericSetter)setter.CreateDelegate(typeof(fastJSON.JSON.GenericSetter));
+            return (GenericSetter)setter.CreateDelegate(typeof(GenericSetter));
         }
 
-        //internal delegate object GenericGetter(object obj);
+        internal delegate object GenericGetter(object obj);
 
-        private static fastJSON.JSON.GenericGetter CreateGetField(Type type, FieldInfo fieldInfo)
+        private static GenericGetter CreateGetField(Type type, FieldInfo fieldInfo)
         {
             DynamicMethod dynamicGet = new DynamicMethod("_", typeof(object), new Type[] { typeof(object) }, type, true);
             ILGenerator il = dynamicGet.GetILGenerator();
@@ -326,10 +348,10 @@ namespace fastBinaryJSON
                 il.Emit(OpCodes.Box, fieldInfo.FieldType);
             il.Emit(OpCodes.Ret);
 
-            return (fastJSON.JSON.GenericGetter)dynamicGet.CreateDelegate(typeof(fastJSON.JSON.GenericGetter));
+            return (GenericGetter)dynamicGet.CreateDelegate(typeof(GenericGetter));
         }
 
-        private static fastJSON.JSON.GenericSetter CreateSetField(Type type, FieldInfo fieldInfo)
+        private static GenericSetter CreateSetField(Type type, FieldInfo fieldInfo)
         {
             Type[] arguments = new Type[2];
             arguments[0] = arguments[1] = typeof(object);
@@ -344,10 +366,10 @@ namespace fastBinaryJSON
             il.Emit(OpCodes.Stfld, fieldInfo);
             il.Emit(OpCodes.Ret);
 
-            return (fastJSON.JSON.GenericSetter)dynamicSet.CreateDelegate(typeof(fastJSON.JSON.GenericSetter));
+            return (GenericSetter)dynamicSet.CreateDelegate(typeof(GenericSetter));
         }
 
-        private fastJSON.JSON.GenericGetter CreateGetMethod(PropertyInfo propertyInfo)
+        private GenericGetter CreateGetMethod(PropertyInfo propertyInfo)
         {
             MethodInfo getMethod = propertyInfo.GetGetMethod();
             if (getMethod == null)
@@ -367,7 +389,7 @@ namespace fastBinaryJSON
 
             il.Emit(OpCodes.Ret);
 
-            return (fastJSON.JSON.GenericGetter)getter.CreateDelegate(typeof(fastJSON.JSON.GenericGetter));
+            return (GenericGetter)getter.CreateDelegate(typeof(GenericGetter));
         }
 
         readonly SafeDictionary<Type, List<Getters>> _getterscache = new SafeDictionary<Type, List<Getters>>();
@@ -381,13 +403,13 @@ namespace fastBinaryJSON
             List<Getters> getters = new List<Getters>();
             foreach (PropertyInfo p in props)
             {
-                if (!p.CanWrite && ShowReadOnlyProperties == false) continue;
+                if (!p.CanWrite && _params.ShowReadOnlyProperties == false) continue;
 
                 object[] att = p.GetCustomAttributes(typeof(System.Xml.Serialization.XmlIgnoreAttribute), false);
                 if (att != null && att.Length > 0)
                     continue;
 
-                JSON.GenericGetter g = CreateGetMethod(p);
+                BJSON.GenericGetter g = CreateGetMethod(p);
                 if (g != null)
                 {
                     Getters gg = new Getters();
@@ -405,7 +427,7 @@ namespace fastBinaryJSON
                 if (att != null && att.Length > 0)
                     continue;
 
-                JSON.GenericGetter g = CreateGetField(type, f);
+                BJSON.GenericGetter g = CreateGetField(type, f);
                 if (g != null)
                 {
                     Getters gg = new Getters();
@@ -425,14 +447,14 @@ namespace fastBinaryJSON
         private object ParseDictionary(Dictionary<string, object> d, Dictionary<string, object> globaltypes, Type type)
         {
             object tn = "";
-            globaltypes = new Dictionary<string, object>();
             if (d.TryGetValue("$types", out tn))
             {
-                UsingGlobalTypes = true;
-                globaltypes = new Dictionary<string, object>();
+                _params.UsingGlobalTypes = true;
+                if (globaltypes == null)
+                    globaltypes = new Dictionary<string, object>();
                 foreach (var kv in (Dictionary<string, object>)tn)
                 {
-                    globaltypes.Add((string)kv.Value, kv.Key);
+                    globaltypes.Add((string)kv.Key, kv.Value);
                 }
             }
 
@@ -445,7 +467,7 @@ namespace fastBinaryJSON
 #endif
             if (found)
             {
-                if (UsingGlobalTypes)
+                if (_params.UsingGlobalTypes)
                 {
                     object tname = "";
                     if (globaltypes.TryGetValue((string)tn, out tname))
@@ -477,8 +499,10 @@ namespace fastBinaryJSON
                         else if (pi.isCustomType)
                             oset = CreateCustom((string)v, pi.pt);
 #endif
+                        if (pi.isDateTime)
+                            oset = ((DateTime)v).ToLocalTime();
 
-                        if (pi.isGenericType && pi.isValueType == false && pi.isDictionary == false)
+                        else if (pi.isGenericType && pi.isValueType == false && pi.isDictionary == false)
 #if SILVERLIGHT
                             oset = CreateGenericList((List<object>)v, pi.pt, pi.bt, globaltypes);
 #else
@@ -486,9 +510,6 @@ namespace fastBinaryJSON
 #endif
                         else if (pi.isByteArray)
                             oset = v;
-
-                        //else if (pi.isDateTime)
-                        //    oset = ((DateTime)v).ToLocalTime(); // FEATURE : to local time ??
 
                         else if (pi.isArray && pi.isValueType == false)
 #if SILVERLIGHT
@@ -549,7 +570,7 @@ namespace fastBinaryJSON
 
         private object CreateEnum(Type pt, string v)
         {
-            // FEATURE : optimize create enum
+            // TODO : optimize create enum
 #if !SILVERLIGHT
             return Enum.Parse(pt, v);
 #else

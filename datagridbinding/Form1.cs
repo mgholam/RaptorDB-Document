@@ -8,6 +8,8 @@ using System.Text;
 using System.Windows.Forms;
 using System.Reflection;
 using RaptorDB;
+using RaptorDB.Common;
+using SampleViews;
 
 namespace datagridbinding
 {
@@ -19,15 +21,18 @@ namespace datagridbinding
 		}
 
 
-		RaptorDB.RaptorDB rap;
+        //RaptorDB.RaptorDB rap;
+        RaptorDBClient rap;
 		
 		private void Form1_Load(object sender, EventArgs e)
 		{
-			rap = RaptorDB.RaptorDB.Open(@"..\..\..\RaptorDBdata");
+            //rap = RaptorDB.RaptorDB.Open(@"..\..\..\RaptorDBdata");
 
-			rap.RegisterView(new SalesInvoiceView());
-			rap.RegisterView(new SalesItemRowsView());
-			rap.RegisterView(new newview());
+            //rap.RegisterView(new SalesInvoiceView());
+            //rap.RegisterView(new SalesItemRowsView());
+            //rap.RegisterView(new newview());
+
+            rap = new RaptorDBClient("127.0.0.1", 90, "admin", "admin");
 
             Query();
 		}
@@ -44,9 +49,9 @@ namespace datagridbinding
 
             try
             {
-                DateTime dt = RaptorDB.FastDateTime.Now;
+                DateTime dt = FastDateTime.Now;
                 var q = rap.Query(s[0].Trim(), s[1].Trim());
-                toolStripStatusLabel2.Text = "Query time (sec) = " + RaptorDB.FastDateTime.Now.Subtract(dt).TotalSeconds;
+                toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;
                 dataGridView1.DataSource = q.Rows;
                 toolStripStatusLabel1.Text = "Count = " + q.Count.ToString("#,0");
             }
@@ -69,7 +74,7 @@ namespace datagridbinding
                     };
 
             dataGridView1.DataSource = res.ToList();
-            toolStripStatusLabel2.Text = "Query time (sec) = " + RaptorDB.FastDateTime.Now.Subtract(dt).TotalSeconds;
+            toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)

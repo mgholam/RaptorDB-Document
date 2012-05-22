@@ -34,5 +34,13 @@ v1.3
 - added api.EmitObject for easier mapping (less code to write)
 - upgrade to fastJSON v1.9.8
 - bug fix datetime in fastBinaryJSON
+- added ConsistentView 
+
+v1.4
+----
+- break up the source into projects
+- created client, server dlls
+- upgrade to fastBinaryJSON v1.1
+- 
 
 

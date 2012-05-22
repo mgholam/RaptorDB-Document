@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using RaptorDB.Common;
 
 namespace fastBinaryJSON
 {
@@ -34,12 +35,12 @@ namespace fastBinaryJSON
                 if (t == TOKENS.DOC_END)
                     break;
                 string key = "";
-                if (t != TOKENS.NAME)
-                    throw new Exception("excpecting a name field");
+                //if (t != TOKENS.NAME)
+                //    throw new Exception("excpecting a name field");
                 key = ParseName();
                 t = GetToken();
-                if (t != TOKENS.COLON)
-                    throw new Exception("expecting a colon");
+                //if (t != TOKENS.COLON)
+                //    throw new Exception("expecting a colon");
                 object val = ParseValue(out breakparse);
 
                 if (breakparse == false)
@@ -257,7 +258,7 @@ namespace fastBinaryJSON
             long l = Helper.ToInt64(json, index);
             index += 8;
 
-            DateTime dt = new DateTime(l); 
+            DateTime dt = new DateTime(l); // FEATURE : to local time ??
 
             return dt;
         }

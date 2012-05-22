@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using System.Threading;
 using System.Collections;
+using RaptorDB.Common;
 
 namespace RaptorDB
 {

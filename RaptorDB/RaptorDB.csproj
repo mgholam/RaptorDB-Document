@@ -95,15 +95,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DataTypes\DataTypes.cs" />
-    <Compile Include="DataTypes\Result.cs" />
-    <Compile Include="fastBinaryJSON\BJSON.cs" />
-    <Compile Include="fastBinaryJSON\BJsonParser.cs" />
-    <Compile Include="fastBinaryJSON\BJsonSerializer.cs" />
-    <Compile Include="fastJSON\Formatter.cs" />
-    <Compile Include="fastJSON\Getters.cs" />
-    <Compile Include="fastJSON\JSON.cs" />
-    <Compile Include="fastJSON\JsonParser.cs" />
-    <Compile Include="fastJSON\JsonSerializer.cs" />
     <Compile Include="Global.cs" />
     <Compile Include="Helper\WAHBitarray2.cs" />
     <Compile Include="Indexes\BitmapIndex.cs" />
@@ -113,24 +104,25 @@
     <Compile Include="Indexes\Indexes.cs" />
     <Compile Include="Indexes\IndexFile.cs" />
     <Compile Include="Indexes\MGIndex.cs" />
-    <Compile Include="Indexes\MurMurHash2.cs" />
+    <Compile Include="RaptorDBServer.cs" />
     <Compile Include="Storage\KeyStore.cs" />
-    <Compile Include="Mapping\IMapAPI.cs" />
-    <Compile Include="Helper\Logger.cs" />
     <Compile Include="RaptorDB.cs" />
-    <Compile Include="Helper\SafeDictionary.cs" />
     <Compile Include="Storage\StorageFile.cs" />
     <Compile Include="Views\apimapper.cs" />
     <Compile Include="Views\Dynamic.cs" />
-    <Compile Include="Views\FieldDescriptor.cs" />
     <Compile Include="Views\LINQQuery.cs" />
     <Compile Include="Views\TaskQueue.cs" />
-    <Compile Include="Views\View.cs" />
     <Compile Include="Views\ViewHandler.cs" />
     <Compile Include="Views\ViewManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RaptorDB.Common\RaptorDB.Common.csproj">
+      <Project>{32331D51-5BE0-41E2-AF1A-9B086C5AE809}</Project>
+      <Name>RaptorDB.Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
