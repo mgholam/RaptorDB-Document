@@ -17,7 +17,7 @@ namespace RaptorDB
 
         public void Set(object key, int recnum)
         {
-            if (key == null) return; // FIX : index null values ??
+            if (key == null) return; // FEATURE : index null values ??
 
             base.Set((T)key, recnum);
         }

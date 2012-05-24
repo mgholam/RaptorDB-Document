@@ -341,7 +341,7 @@ namespace RaptorDB
                 {
                     if (_shuttingdown)
                         return;
-                    while (_pauseindexer) Thread.Sleep(1);
+                    while (_pauseindexer) Thread.Sleep(0);
                     if (_CurrentRecordNumber == _LastRecordNumberProcessed)
                         return;
                     _LastRecordNumberProcessed++;

@@ -26,6 +26,7 @@ namespace datagridbinding
 		
 		private void Form1_Load(object sender, EventArgs e)
 		{
+            dataGridView1.DoubleBuffered(true);
             //rap = RaptorDB.RaptorDB.Open(@"..\..\..\RaptorDBdata");
 
             //rap.RegisterView(new SalesInvoiceView());

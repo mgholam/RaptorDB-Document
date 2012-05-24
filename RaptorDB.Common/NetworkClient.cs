@@ -1,21 +1,19 @@
-﻿
-using System;
+﻿using System;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 
-#if NETSERVER
 using System.Collections;
 using System.Net;
 using System.Threading.Tasks;
-#endif
 
 namespace RaptorDB.Common
 {
     internal static class Param
     {
         public static int BufferSize = 32 * 1024;
+        public static int LogDataSizesOver = 1000000;
     }
 
     public class NetworkClient
@@ -34,11 +32,12 @@ namespace RaptorDB.Common
 
         public void Connect()
         {
+            _client = new TcpClient(_server, _port);
         }
 
+        // FIX : check connected state before sending
         public object Send(object data)
         {
-            _client = new TcpClient(_server, _port);
             _client.SendBufferSize = Param.BufferSize;
             _client.ReceiveBufferSize = _client.SendBufferSize;
 
@@ -110,7 +109,6 @@ namespace RaptorDB.Common
                 {
                     TcpClient c = listener.AcceptTcpClient();
                     Task.Factory.StartNew(() => Accept(c));
-                    count++;
                 }
                 catch (Exception ex) { log.Error(ex); }
             }
@@ -132,29 +130,46 @@ namespace RaptorDB.Common
         {
             using (NetworkStream n = client.GetStream())
             {
-                byte[] c = new byte[5];
-                n.Read(c, 0, 5);
-                int count = BitConverter.ToInt32(c, 1);
-                byte[] data = new byte[count];
-                int bytesRead = 0;
-                int chunksize = 1;
-                while (bytesRead < count && chunksize > 0)
-                    bytesRead +=
-                      chunksize = n.Read
-                        (data, bytesRead, count - bytesRead);
+                while (client.Connected)
+                {
+                    this.count++;
+                    byte[] c = new byte[5];
+                    n.Read(c, 0, 5);
+                    int count = BitConverter.ToInt32(c, 1);
+                    byte[] data = new byte[count];
+                    int bytesRead = 0;
+                    int chunksize = 1;
+                    while (bytesRead < count && chunksize > 0)
+                        bytesRead +=
+                          chunksize = n.Read
+                            (data, bytesRead, count - bytesRead);
 
-                object o = fastBinaryJSON.BJSON.Instance.ToObject(data);
+                    object o = fastBinaryJSON.BJSON.Instance.ToObject(data);
 
-                object r = _handler(o);
+                    object r = _handler(o);
 
-                data = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
+                    data = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
+                    if (data.Length > Param.LogDataSizesOver)
+                        log.Debug("data size (bytes) = " + data.Length.ToString("#,#"));
 
-                byte[] b = BitConverter.GetBytes(data.Length);
-                byte[] hdr = new byte[5];
-                hdr[0] = (byte)3;
-                Array.Copy(b, 0, hdr, 1, 4);
-                n.Write(hdr, 0, 5);
-                n.Write(data, 0, data.Length);
+                    byte[] b = BitConverter.GetBytes(data.Length);
+                    byte[] hdr = new byte[5];
+                    hdr[0] = (byte)3;
+                    Array.Copy(b, 0, hdr, 1, 4);
+                    n.Write(hdr, 0, 5);
+                    n.Write(data, 0, data.Length);
+
+                    int wait = 0;
+                    while (n.DataAvailable == false)
+                    {
+                        wait++;
+                        if (wait<1000) // kludge : for insert performance
+                            Thread.Sleep(0);
+                        else
+                            Thread.Sleep(1);
+                        // FEATURE : if wait > 10 min -> close connection 
+                    }
+                }
             }
         }
     }

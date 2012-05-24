@@ -205,7 +205,7 @@ namespace RaptorDB
 
         #region [  P a g e s ]
 
-        public void GetPageList(List<int> PageListDiskPages, SortedList<T, PageInfo> PageList, out int lastIndexedRow)
+        public void GetPageList(List<int> PageListDiskPages, SafeSortedList<T, PageInfo> PageList, out int lastIndexedRow)
         {
             lastIndexedRow = Helper.ToInt32(_FileHeader, 11);
             // load page list
@@ -219,7 +219,7 @@ namespace RaptorDB
             }
         }
 
-        private int LoadPageListData(int page, SortedList<T, PageInfo> PageList)
+        private int LoadPageListData(int page, SafeSortedList<T, PageInfo> PageList)
         {
             // load page list data
             int nextpage = -1;
@@ -325,7 +325,7 @@ namespace RaptorDB
         }
         #endregion
 
-        internal void SavePageList(SortedList<T, PageInfo> _pages, List<int> diskpages)
+        internal void SavePageList(SafeSortedList<T, PageInfo> _pages, List<int> diskpages)
         {
             // save page list
             int c = (_pages.Count / Global.PageItemCount) + 1;
@@ -358,11 +358,11 @@ namespace RaptorDB
             _file.Write(lastpage, 0, lastpage.Length);
         }
 
-        private void CreatePageListData(SortedList<T, PageInfo> _pages, int i, byte[] page, int index, int j)
+        private void CreatePageListData(SafeSortedList<T, PageInfo> _pages, int i, byte[] page, int index, int j)
         {
             int idx = index + _rowSize * j;
             // key bytes
-            byte[] kk = _T.GetBytes(_pages.Keys[j + i]);
+            byte[] kk = _T.GetBytes(_pages.GetKey(j + i));
             byte size = (byte)kk.Length;
             if (size > _maxKeySize)
                 size = _maxKeySize;
@@ -370,10 +370,10 @@ namespace RaptorDB
             page[idx] = size;
             Buffer.BlockCopy(kk, 0, page, idx + 1, page[idx]);
             // offset = 4 bytes
-            byte[] b = Helper.GetBytes(_pages.Values[i + j].PageNumber, false);
+            byte[] b = Helper.GetBytes(_pages.GetValue(i + j).PageNumber, false);
             Buffer.BlockCopy(b, 0, page, idx + 1 + _maxKeySize, b.Length);
             // add counts 
-            b = Helper.GetBytes(_pages.Values[i + j].UniqueCount, false);
+            b = Helper.GetBytes(_pages.GetValue(i + j).UniqueCount, false);
             Buffer.BlockCopy(b, 0, page, idx + 1 + _maxKeySize + 4, b.Length);
             // FEATURE : add dup counts
         }

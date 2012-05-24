@@ -66,11 +66,10 @@ namespace RaptorDB
         }
     }
     #endregion
-
     internal class MGIndex<T> where T : IComparable<T>
     {
         ILog _log = LogManager.GetLogger(typeof(MGIndex<T>));
-        private SortedList<T, PageInfo> _pageList = new SortedList<T, PageInfo>();
+        private SafeSortedList<T, PageInfo> _pageList = new SafeSortedList<T, PageInfo>();
         private SafeDictionary<int, Page<T>> _cache = new SafeDictionary<int, Page<T>>();
         private List<int> _pageListDiskPages = new List<int>();
         private IndexFile<T> _index;
@@ -95,20 +94,20 @@ namespace RaptorDB
             }
         }
 
-        public int Count(bool includeDuplicates)
-        {
-            int i = 0;
-            foreach (var k in _pageList)
-            {
-                i += k.Value.UniqueCount;
-                if (includeDuplicates)
-                {
-                    // FEATURE : count duplicates 
-                }
-            }
+        //public int Count(bool includeDuplicates)
+        //{
+        //    int i = 0;
+        //    foreach (var k in _pageList)
+        //    {
+        //        i += k.Value.UniqueCount;
+        //        if (includeDuplicates)
+        //        {
+        //            // FEATURE : count duplicates 
+        //        }
+        //    }
 
-            return i;
-        }
+        //    return i;
+        //}
 
         public int GetLastIndexedRecordNumber()
         {
@@ -151,7 +150,7 @@ namespace RaptorDB
                     doPageOperation(ref result, i);
             }
             // key page
-            Page<T> page = LoadPage(_pageList.Values[pos].PageNumber);
+            Page<T> page = LoadPage(_pageList.GetValue(pos).PageNumber);
             T[] keys = page.tree.Keys();
             Array.Sort(keys);
 
@@ -184,7 +183,7 @@ namespace RaptorDB
                     doPageOperation(ref result, i);
             }
             // key page
-            Page<T> page = LoadPage(_pageList.Values[pos].PageNumber);
+            Page<T> page = LoadPage(_pageList.GetValue(pos).PageNumber);
             T[] keys = page.tree.Keys();
             Array.Sort(keys);
             for (int i = 0; i < keys.Length; i++)
@@ -220,7 +219,7 @@ namespace RaptorDB
 
         private void doPageOperation(ref WAHBitArray res, int pageidx)
         {
-            Page<T> page = LoadPage(_pageList.Values[pageidx].PageNumber);
+            Page<T> page = LoadPage(_pageList.GetValue(pageidx).PageNumber);
             T[] keys = page.tree.Keys(); // avoid sync issues
             foreach (var k in keys)
             {
@@ -308,33 +307,6 @@ namespace RaptorDB
         {
             _index.BitmapFlush();
         }
-
-        //// FEATURE : bool includeDuplices, int start, int count)
-        //public IEnumerable<KeyValuePair<T, int>> Enumerate(T fromkey)
-        //{
-        //    List<KeyValuePair<T, int>> list = new List<KeyValuePair<T, int>>();
-        //    // enumerate
-        //    PageInfo pi;
-        //    Page<T> page = LoadPage(fromkey, out pi);
-        //    T[] keys = page.tree.Keys();
-        //    Array.Sort<T>(keys);
-
-        //    int p = Array.BinarySearch<T>(keys, fromkey);
-        //    for (int i = p; i < keys.Length; i++)
-        //        list.Add(new KeyValuePair<T, int>(keys[i], page.tree[keys[i]].RecordNumber));
-
-        //    while (page.RightPageNumber != -1)
-        //    {
-        //        page = LoadPage(page.RightPageNumber);
-        //        keys = page.tree.Keys();
-        //        Array.Sort<T>(keys);
-
-        //        foreach (var k in keys)
-        //            list.Add(new KeyValuePair<T, int>(k, page.tree[k].RecordNumber));
-        //    }
-
-        //    return list;
-        //}
 
         public IEnumerable<int> GetDuplicates(T key)
         {
@@ -424,7 +396,7 @@ namespace RaptorDB
             int pos = 0;
             if (key != null)
                 pos = FindPageOrLowerPosition(key, ref found);
-            pageinfo = _pageList.Values[pos];
+            pageinfo = _pageList.GetValue(pos);
             pagenum = pageinfo.PageNumber;
 
             Page<T> page;
@@ -469,7 +441,7 @@ namespace RaptorDB
             while (first <= last)
             {
                 mid = (first + last) >> 1;
-                T k = _pageList.Keys[mid];
+                T k = _pageList.GetKey(mid);
                 int compare = k.CompareTo(key);
                 if (compare < 0)
                 {

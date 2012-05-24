@@ -35,12 +35,12 @@ namespace fastBinaryJSON
                 if (t == TOKENS.DOC_END)
                     break;
                 string key = "";
-                //if (t != TOKENS.NAME)
-                //    throw new Exception("excpecting a name field");
+                if (t != TOKENS.NAME)
+                    throw new Exception("excpecting a name field");
                 key = ParseName();
                 t = GetToken();
-                //if (t != TOKENS.COLON)
-                //    throw new Exception("expecting a colon");
+                if (t != TOKENS.COLON)
+                    throw new Exception("expecting a colon");
                 object val = ParseValue(out breakparse);
 
                 if (breakparse == false)

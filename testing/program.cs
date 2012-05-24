@@ -14,7 +14,6 @@ using System.Linq;
 using System.Collections.ObjectModel;
 using System.Dynamic;
 using RaptorDB.Common;
-using SampleViews;
 
 namespace testing
 {
@@ -28,13 +27,14 @@ namespace testing
             //RaptorDBClient client = new RaptorDBClient("127.0.0.1", 90, "admin", "admin");
             //var r = client.Query("salesinvoice", "serial<100");
             Console.WriteLine("Server started on port 90");
+            Console.WriteLine("Press Enter to exit...");
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
 
             Console.ReadLine();
             server.Shutdown();
             return;
 
-
+            /*
             RaptorDB.RaptorDB rap = RaptorDB.RaptorDB.Open(@"..\..\..\RaptorDBdata");
 
             rap.RegisterView(new SalesInvoiceView());
@@ -69,12 +69,6 @@ namespace testing
             if (!end)
                 goto redo;
             rap.Shutdown();
-        }
-
-        static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
-        {
-            Console.WriteLine("Shutting down...");
-            server.Shutdown();
         }
 
         private static void stringquery(RaptorDB.RaptorDB rap)
@@ -140,6 +134,13 @@ namespace testing
             }
             Console.WriteLine();
             Console.WriteLine("insert time secs = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+             */
+        }
+
+        static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            Console.WriteLine("Shutting down...");
+            server.Shutdown();
         }
 
         static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

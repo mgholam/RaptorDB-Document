@@ -6,6 +6,7 @@ using RaptorDB.Common;
 using System.Reflection;
 using System.IO;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace RaptorDB
 {
@@ -13,12 +14,25 @@ namespace RaptorDB
     {
         public RaptorDBServer(int port, string DataPath)
         {
+            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
             _server = new NetworkServer();//90, processpayload);
             _raptor = RaptorDB.Open(DataPath);
             register = _raptor.GetType().GetMethod("RegisterView", BindingFlags.Instance | BindingFlags.Public);
             save = _raptor.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
             Initialize();
             _server.Start(port, processpayload);
+        }
+
+        Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            string[] ss = args.Name.Split(',');
+            string fname = ss[0] + ".dll";
+            if (File.Exists(fname))
+                return Assembly.LoadFile(fname);
+            fname = "Extensions\\" + fname;
+            if (File.Exists(fname))
+                return Assembly.LoadFile(fname);
+            else return null;
         }
 
         private ILog log = LogManager.GetLogger(typeof(RaptorDBServer));
@@ -97,13 +111,14 @@ namespace RaptorDB
 
 
             // FIX : - open extensions folder
+            string path = Directory.GetCurrentDirectory() + "";
 
-            foreach (var f in Directory.GetFiles(".", "*.dll"))
+            foreach (var f in Directory.GetFiles(path, "*.dll"))
             {
                 //        - load all dll files
                 //        - register views 
                 log.Debug("loading : " + f);
-                Assembly a = Assembly.LoadFrom(f);
+                Assembly a = Assembly.LoadFile(f);
                 foreach (var t in a.GetTypes())
                 {
                     foreach (var att in t.GetCustomAttributes(typeof(RegisterViewAttribute), false))

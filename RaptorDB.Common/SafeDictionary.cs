@@ -83,6 +83,39 @@ namespace RaptorDB.Common
         }
     }
 
+    public class SafeSortedList<T,V>
+    {
+        private object _padlock = new object();
+        SortedList<T, V> _list = new SortedList<T, V>();
+
+        public int Count
+        {
+            get { lock(_padlock) return _list.Count; }
+        }
+
+        public void Add(T key, V val)
+        {
+            lock (_padlock)
+                _list.Add(key, val);
+        }
+
+        public void Remove(T key)
+        {
+            lock (_padlock)
+                _list.Remove(key);
+        }
+
+        public T GetKey(int index)
+        {
+            lock (_padlock) return _list.Keys[index];
+        }
+
+        public V GetValue(int index)
+        {
+            lock (_padlock) return _list.Values[index];
+        }
+    }
+
     //------------------------------------------------------------------------------------------------------------------
 
     public static class FastDateTime
