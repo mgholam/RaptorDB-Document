@@ -14,7 +14,7 @@ namespace RaptorDB
             _username = username;
             _password = password;
             _client = new NetworkClient(server, port);
-            _client.Connect();
+            //_client.Connect();
         }
 
         private NetworkClient _client;

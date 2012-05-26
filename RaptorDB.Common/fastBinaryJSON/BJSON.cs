@@ -222,7 +222,7 @@ namespace fastBinaryJSON
 #endif
             public fastJSON.JSON.GenericSetter setter;
             public bool isEnum;
-            public bool isDateTime;
+            //public bool isDateTime;
             public Type[] GenericTypes;
             //public bool isInt;
             //public bool isLong;
@@ -295,7 +295,7 @@ namespace fastBinaryJSON
             d.isDataSet = t == typeof(DataSet);
             d.isDataTable = t == typeof(DataTable);
 #endif
-            d.isDateTime = t == typeof(DateTime);
+            //d.isDateTime = t == typeof(DateTime);
             d.isEnum = t.IsEnum;
             d.isClass = t.IsClass;
 
@@ -511,9 +511,6 @@ namespace fastBinaryJSON
 #endif
                         else if (pi.isByteArray)
                             oset = v;
-
-                        //else if (pi.isDateTime)
-                        //    oset = ((DateTime)v).ToLocalTime(); // FEATURE : to local time ??
 
                         else if (pi.isArray && pi.isValueType == false)
 #if SILVERLIGHT

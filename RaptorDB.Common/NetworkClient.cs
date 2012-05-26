@@ -33,13 +33,13 @@ namespace RaptorDB.Common
         public void Connect()
         {
             _client = new TcpClient(_server, _port);
-        }
-
-        // FIX : check connected state before sending
-        public object Send(object data)
-        {
             _client.SendBufferSize = Param.BufferSize;
             _client.ReceiveBufferSize = _client.SendBufferSize;
+        }
+
+        public object Send(object data)
+        {
+            CheckConnection();
 
             byte[] hdr = new byte[5];
             hdr[0] = (UseBJSON ? (byte)3 : (byte)0);
@@ -52,7 +52,6 @@ namespace RaptorDB.Common
             byte[] rechdr = new byte[5];
             using (NetworkStream n = new NetworkStream(_client.Client))
             {
-
                 n.Read(rechdr, 0, 5);
                 int c = Helper.ToInt32(rechdr, 1);
                 byte[] recd = new byte[c];
@@ -63,11 +62,21 @@ namespace RaptorDB.Common
                       chunksize = n.Read
                         (recd, bytesRead, c - bytesRead);
                 if (rechdr[0] == (byte)3)
-                {
                     return fastBinaryJSON.BJSON.Instance.ToObject(recd);
-                }
             }
             return null;
+        }
+
+        private void CheckConnection()
+        {
+            // check connected state before sending
+            if (_client == null)
+                Connect();
+            else
+            {
+                if (_client.Connected == false)
+                    Connect();
+            }
         }
 
         public void Close()
@@ -96,7 +105,6 @@ namespace RaptorDB.Common
             t.Start();
             t.Elapsed += new System.Timers.ElapsedEventHandler(t_Elapsed);
             Task.Factory.StartNew(() => Run(), TaskCreationOptions.AttachedToParent);
-            //Run();
         }
 
         private void Run()

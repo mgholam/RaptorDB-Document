@@ -81,6 +81,7 @@ Run with :
         private static void Dostart()
         {
             var _raptor = new RaptorDB.RaptorDBServer(Program.Port, Program.Path);
+            Console.WriteLine("Press Enter to shutdown...");
             Console.ReadLine();
             _raptor.Shutdown();
         }
@@ -92,9 +93,8 @@ Run with :
 
             // Look for our service
             foreach (ServiceController service in services)
-            {
-                if (String.Compare(serviceName, service.ServiceName, true) == 0) return true;
-            }
+                if (String.Compare(serviceName, service.ServiceName, true) == 0) 
+                    return true;
 
             // Return
             return false;

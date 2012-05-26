@@ -106,9 +106,7 @@ namespace RaptorDB
         {
             // exe folder
             // |-Data
-            // |-LOGS
             // |-Extensions
-
 
             // FIX : - open extensions folder
             string path = Directory.GetCurrentDirectory() + "";
@@ -117,7 +115,7 @@ namespace RaptorDB
             {
                 //        - load all dll files
                 //        - register views 
-                log.Debug("loading : " + f);
+                log.Debug("loading dll for views : " + f);
                 Assembly a = Assembly.LoadFile(f);
                 foreach (var t in a.GetTypes())
                 {
