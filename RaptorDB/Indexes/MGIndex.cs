@@ -66,6 +66,7 @@ namespace RaptorDB
         }
     }
     #endregion
+
     internal class MGIndex<T> where T : IComparable<T>
     {
         ILog _log = LogManager.GetLogger(typeof(MGIndex<T>));
@@ -94,21 +95,6 @@ namespace RaptorDB
             }
         }
 
-        //public int Count(bool includeDuplicates)
-        //{
-        //    int i = 0;
-        //    foreach (var k in _pageList)
-        //    {
-        //        i += k.Value.UniqueCount;
-        //        if (includeDuplicates)
-        //        {
-        //            // FEATURE : count duplicates 
-        //        }
-        //    }
-
-        //    return i;
-        //}
-
         public int GetLastIndexedRecordNumber()
         {
             return _LastIndexedRecordNumber;
@@ -136,95 +122,6 @@ namespace RaptorDB
                 return doMoreOp(exp, key);
             
             return new WAHBitArray(); // blank results 
-        }
-
-        private WAHBitArray doMoreOp(RDBExpression exp, T key)
-        {
-            bool found = false;
-            int pos = FindPageOrLowerPosition(key, ref found);
-            WAHBitArray result = new WAHBitArray();
-            if (pos < _pageList.Count)
-            {
-                // all the pages after
-                for (int i = pos + 1; i < _pageList.Count; i++)
-                    doPageOperation(ref result, i);
-            }
-            // key page
-            Page<T> page = LoadPage(_pageList.GetValue(pos).PageNumber);
-            T[] keys = page.tree.Keys();
-            Array.Sort(keys);
-
-            // find better start position rather than 0
-            pos = Array.IndexOf<T>(keys, key);
-            if (pos == -1) pos = 0;
-            
-            for (int i = pos; i < keys.Length; i++)
-            {
-                T k = keys[i];
-
-                if (k.CompareTo(key) > 0)
-                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
-
-                if (exp == RDBExpression.GreaterEqual && k.CompareTo(key) == 0)
-                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
-            }
-            return result;
-        }
-
-        private WAHBitArray doLessOp(RDBExpression exp, T key)
-        {
-            bool found = false;
-            int pos = FindPageOrLowerPosition(key, ref found);
-            WAHBitArray result = new WAHBitArray();
-            if (pos > 0)
-            {
-                // all the pages before
-                for (int i = 0; i < pos - 1; i++)
-                    doPageOperation(ref result, i);
-            }
-            // key page
-            Page<T> page = LoadPage(_pageList.GetValue(pos).PageNumber);
-            T[] keys = page.tree.Keys();
-            Array.Sort(keys);
-            for (int i = 0; i < keys.Length; i++)
-            {
-                T k = keys[i];
-                if (k.CompareTo(key) > 0)
-                    break;
-
-                if (k.CompareTo(key) < 0)
-                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
-
-                if (exp == RDBExpression.LessEqual && k.CompareTo(key) == 0)
-                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
-            }
-            return result;
-        }
-
-        private WAHBitArray doEqualOp(RDBExpression exp, T key)
-        {
-            PageInfo pi;
-            Page<T> page = LoadPage(key, out pi);
-            KeyInfo k;
-            if (page.tree.TryGetValue(key, out k))
-            {
-                if (exp == RDBExpression.Equal)
-                    return _index.GetDuplicateBitmap(k.DuplicateBitmapNumber);
-                else
-                    return _index.GetDuplicateBitmap(k.DuplicateBitmapNumber).Not();
-            }
-            else
-                return new WAHBitArray();
-        }
-
-        private void doPageOperation(ref WAHBitArray res, int pageidx)
-        {
-            Page<T> page = LoadPage(_pageList.GetValue(pageidx).PageNumber);
-            T[] keys = page.tree.Keys(); // avoid sync issues
-            foreach (var k in keys)
-            {
-                res = res.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
-            }
         }
 
         private object _setlock = new object();
@@ -350,6 +247,94 @@ namespace RaptorDB
         }
 
         #region [  P R I V A T E  ]
+        private WAHBitArray doMoreOp(RDBExpression exp, T key)
+        {
+            bool found = false;
+            int pos = FindPageOrLowerPosition(key, ref found);
+            WAHBitArray result = new WAHBitArray();
+            if (pos < _pageList.Count)
+            {
+                // all the pages after
+                for (int i = pos + 1; i < _pageList.Count; i++)
+                    doPageOperation(ref result, i);
+            }
+            // key page
+            Page<T> page = LoadPage(_pageList.GetValue(pos).PageNumber);
+            T[] keys = page.tree.Keys();
+            Array.Sort(keys);
+
+            // find better start position rather than 0
+            pos = Array.IndexOf<T>(keys, key);
+            if (pos == -1) pos = 0;
+
+            for (int i = pos; i < keys.Length; i++)
+            {
+                T k = keys[i];
+
+                if (k.CompareTo(key) > 0)
+                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
+
+                if (exp == RDBExpression.GreaterEqual && k.CompareTo(key) == 0)
+                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
+            }
+            return result;
+        }
+
+        private WAHBitArray doLessOp(RDBExpression exp, T key)
+        {
+            bool found = false;
+            int pos = FindPageOrLowerPosition(key, ref found);
+            WAHBitArray result = new WAHBitArray();
+            if (pos > 0)
+            {
+                // all the pages before
+                for (int i = 0; i < pos - 1; i++)
+                    doPageOperation(ref result, i);
+            }
+            // key page
+            Page<T> page = LoadPage(_pageList.GetValue(pos).PageNumber);
+            T[] keys = page.tree.Keys();
+            Array.Sort(keys);
+            for (int i = 0; i < keys.Length; i++)
+            {
+                T k = keys[i];
+                if (k.CompareTo(key) > 0)
+                    break;
+
+                if (k.CompareTo(key) < 0)
+                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
+
+                if (exp == RDBExpression.LessEqual && k.CompareTo(key) == 0)
+                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
+            }
+            return result;
+        }
+
+        private WAHBitArray doEqualOp(RDBExpression exp, T key)
+        {
+            PageInfo pi;
+            Page<T> page = LoadPage(key, out pi);
+            KeyInfo k;
+            if (page.tree.TryGetValue(key, out k))
+            {
+                if (exp == RDBExpression.Equal)
+                    return _index.GetDuplicateBitmap(k.DuplicateBitmapNumber);
+                else
+                    return _index.GetDuplicateBitmap(k.DuplicateBitmapNumber).Not();
+            }
+            else
+                return new WAHBitArray();
+        }
+
+        private void doPageOperation(ref WAHBitArray res, int pageidx)
+        {
+            Page<T> page = LoadPage(_pageList.GetValue(pageidx).PageNumber);
+            T[] keys = page.tree.Keys(); // avoid sync issues
+            foreach (var k in keys)
+            {
+                res = res.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
+            }
+        }
 
         private double _totalsplits = 0;
         private void SplitPage(Page<T> page)

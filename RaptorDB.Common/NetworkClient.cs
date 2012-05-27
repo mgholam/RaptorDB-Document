@@ -16,6 +16,7 @@ namespace RaptorDB.Common
         public static int LogDataSizesOver = 1000000;
     }
 
+    // FEATURE : compress data over x Mb  
     public class NetworkClient
     {
         public NetworkClient(string server, int port)
@@ -81,7 +82,8 @@ namespace RaptorDB.Common
 
         public void Close()
         {
-            _client.Close();
+            if (_client != null)
+                _client.Close();
         }
     }
 
@@ -171,7 +173,7 @@ namespace RaptorDB.Common
                     while (n.DataAvailable == false)
                     {
                         wait++;
-                        if (wait<1000) // kludge : for insert performance
+                        if (wait < 10000) // kludge : for insert performance
                             Thread.Sleep(0);
                         else
                             Thread.Sleep(1);

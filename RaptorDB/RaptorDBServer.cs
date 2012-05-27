@@ -63,8 +63,11 @@ namespace RaptorDB
         private object processpayload(object data)
         {
             Packet p = (Packet)data;
-            ReturnPacket ret = new ReturnPacket();
-            ret.OK = true;
+
+            if (Authenticate(p) == false)
+                return new ReturnPacket(false);
+
+            ReturnPacket ret = new ReturnPacket(true);
             try
             {
                 object[] param;
@@ -100,6 +103,13 @@ namespace RaptorDB
                 log.Error(ex);
             }
             return ret;
+        }
+
+        private bool Authenticate(Packet p)
+        {
+            // FIX : add authentication here
+            if (p.Username == "admin") return true;
+            return false;
         }
 
         private void Initialize()

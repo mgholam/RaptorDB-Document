@@ -19,6 +19,14 @@ namespace RaptorDB.Common
 
     public class ReturnPacket
     {
+        public ReturnPacket()
+        {
+
+        }
+        public ReturnPacket(bool ok)
+        {
+            OK = ok;
+        }
         public bool OK { get; set; }
         //public int Token { get; set; }
         //public int Session { get; set; }

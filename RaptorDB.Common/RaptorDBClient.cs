@@ -7,14 +7,13 @@ using System.Linq.Expressions;
 
 namespace RaptorDB
 {
-    public class RaptorDBClient
+    public class RaptorDBClient : IRaptorDB
     {
         public RaptorDBClient(string server, int port, string username, string password)
         {
             _username = username;
             _password = password;
             _client = new NetworkClient(server, port);
-            //_client.Connect();
         }
 
         private NetworkClient _client;
@@ -22,7 +21,7 @@ namespace RaptorDB
         private string _password;
 
 
-        public bool Save(Guid docID, object document)
+        public bool Save<T>(Guid docID, T document)
         {
             Packet p = CreatePacket();
             p.Command = "save";
@@ -166,16 +165,15 @@ namespace RaptorDB
             _client.Close();
         }
 
-        public List<string> GetViews()
-        {
-            return null;
-        }
+        //public List<string> GetViews()
+        //{
+        //    return null;
+        //}
 
-        public List<string> GetViewSchema(string viewname)
-        {
-            return null;
-        }
-
+        //public List<string> GetViewSchema(string viewname)
+        //{
+        //    return null;
+        //}
 
         private Packet CreatePacket()
         {

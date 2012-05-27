@@ -12,7 +12,7 @@ using RaptorDB.Common;
 
 namespace RaptorDB
 {
-    public class RaptorDB : IDisposable
+    public class RaptorDB : IDisposable, IRaptorDB
     {
         private RaptorDB(string FolderPath)
         {
@@ -45,10 +45,11 @@ namespace RaptorDB
         /// </summary>
         /// <param name="docID"></param>
         /// <param name="bytes"></param>
-        public void SaveBytes(Guid docID, byte[] bytes)
+        public bool SaveBytes(Guid docID, byte[] bytes)
         {
             // save files in storage
             _fileStore.Set(docID, bytes);
+            return true;
         }
 
         //public bool Delete(Guid docid)

@@ -13,36 +13,33 @@ using SampleViews;
 
 namespace datagridbinding
 {
-	public partial class Form1 : Form
-	{
-		public Form1()
-		{
-			InitializeComponent();
-		}
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
 
 
-        //RaptorDB.RaptorDB rap;
-        RaptorDBClient rap;
-		
-		private void Form1_Load(object sender, EventArgs e)
-		{
+        IRaptorDB rap;
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
             dataGridView1.DoubleBuffered(true);
-            //rap = RaptorDB.RaptorDB.Open(@"..\..\..\RaptorDBdata");
+            Form2 f = new Form2();
+            if (f.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                rap = f._rap;
 
-            //rap.RegisterView(new SalesInvoiceView());
-            //rap.RegisterView(new SalesItemRowsView());
-            //rap.RegisterView(new newview());
-
-            rap = new RaptorDBClient("127.0.0.1", 90, "admin", "admin");
-
-            Query();
-		}
-		
-		void TextBox1KeyPress(object sender, KeyPressEventArgs e)
-		{
-			if(e.KeyChar == (char)Keys.Return)
                 Query();
-		}
+            }
+        }
+
+        void TextBox1KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)Keys.Return)
+                Query();
+        }
 
         private void Query()
         {
@@ -66,13 +63,13 @@ namespace datagridbinding
 
             List<SalesItemRowsView.RowSchema> list = q.Rows.Cast<SalesItemRowsView.RowSchema>().ToList();
             var res = from item in list
-                    group item by item.Product into grouped
-                    select new
-                    {
-                        Product = grouped.Key,
-                        TotalPrice = grouped.Sum(product => product.Price),
-                        TotalQTY = grouped.Sum(product => product.QTY)
-                    };
+                      group item by item.Product into grouped
+                      select new
+                      {
+                          Product = grouped.Key,
+                          TotalPrice = grouped.Sum(product => product.Price),
+                          TotalQTY = grouped.Sum(product => product.QTY)
+                      };
 
             dataGridView1.DataSource = res.ToList();
             toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;
@@ -80,7 +77,8 @@ namespace datagridbinding
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            rap.Shutdown();
+            if (rap != null)
+                rap.Shutdown();
             this.Close();
         }
 
@@ -119,5 +117,5 @@ namespace datagridbinding
                 toolStripProgressBar1.Value = 0;
             }
         }
-	}
+    }
 }

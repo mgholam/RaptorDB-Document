@@ -41,9 +41,11 @@ v1.4
 - break up the source into projects
 - created client, server dlls
 - upgrade to fastBinaryJSON v1.1
-- changed to SafeSortedList for multithreading indexes
+- changed to SafeSortedList for thread safe indexes
 - add auto installer RaptorDBServer service
-- performance optimized network layer
+- performance optimized tcp network layer
+- added dual mode usage to the windows application (embeded, server)
+- code cleanup
 
 
 

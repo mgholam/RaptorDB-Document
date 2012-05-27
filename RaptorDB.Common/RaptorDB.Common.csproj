@@ -50,6 +50,7 @@
     <Compile Include="fastJSON\JsonSerializer.cs" />
     <Compile Include="FieldDescriptor.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="IRaptorDB.cs" />
     <Compile Include="LINQString.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="MurMurHash2.cs" />

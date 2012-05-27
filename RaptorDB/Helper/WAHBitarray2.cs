@@ -320,8 +320,6 @@ namespace RaptorDB
                 left.CopyTo(ar, 0);
                 left = ar;
             }
-
-            //FixLengths(ints, uncomp);
         }
 
         private uint[] GetUncompressed()
