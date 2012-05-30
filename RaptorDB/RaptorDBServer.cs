@@ -15,7 +15,7 @@ namespace RaptorDB
         public RaptorDBServer(int port, string DataPath)
         {
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
-            _server = new NetworkServer();//90, processpayload);
+            _server = new NetworkServer();
             _raptor = RaptorDB.Open(DataPath);
             register = _raptor.GetType().GetMethod("RegisterView", BindingFlags.Instance | BindingFlags.Public);
             save = _raptor.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
@@ -25,13 +25,15 @@ namespace RaptorDB
 
         Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
+            if (File.Exists(args.Name))
+                return Assembly.LoadFrom(args.Name);
             string[] ss = args.Name.Split(',');
             string fname = ss[0] + ".dll";
             if (File.Exists(fname))
-                return Assembly.LoadFile(fname);
+                return Assembly.LoadFrom(fname);
             fname = "Extensions\\" + fname;
             if (File.Exists(fname))
-                return Assembly.LoadFile(fname);
+                return Assembly.LoadFrom(fname);
             else return null;
         }
 
@@ -118,15 +120,15 @@ namespace RaptorDB
             // |-Data
             // |-Extensions
 
-            // FIX : - open extensions folder
-            string path = Directory.GetCurrentDirectory() + "";
+            // open extensions folder
+            string path = Directory.GetCurrentDirectory() + "\\Extensions";
 
             foreach (var f in Directory.GetFiles(path, "*.dll"))
             {
                 //        - load all dll files
                 //        - register views 
                 log.Debug("loading dll for views : " + f);
-                Assembly a = Assembly.LoadFile(f);
+                Assembly a = Assembly.Load(f);
                 foreach (var t in a.GetTypes())
                 {
                     foreach (var att in t.GetCustomAttributes(typeof(RegisterViewAttribute), false))

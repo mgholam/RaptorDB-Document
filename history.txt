@@ -44,8 +44,8 @@ v1.4
 - changed to SafeSortedList for thread safe indexes
 - add auto installer RaptorDBServer service
 - performance optimized tcp network layer
-- added dual mode usage to the windows application (embeded, server)
+- added dual mode usage to the windows application (embedded, server)
 - code cleanup
-
-
+- added IRaptorDB interface to allow you to switch between embedded and client seamlessly
+- load views from the Extensions folder in server mode
 

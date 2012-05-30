@@ -95,6 +95,7 @@ namespace fastJSON
 
         public object Parse(string json)
         {
+            _params = Parameters;
             return new JsonParser(json, Parameters.IgnoreCaseOnDeserialize).Decode();
         }
 
@@ -110,6 +111,7 @@ namespace fastJSON
 
         public object ToObject(string json, Type type)
         {
+            _params = Parameters;
             Dictionary<string, object> ht = new JsonParser(json, Parameters.IgnoreCaseOnDeserialize).Decode() as Dictionary<string, object>;
             if (ht == null) return null;
             return ParseDictionary(ht, null, type, null);
@@ -122,6 +124,7 @@ namespace fastJSON
 
         public object FillObject(object input, string json)
         {
+            _params = Parameters;
             Dictionary<string, object> ht = new JsonParser(json, Parameters.IgnoreCaseOnDeserialize).Decode() as Dictionary<string, object>;
             if (ht == null) return null;
             return ParseDictionary(ht, null, input.GetType(), input);
