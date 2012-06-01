@@ -53,6 +53,7 @@
     <Compile Include="IRaptorDB.cs" />
     <Compile Include="LINQString.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="MiniLZO.cs" />
     <Compile Include="MurMurHash2.cs" />
     <Compile Include="NetworkClient.cs" />
     <Compile Include="Packets.cs" />

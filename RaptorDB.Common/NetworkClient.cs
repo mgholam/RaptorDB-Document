@@ -14,7 +14,13 @@ namespace RaptorDB.Common
     {
         public static int BufferSize = 32 * 1024;
         public static int LogDataSizesOver = 1000000;
+        public static int CompressDataOver = 1000000;
     }
+
+    //
+    // Header bits format : 0 - json = 1 , bin = 0 
+    //                      1 - binaryjson = 1 , text json = 0
+    //                      2 - compressed = 1 , uncompressed = 0 
 
     // FEATURE : compress data over x Mb  
     public class NetworkClient
@@ -62,7 +68,9 @@ namespace RaptorDB.Common
                     bytesRead +=
                       chunksize = n.Read
                         (recd, bytesRead, c - bytesRead);
-                if (rechdr[0] == (byte)3)
+                if ((rechdr[0] & (byte)4) == (byte)4)
+                    recd = MiniLZO.Decompress(recd);
+                if ((rechdr[0] & (byte)3) == (byte)3)
                     return fastBinaryJSON.BJSON.Instance.ToObject(recd);
             }
             return null;
@@ -157,14 +165,21 @@ namespace RaptorDB.Common
                     object o = fastBinaryJSON.BJSON.Instance.ToObject(data);
 
                     object r = _handler(o);
-
+                    bool compressed = false;
                     data = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
+                    if (data.Length > Param.CompressDataOver)
+                    {
+                        log.Debug("compressing data over limit : " + data.Length.ToString("#,#"));
+                        compressed = true;
+                        data = MiniLZO.Compress(data);
+                        log.Debug("new size : " + data.Length.ToString("#,#"));
+                    }
                     if (data.Length > Param.LogDataSizesOver)
                         log.Debug("data size (bytes) = " + data.Length.ToString("#,#"));
 
                     byte[] b = BitConverter.GetBytes(data.Length);
                     byte[] hdr = new byte[5];
-                    hdr[0] = (byte)3;
+                    hdr[0] = (byte)(3 + (compressed ? 4 : 0));
                     Array.Copy(b, 0, hdr, 1, 4);
                     n.Write(hdr, 0, 5);
                     n.Write(data, 0, data.Length);

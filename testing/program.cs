@@ -33,7 +33,6 @@ namespace testing
             Console.ReadLine();
             server.Shutdown();
             return;
-
             /*
             RaptorDB.RaptorDB rap = RaptorDB.RaptorDB.Open(@"..\..\..\RaptorDBdata");
 

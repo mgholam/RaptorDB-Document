@@ -117,11 +117,17 @@ namespace RaptorDB
         private void Initialize()
         {
             // exe folder
-            // |-Data
+            // |-Backup
+            // |-Restore
             // |-Extensions
+            string mpath = Directory.GetCurrentDirectory();
+
+            Directory.CreateDirectory(mpath + "\\Extensions");
+            Directory.CreateDirectory(mpath + "\\Backup");
+            Directory.CreateDirectory(mpath + "\\Restore");
 
             // open extensions folder
-            string path = Directory.GetCurrentDirectory() + "\\Extensions";
+            string path = mpath + "\\Extensions";
 
             foreach (var f in Directory.GetFiles(path, "*.dll"))
             {

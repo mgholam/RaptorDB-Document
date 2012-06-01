@@ -49,3 +49,7 @@ v1.4
 - added IRaptorDB interface to allow you to switch between embedded and client seamlessly
 - load views from the Extensions folder in server mode
 
+v1.5
+----
+- compressing network traffic over Param.CompressDataOver limit with MiniLZO
+- 
