@@ -221,6 +221,11 @@ namespace RaptorDB.Views
             File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
         }
 
+        internal void Delete(Guid docid)
+        {
+            DeleteRowsWith(docid);
+        }
+        
         #region [  private methods  ]
 
         private void CreateResultRowFiller()
@@ -338,6 +343,7 @@ public class rf : RaptorDB.IRowFiller
             int c = docs.RecordCount();
             for (int i = 0; i < c; i++)
             {
+                // FIX : handle deleted items
                 Guid docid = Guid.Empty;
                 byte[] b = docs.Get(i, out docid);
                 if (b != null)

@@ -53,7 +53,7 @@ namespace RaptorDB
     }
 
 
-    public class Statistics
+    internal class Statistics
     {
         public int PageCount = 0;
         public double TotalSplitTime = 0;
@@ -117,10 +117,10 @@ namespace RaptorDB
 
             if (exp == RDBExpression.Less || exp == RDBExpression.LessEqual)
                 return doLessOp(exp, key);
-            
+
             else if (exp == RDBExpression.Greater || exp == RDBExpression.GreaterEqual)
                 return doMoreOp(exp, key);
-            
+
             return new WAHBitArray(); // blank results 
         }
 
@@ -149,6 +149,8 @@ namespace RaptorDB
                 {
                     // new item 
                     ki = new KeyInfo(val);
+                    if (_AllowDuplicates)
+                        SaveDuplicate(key, ref ki);
                     pi.UniqueCount++;
                     page.tree.Add(key, ki);
                 }
@@ -234,17 +236,18 @@ namespace RaptorDB
                 pi.UniqueCount--;
                 // FEATURE : decrease dup count
             }
+            page.isDirty = true;
             return b;
         }
 
-        public Statistics GetStatistics()
-        {
-            Statistics s = new Statistics();
-            s.TotalSplitTime = _totalsplits;
-            s.PageCount = _pageList.Count;
+        //public Statistics GetStatistics()
+        //{
+        //    Statistics s = new Statistics();
+        //    s.TotalSplitTime = _totalsplits;
+        //    s.PageCount = _pageList.Count;
 
-            return s;
-        }
+        //    return s;
+        //}
 
         #region [  P R I V A T E  ]
         private WAHBitArray doMoreOp(RDBExpression exp, T key)
@@ -270,12 +273,17 @@ namespace RaptorDB
             for (int i = pos; i < keys.Length; i++)
             {
                 T k = keys[i];
+                int bn = page.tree[k].DuplicateBitmapNumber;
+                if (bn == -1)
+                {
+                    // FIX:
+                }
 
                 if (k.CompareTo(key) > 0)
-                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
+                    result = result.Or(_index.GetDuplicateBitmap(bn));
 
                 if (exp == RDBExpression.GreaterEqual && k.CompareTo(key) == 0)
-                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
+                    result = result.Or(_index.GetDuplicateBitmap(bn));
             }
             return result;
         }
@@ -300,12 +308,16 @@ namespace RaptorDB
                 T k = keys[i];
                 if (k.CompareTo(key) > 0)
                     break;
-
+                int bn = page.tree[k].DuplicateBitmapNumber;
+                if (bn == -1)
+                {
+                    // FIX:
+                }
                 if (k.CompareTo(key) < 0)
-                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
+                    result = result.Or(_index.GetDuplicateBitmap(bn));
 
                 if (exp == RDBExpression.LessEqual && k.CompareTo(key) == 0)
-                    result = result.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
+                    result = result.Or(_index.GetDuplicateBitmap(bn));
             }
             return result;
         }
@@ -317,10 +329,15 @@ namespace RaptorDB
             KeyInfo k;
             if (page.tree.TryGetValue(key, out k))
             {
+                int bn = k.DuplicateBitmapNumber;
+                if (bn == -1)
+                {
+                    // FIX:
+                }
                 if (exp == RDBExpression.Equal)
-                    return _index.GetDuplicateBitmap(k.DuplicateBitmapNumber);
+                    return _index.GetDuplicateBitmap(bn);
                 else
-                    return _index.GetDuplicateBitmap(k.DuplicateBitmapNumber).Not();
+                    return _index.GetDuplicateBitmap(bn).Not();
             }
             else
                 return new WAHBitArray();
@@ -332,7 +349,12 @@ namespace RaptorDB
             T[] keys = page.tree.Keys(); // avoid sync issues
             foreach (var k in keys)
             {
-                res = res.Or(_index.GetDuplicateBitmap(page.tree[k].DuplicateBitmapNumber));
+                int bn = page.tree[k].DuplicateBitmapNumber;
+                if (bn == -1)
+                {
+                    // FIX:
+                }
+                res = res.Or(_index.GetDuplicateBitmap(bn));
             }
         }
 

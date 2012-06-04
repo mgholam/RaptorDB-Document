@@ -225,5 +225,12 @@ namespace RaptorDB.Views
 
             return "";
         }
+
+        internal void Delete(Guid docid)
+        {
+            // remove from all views
+            foreach (var v in _views)
+                v.Value.Delete(docid);
+        }
     }
 }

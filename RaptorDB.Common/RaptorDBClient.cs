@@ -26,7 +26,7 @@ namespace RaptorDB
             Packet p = CreatePacket();
             p.Command = "save";
             p.Docid = docID;
-            p.Data =  document;
+            p.Data = document;
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return ret.OK;
         }
@@ -36,7 +36,7 @@ namespace RaptorDB
             Packet p = CreatePacket();
             p.Command = "savebytes";
             p.Docid = docID;
-            p.Data = bytes ;
+            p.Data = bytes;
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return ret.OK;
         }
@@ -67,7 +67,7 @@ namespace RaptorDB
         {
             Packet p = CreatePacket();
             p.Command = "querytype";
-            p.Data = new object[] { view.AssemblyQualifiedName , ""};
+            p.Data = new object[] { view.AssemblyQualifiedName, "" };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (Result)ret.Data;
         }
@@ -103,7 +103,7 @@ namespace RaptorDB
             Packet p = CreatePacket();
             p.Command = "querystr";
             p.Viewname = viewname;
-            p.Data =  ls.sb.ToString();
+            p.Data = ls.sb.ToString();
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (Result)ret.Data;
         }
@@ -165,6 +165,32 @@ namespace RaptorDB
             _client.Close();
         }
 
+        public bool Backup()
+        {
+            Packet p = CreatePacket();
+            p.Command = "backup";
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return ret.OK;
+        }
+
+        public bool Delete(Guid docid)
+        {
+            Packet p = CreatePacket();
+            p.Command = "delete";
+            p.Docid = docid;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return ret.OK;
+        }
+
+        public bool DeleteBytes(Guid fileid)
+        {
+            Packet p = CreatePacket();
+            p.Command = "deletebytes";
+            p.Docid = fileid;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return ret.OK;
+        }
+
         //public List<string> GetViews()
         //{
         //    return null;
@@ -180,7 +206,7 @@ namespace RaptorDB
             Packet p = new Packet();
             p.Username = _username;
             p.PasswordHash = _password;
-            
+
             return p;
         }
     }

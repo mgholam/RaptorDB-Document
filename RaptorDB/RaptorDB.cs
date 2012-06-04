@@ -30,10 +30,13 @@ namespace RaptorDB
         private KeyStoreGuid _fileStore;
         private string _Path = "";
         private int _LastRecordNumberProcessed = -1; // used by background saver
+        private int _LastBackupRecordNumber = -1;
         private int _CurrentRecordNumber = -1;
         private System.Timers.Timer _saveTimer;
         private bool _shuttingdown = false;
         private bool _pauseindexer = false;
+        private bool _enableBackup = false;
+        private bool _backupDone = false;
 
         internal string GetViewName(Type type)
         {
@@ -52,17 +55,17 @@ namespace RaptorDB
             return true;
         }
 
-        //public bool Delete(Guid docid)
-        //{
-        //    // FIX : here
-        //    return false;
-        //}
+        public bool Delete(Guid docid)
+        {
+            bool b = _objStore.Delete(docid);
+            _viewManager.Delete(docid);
+            return b;
+        }
 
-        //public bool DeleteBytes(Guid bytesid)
-        //{
-        //    // FIX : here
-        //    return false;
-        //}
+        public bool DeleteBytes(Guid bytesid)
+        {
+            return _fileStore.Delete(bytesid);
+        }
 
         /// <summary>
         /// Save a document
@@ -212,6 +215,18 @@ namespace RaptorDB
             _objStore.Shutdown();
             _fileStore.Shutdown();
             LogManager.Shutdown();
+        }
+
+        private object _backuplock = new object();
+        public bool Backup()
+        {
+            lock (_backuplock)
+            {
+                _log.Debug("Backup Started");
+                // FIX : add backup code here
+
+                return false;
+            }
         }
 
         public void Dispose()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using RaptorDB.Common;
 
 namespace RaptorDB
 {
@@ -123,6 +124,12 @@ namespace RaptorDB
         private void ReadFile()
         {
             byte[] b = File.ReadAllBytes(_path + _filename);
+            List<uint> ints = new List<uint>();
+            for (int i = 0; i < b.Length / 4; i++)
+            {
+                ints.Add((uint)Helper.ToInt32(b, i * 4));
+            }
+            _bits = new WAHBitArray(WAHBitArray.TYPE.Compressed_WAH, ints.ToArray());
         }
 
         internal WAHBitArray Not()

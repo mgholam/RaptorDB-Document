@@ -192,11 +192,6 @@ namespace RaptorDB
             return false;
         }
 
-        //public int Count(bool includeDuplicates)
-        //{
-        //    return _db.Count(includeDuplicates);
-        //}
-
         public void SaveIndex()
         {
             _db.SaveIndex();
@@ -233,6 +228,7 @@ namespace RaptorDB
             docid = Guid.Empty;
             byte[] buffer = _db.FetchRecordBytes(recnumber);
             if (buffer == null) return null;
+            if (buffer.Length == 0) return null;
             byte[] key;
             byte[] val;
             // unpack data
@@ -244,6 +240,13 @@ namespace RaptorDB
         internal int RecordCount()
         {
             return _db.RecordCount();
+        }
+
+        internal bool Delete(Guid key)
+        {
+            byte[] bkey = key.ToByteArray();
+            int hc = (int)Helper.MurMur.Hash(bkey);
+            return _db.Delete(hc);
         }
     }
     #endregion
@@ -372,6 +375,12 @@ namespace RaptorDB
                 log.Debug("Shutting down log");
                 LogManager.Shutdown();
             }
+        }
+
+        public bool Delete(T id)
+        {
+            _archive.WriteData(id, null, true);
+            return _index.RemoveKey(id);
         }
 
         #region [            P R I V A T E     M E T H O D S              ]

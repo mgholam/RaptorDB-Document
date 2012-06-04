@@ -14,7 +14,7 @@ namespace System.Linq.Dynamic
     // FEATURE : cleanup unused code here
 
     #region [  Classes  ]
-    public abstract class DynamicClass
+    internal abstract class DynamicClass
     {
         public override string ToString()
         {
@@ -33,7 +33,7 @@ namespace System.Linq.Dynamic
         }
     }
 
-    public class DynamicProperty
+    internal class DynamicProperty
     {
         string name;
         Type type;
@@ -57,7 +57,7 @@ namespace System.Linq.Dynamic
         }
     }
 
-    public static class DynamicExpression
+    internal static class DynamicExpression
     {
         public static Expression Parse(Type resultType, string expression, params object[] values)
         {
@@ -309,7 +309,7 @@ namespace System.Linq.Dynamic
         }
     }
 
-    public sealed class ParseException : Exception
+    internal sealed class ParseException : Exception
     {
         int position;
 
@@ -333,7 +333,7 @@ namespace System.Linq.Dynamic
 
     internal class ExpressionParser
     {
-        #region [ internal ] 
+        #region [ internal ]
         struct Token
         {
             public TokenId id;
@@ -1004,6 +1004,11 @@ namespace System.Linq.Dynamic
                 //}
                 else
                 {
+                    if (left.Type == typeof(Guid))
+                        right = Expression.Constant(Guid.Parse(right.ToString().Replace("\"", "").Replace("'","")));
+                    else if (left.Type == typeof(DateTime))
+                        right = Expression.Constant(DateTime.Parse(right.ToString().Replace("\"", "").Replace("'", "")));
+                    else
                     CheckAndPromoteOperands(isEquality ? typeof(IEqualitySignatures) : typeof(IRelationalSignatures),
                         op.text, ref left, ref right, op.pos);
                 }

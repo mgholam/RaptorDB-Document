@@ -10,21 +10,20 @@ using System.Threading.Tasks;
 
 namespace RaptorDB.Common
 {
-    internal static class Param
-    {
-        public static int BufferSize = 32 * 1024;
-        public static int LogDataSizesOver = 1000000;
-        public static int CompressDataOver = 1000000;
-    }
-
     //
     // Header bits format : 0 - json = 1 , bin = 0 
     //                      1 - binaryjson = 1 , text json = 0
     //                      2 - compressed = 1 , uncompressed = 0 
 
-    // FEATURE : compress data over x Mb  
     public class NetworkClient
     {
+        internal static class Config
+        {
+            public static int BufferSize = 32 * 1024;
+            public static int LogDataSizesOver = 1000000;
+            public static int CompressDataOver = 1000000;
+        }
+
         public NetworkClient(string server, int port)
         {
             _server = server;
@@ -35,12 +34,11 @@ namespace RaptorDB.Common
         private int _port;
 
         public bool UseBJSON = true;
-        //public bool Compress = false;
 
         public void Connect()
         {
             _client = new TcpClient(_server, _port);
-            _client.SendBufferSize = Param.BufferSize;
+            _client.SendBufferSize = Config.BufferSize;
             _client.ReceiveBufferSize = _client.SendBufferSize;
         }
 
@@ -167,14 +165,14 @@ namespace RaptorDB.Common
                     object r = _handler(o);
                     bool compressed = false;
                     data = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
-                    if (data.Length > Param.CompressDataOver)
+                    if (data.Length > RaptorDB.Common.NetworkClient.Config.CompressDataOver)
                     {
                         log.Debug("compressing data over limit : " + data.Length.ToString("#,#"));
                         compressed = true;
                         data = MiniLZO.Compress(data);
                         log.Debug("new size : " + data.Length.ToString("#,#"));
                     }
-                    if (data.Length > Param.LogDataSizesOver)
+                    if (data.Length > RaptorDB.Common.NetworkClient.Config.LogDataSizesOver)
                         log.Debug("data size (bytes) = " + data.Length.ToString("#,#"));
 
                     byte[] b = BitConverter.GetBytes(data.Length);

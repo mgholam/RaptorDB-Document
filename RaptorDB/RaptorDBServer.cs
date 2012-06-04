@@ -97,6 +97,15 @@ namespace RaptorDB
                     case "fetchbytes":
                         ret.Data = _raptor.FetchBytes(p.Docid);
                         break;
+                    case "backup":
+                        ret.OK = _raptor.Backup();
+                        break;
+                    case "delete":
+                        ret.OK = _raptor.Delete(p.Docid);
+                        break;
+                    case "deletebytes":
+                        ret.OK = _raptor.DeleteBytes(p.Docid);
+                        break;
                 }
             }
             catch (Exception ex)

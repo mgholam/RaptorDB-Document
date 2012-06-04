@@ -18,7 +18,6 @@ namespace RaptorDB.Views
         {
             qexpression = express;
         }
-        //public StringBuilder sb = new StringBuilder();
         public Stack<object> _stack = new Stack<object>();
         public Stack<object> _bitmap = new Stack<object>();
         //QueryFromTo qfromto;
@@ -26,7 +25,6 @@ namespace RaptorDB.Views
 
         protected override Expression VisitBinary(BinaryExpression b)
         {
-            //sb.Append("(");
             this.Visit(b.Left);
             ExpressionType t = b.NodeType;
 
@@ -34,48 +32,8 @@ namespace RaptorDB.Views
                t == ExpressionType.GreaterThan || t == ExpressionType.GreaterThanOrEqual)
                 _stack.Push(b.NodeType);
 
-            #region [  stringbuilder  ]
-            //switch (b.NodeType)
-            //{
-            //    //case ExpressionType.Not:
-            //    //    sb.Append(" NOT ");
-            //    //    break;
-            //    //case ExpressionType.AndAlso:
-            //    //case ExpressionType.And:
-            //    //    sb.Append(" AND ");
-            //    //    break;
-            //    //case ExpressionType.OrElse:
-            //    //case ExpressionType.Or:
-            //    //    sb.Append(" OR ");
-            //    //    break;
-            //    case ExpressionType.Equal:
-            //        //sb.Append(" = ");
-            //        _stack.Push(b.NodeType);
-            //        break;
-            //    //case ExpressionType.NotEqual:
-            //    //    sb.Append(" <> ");
-            //    //    break;
-            //    case ExpressionType.LessThan:
-            //        //sb.Append(" < ");
-            //        _stack.Push(b.NodeType);
-            //        break;
-            //    case ExpressionType.LessThanOrEqual:
-            //        //sb.Append(" <= ");
-            //        _stack.Push(b.NodeType);
-            //        break;
-            //    case ExpressionType.GreaterThan:
-            //        //sb.Append(" > ");
-            //        _stack.Push(b.NodeType);
-            //        break;
-            //    case ExpressionType.GreaterThanOrEqual:
-            //        //sb.Append(" >= ");
-            //        _stack.Push(b.NodeType);
-            //        break;
-            //} 
-            #endregion
 
             this.Visit(b.Right);
-            //sb.Append(")");
             t = b.NodeType;
             if (t == ExpressionType.Equal || t == ExpressionType.NotEqual ||
                 t == ExpressionType.LessThanOrEqual || t == ExpressionType.LessThan ||
@@ -115,7 +73,6 @@ namespace RaptorDB.Views
         {
             string s = m.ToString();
             _stack.Push(s.Substring(s.IndexOf('.') + 1));
-            //sb.Append(s.Substring(s.IndexOf('.') + 1));
             return m;
         }
 
@@ -128,11 +85,9 @@ namespace RaptorDB.Views
                 Type t = c.Value.GetType();
                 var x = t.InvokeMember(m.Member.Name, BindingFlags.GetField, null, c.Value, null);
                 _stack.Push(x);
-                //sb.Append(x);
             }
             if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
             {
-                //sb.Append(m.Member.Name);
                 _stack.Push(m.Member.Name);
                 return e;
             }
@@ -145,38 +100,16 @@ namespace RaptorDB.Views
             if (q != null)
             {
                 _stack.Push(q.ElementType.Name);
-                //sb.Append(q.ElementType.Name);
             }
             else if (c.Value == null)
             {
                 _stack.Push(null);
-                //sb.Append("NULL");
             }
             else
             {
                 _stack.Push(c.Value);
-                if (Type.GetTypeCode(c.Value.GetType()) == TypeCode.Object)
-                    _stack.Pop();
-
-                #region [  stringbuilder  ]
-                //switch (Type.GetTypeCode(c.Value.GetType()))
-                //{
-                //    case TypeCode.Boolean:
-                //        sb.Append(((bool)c.Value) ? 1 : 0);
-                //        break;
-                //    case TypeCode.String:
-                //        sb.Append("'");
-                //        sb.Append(c.Value);
-                //        sb.Append("'");
-                //        break;
-                //    case TypeCode.Object:
-                //        _stack.Pop();
-                //        break;
-                //    default:
-                //        sb.Append(c.Value);
-                //        break;
-                //} 
-                #endregion
+                //if (Type.GetTypeCode(c.Value.GetType()) == TypeCode.Object)
+                //    _stack.Pop();
             }
             return c;
         }

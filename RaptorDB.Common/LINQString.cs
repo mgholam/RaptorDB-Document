@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RaptorDB
 {
-	internal class LINQString : ExpressionVisitor
+	public class LINQString : ExpressionVisitor
 	{
 		public LINQString()
 		{

@@ -52,4 +52,6 @@ v1.4
 v1.5
 ----
 - compressing network traffic over Param.CompressDataOver limit with MiniLZO
-- 
+- added Delete(docid) and DeleteBytes(fileid)
+- added ability to query Guid and DateTime in string form
+-

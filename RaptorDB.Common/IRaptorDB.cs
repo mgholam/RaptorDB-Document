@@ -17,6 +17,10 @@ namespace RaptorDB.Common
         Result Query<T>(Type type, Expression<Predicate<T>> filter);
         object Fetch(Guid docID);
         byte[] FetchBytes(Guid fileID);
-        void Shutdown();     
+        void Shutdown();
+
+        bool Backup();
+        bool Delete(Guid docid);
+        bool DeleteBytes(Guid fileid);
     }
 }
