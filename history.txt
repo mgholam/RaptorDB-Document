@@ -54,4 +54,10 @@ v1.5
 - compressing network traffic over Param.CompressDataOver limit with MiniLZO
 - added Delete(docid) and DeleteBytes(fileid)
 - added ability to query Guid and DateTime in string form
+- bug fix reading boolean indexes
+- added tar format for backup from http://code.google.com/p/tar-cs/
+- rebuild view and background indexer handles deleted docs
+- added authentication via users.config file in server mode
+- Backup & Restore data
 -
+

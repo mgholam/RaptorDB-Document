@@ -27,6 +27,12 @@ namespace RaptorDB.Common
         {
             OK = ok;
         }
+        public ReturnPacket(bool ok, string err)
+        {
+            OK = ok;
+            Error = err;
+        }
+        public string Error { get; set; }
         public bool OK { get; set; }
         //public int Token { get; set; }
         //public int Session { get; set; }

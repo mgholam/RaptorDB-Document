@@ -9,6 +9,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Reflection;
 using RaptorDB.Common;
+using System.IO.Compression;
 
 namespace RaptorDB
 {
@@ -206,9 +207,11 @@ namespace RaptorDB
                 return;
 
             _shuttingdown = true;
-            // save _LastRecordNumberProcessed 
+            // save records 
             _log.Debug("last record = " + _LastRecordNumberProcessed);
             File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
+            _log.Debug("last backup record = " + _LastBackupRecordNumber);
+            File.WriteAllBytes(_Path + "Data\\_lastbackuprecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
             _log.Debug("Shutting down");
             _saveTimer.Stop();
             _viewManager.ShutDown();
@@ -218,14 +221,56 @@ namespace RaptorDB
         }
 
         private object _backuplock = new object();
+        /// <summary>
+        /// Backup the document storage file incrementally to "Backup" folder
+        /// </summary>
+        /// <returns>True = done</returns>
         public bool Backup()
         {
+            if (_LastBackupRecordNumber >= _CurrentRecordNumber)
+                return false;
             lock (_backuplock)
             {
                 _log.Debug("Backup Started");
-                // FIX : add backup code here
+                string p = _Path + "Temp\\" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm");
+                Directory.CreateDirectory(p);
+                StorageFile<int> backup = new StorageFile<int>(p + "\\backup.mgdat");
+                _log.Debug("Copying data to backup");
+                if (_LastBackupRecordNumber == -1)
+                    _LastBackupRecordNumber = 0;
+                int rec = _objStore.CopyTo(backup, _LastBackupRecordNumber);
+                backup.Shutdown();
+                _LastBackupRecordNumber = rec;
+                _log.Debug("Last backup rec# = " + rec);
 
-                return false;
+                // compress the tar
+                using (FileStream read = File.OpenRead(p+ "\\backup.mgdat"))
+                {
+                    using (FileStream outp = File.Create(p + "\\backup.mgdat.gz"))
+                    {
+                        Compress(read, outp);
+                    }
+                }
+                _log.Debug("Backup compressed and done");
+                File.Move(p + "\\backup.mgdat.gz", _Path + "Backup\\" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm") + ".mgdat.gz");
+
+                // cleanup temp folder
+                Directory.Delete(p, true);
+                return true;
+            }
+        }
+        private object _restoreLock = new object();
+        /// <summary>
+        /// Start background restore of backups in the "Restore" folder
+        /// </summary>
+        public void Restore()
+        {
+            lock (_restoreLock)
+            {
+                // FIX : do restore 
+                string[] files = Directory.GetFiles(_Path + "Restore\\");
+                Array.Sort(files);
+
             }
         }
 
@@ -237,6 +282,29 @@ namespace RaptorDB
         }
 
         #region [            P R I V A T E     M E T H O D S              ]
+
+        private static void Pump(Stream input, Stream output)
+        {
+            byte[] bytes = new byte[4096 * 2];
+            int n;
+            while ((n = input.Read(bytes, 0, bytes.Length)) != 0)
+            {
+                output.Write(bytes, 0, n);
+            }
+        }
+
+        private static void Compress(Stream source, Stream destination)
+        {
+            // We must explicitly close the output stream, or GZipStream will not
+            // write the compression's footer to the file.  So we'll get a file, but
+            // we won't be able to decompress it.  We'll get back 0 bytes.
+            using (GZipStream output = new GZipStream(destination, CompressionMode.Compress))
+            {
+                Pump(source, output);
+            }
+        }
+
+
         private void SaveToConsistentViews<T>(Guid docid, T data)
         {
             List<string> list = _viewManager.GetConsistentViews(data.GetType());
@@ -296,7 +364,10 @@ namespace RaptorDB
             Directory.CreateDirectory(_Path + "Data");
             Directory.CreateDirectory(_Path + "Views");
             Directory.CreateDirectory(_Path + "Logs");
-
+            Directory.CreateDirectory(_Path + "Temp");
+            Directory.CreateDirectory(_Path + "Backup");
+            Directory.CreateDirectory(_Path + "Restore");
+            Directory.CreateDirectory(_Path + "Restore\\Done");
             // load logger
             LogManager.Configure(_Path + "Logs\\log.txt", 500, false);
 
@@ -315,6 +386,12 @@ namespace RaptorDB
                 byte[] b = File.ReadAllBytes(_Path + "Data\\_lastrecord.rec");
                 _LastRecordNumberProcessed = Helper.ToInt32(b, 0, false);
             }
+            // load _LastBackupRecordNumber 
+            if (File.Exists(_Path + "Data\\_lastbackuprecord.rec"))
+            {
+                byte[] b = File.ReadAllBytes(_Path + "Data\\_lastbackuprecord.rec");
+                _LastBackupRecordNumber = Helper.ToInt32(b, 0, false);
+            }
             _CurrentRecordNumber = _objStore.RecordCount();
 
             otherviews = this.GetType().GetMethod("SaveInOtherViews", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -326,7 +403,7 @@ namespace RaptorDB
             _saveTimer.AutoReset = true;
             _saveTimer.Start();
         }
-
+        
         private void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             _log.Debug("appdomain closing");
@@ -362,18 +439,24 @@ namespace RaptorDB
                         return;
                     _LastRecordNumberProcessed++;
                     Guid docid;
-                    byte[] b = _objStore.Get(_LastRecordNumberProcessed, out docid);
-                    if (b == null)
+                    bool isdeleted = false;
+                    byte[] b = _objStore.Get(_LastRecordNumberProcessed, out docid, out isdeleted);
+                    if (isdeleted)
+                        _viewManager.Delete(docid);
+                    else
                     {
-                        _log.Debug("byte[] is null");
-                        _log.Debug("curr rec = " + _CurrentRecordNumber);
-                        _log.Debug("last rec = " + _LastRecordNumberProcessed);
-                        continue;
-                    }
-                    object obj = CreateObject(b);
+                        if (b == null)
+                        {
+                            _log.Debug("byte[] is null");
+                            _log.Debug("curr rec = " + _CurrentRecordNumber);
+                            _log.Debug("last rec = " + _LastRecordNumberProcessed);
+                            continue;
+                        }
+                        object obj = CreateObject(b);
 
-                    var m = otherviews.MakeGenericMethod(new Type[] { obj.GetType() });
-                    m.Invoke(this, new object[] { docid, obj });
+                        var m = otherviews.MakeGenericMethod(new Type[] { obj.GetType() });
+                        m.Invoke(this, new object[] { docid, obj });
+                    }
 
                     batch--;
                 }

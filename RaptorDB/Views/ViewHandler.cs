@@ -343,22 +343,27 @@ public class rf : RaptorDB.IRowFiller
             int c = docs.RecordCount();
             for (int i = 0; i < c; i++)
             {
-                // FIX : handle deleted items
                 Guid docid = Guid.Empty;
-                byte[] b = docs.Get(i, out docid);
-                if (b != null)
-                {
-                    // FEATURE : optimize this by not creating the object if not in FireOnTypes
-                    object obj = CreateObject(b);
-                    Type t = obj.GetType();
-                    if (_view.FireOnTypes.Contains(t.AssemblyQualifiedName))
-                    {
-                        var m = view.MakeGenericMethod(new Type[] { obj.GetType() });
-                        m.Invoke(this, new object[] { docid, obj });
-                    }
-                }
+                bool isdeleted = false;
+                byte[] b = docs.Get(i, out docid, out isdeleted);
+                if (isdeleted)
+                    Delete(docid);
                 else
-                    _log.Error("Doc is null : " + docid);
+                {
+                    if (b != null)
+                    {
+                        // FEATURE : optimize this by not creating the object if not in FireOnTypes
+                        object obj = CreateObject(b);
+                        Type t = obj.GetType();
+                        if (_view.FireOnTypes.Contains(t.AssemblyQualifiedName))
+                        {
+                            var m = view.MakeGenericMethod(new Type[] { obj.GetType() });
+                            m.Invoke(this, new object[] { docid, obj });
+                        }
+                    }
+                    else
+                        _log.Error("Doc is null : " + docid);
+                }
             }
             _log.Debug("rebuild done (s) = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
         }

@@ -14,6 +14,7 @@ namespace RaptorDB
     {
         public RaptorDBServer(int port, string DataPath)
         {
+            _path = Directory.GetCurrentDirectory();
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
             _server = new NetworkServer();
             _raptor = RaptorDB.Open(DataPath);
@@ -22,6 +23,9 @@ namespace RaptorDB
             Initialize();
             _server.Start(port, processpayload);
         }
+
+        private Dictionary<string, uint> _users = new Dictionary<string, uint>();
+        private string _path = "";
 
         Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
@@ -57,17 +61,31 @@ namespace RaptorDB
 
         public void Shutdown()
         {
+            WriteUsers();
             _server.Stop();
             _raptor.Shutdown();
         }
 
+        private void WriteUsers()
+        {
+            // write users to user.config file
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("# FORMAT : username , pasword hash");
+            sb.AppendLine("# To disable a user comment the line with the '#'");
+            foreach (var kv in _users)
+            {
+                sb.AppendLine(kv.Key + " , " + kv.Value);
+            }
+
+            File.WriteAllText(_path + "\\users.config", sb.ToString());
+        }
 
         private object processpayload(object data)
         {
             Packet p = (Packet)data;
 
             if (Authenticate(p) == false)
-                return new ReturnPacket(false);
+                return new ReturnPacket(false, "Authentication failed");
 
             ReturnPacket ret = new ReturnPacket(true);
             try
@@ -106,6 +124,10 @@ namespace RaptorDB
                     case "deletebytes":
                         ret.OK = _raptor.DeleteBytes(p.Docid);
                         break;
+                    case "restore":
+                        ret.OK = true;
+                        Task.Factory.StartNew(() => _raptor.Restore());
+                        break;
                 }
             }
             catch (Exception ex)
@@ -118,25 +140,40 @@ namespace RaptorDB
 
         private bool Authenticate(Packet p)
         {
-            // FIX : add authentication here
-            if (p.Username == "admin") return true;
+            uint pwd;
+            if (_users.TryGetValue(p.Username, out pwd))
+            {
+                uint hash = uint.Parse(p.PasswordHash);
+                if (hash == pwd) return true;
+            }
+            log.Debug("Authentication failed for '" + p.Username + "' hash = " + p.PasswordHash);
             return false;
         }
 
         private void Initialize()
         {
-            // exe folder
-            // |-Backup
-            // |-Restore
-            // |-Extensions
-            string mpath = Directory.GetCurrentDirectory();
+            // load users here
+            if (File.Exists(_path + "\\users.config"))
+            {
+                foreach (string line in File.ReadAllLines(_path + "\\users.config"))
+                {
+                    if (line.Contains("#") == false)
+                    {
+                        string[] s = line.Split(',');
+                        _users.Add(s[0].Trim(), uint.Parse(s[1].Trim()));
+                    }
+                }
+            }
+            // add default admin user if not exists
+            if (_users.ContainsKey("admin") == false)
+                _users.Add("admin", Helper.MurMur.Hash(Encoding.UTF8.GetBytes("admin|admin")));
 
-            Directory.CreateDirectory(mpath + "\\Extensions");
-            Directory.CreateDirectory(mpath + "\\Backup");
-            Directory.CreateDirectory(mpath + "\\Restore");
+            // exe folder
+            // |-Extensions
+            Directory.CreateDirectory(_path + "\\Extensions");
 
             // open extensions folder
-            string path = mpath + "\\Extensions";
+            string path = _path + "\\Extensions";
 
             foreach (var f in Directory.GetFiles(path, "*.dll"))
             {

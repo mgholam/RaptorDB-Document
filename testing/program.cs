@@ -29,7 +29,7 @@ namespace testing
             Console.WriteLine("Server started on port 90");
             Console.WriteLine("Press Enter to exit...");
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
-
+            
             Console.ReadLine();
             server.Shutdown();
             return;

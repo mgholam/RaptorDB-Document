@@ -225,16 +225,8 @@ namespace RaptorDB
 
         internal byte[] Get(int recnumber, out Guid docid)
         {
-            docid = Guid.Empty;
-            byte[] buffer = _db.FetchRecordBytes(recnumber);
-            if (buffer == null) return null;
-            if (buffer.Length == 0) return null;
-            byte[] key;
-            byte[] val;
-            // unpack data
-            UnpackData(buffer, out val, out key);
-            docid = new Guid(key);
-            return val;
+            bool isdeleted = false;
+            return Get(recnumber, out docid, out isdeleted);
         }
 
         internal int RecordCount()
@@ -247,6 +239,25 @@ namespace RaptorDB
             byte[] bkey = key.ToByteArray();
             int hc = (int)Helper.MurMur.Hash(bkey);
             return _db.Delete(hc);
+        }
+
+        internal byte[] Get(int recnumber, out Guid docid, out bool isdeleted)
+        {
+            docid = Guid.Empty;
+            byte[] buffer = _db.FetchRecordBytes(recnumber, out isdeleted);
+            if (buffer == null) return null;
+            if (buffer.Length == 0) return null;
+            byte[] key;
+            byte[] val;
+            // unpack data
+            UnpackData(buffer, out val, out key);
+            docid = new Guid(key);
+            return val;
+        }
+
+        internal int CopyTo(StorageFile<int> backup, int start)
+        {
+            return _db.CopyTo(backup, start);
         }
     }
     #endregion
@@ -463,6 +474,16 @@ namespace RaptorDB
         internal int RecordCount()
         {
             return _archive.Count();
+        }
+
+        internal byte[] FetchRecordBytes(int record, out bool isdeleted)
+        {
+            return _archive.ReadData(record, out isdeleted);
+        }
+
+        internal int CopyTo(StorageFile<int> storagefile, int start)
+        {
+            return _archive.CopyTo(storagefile, start);            
         }
     }
 }

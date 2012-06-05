@@ -20,7 +20,6 @@ namespace RaptorDB
         private string _username;
         private string _password;
 
-
         public bool Save<T>(Guid docID, T document)
         {
             Packet p = CreatePacket();
@@ -173,6 +172,13 @@ namespace RaptorDB
             return ret.OK;
         }
 
+        public void Restore()
+        {
+            Packet p = CreatePacket();
+            p.Command = "restore";
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+        }
+
         public bool Delete(Guid docid)
         {
             Packet p = CreatePacket();
@@ -205,7 +211,7 @@ namespace RaptorDB
         {
             Packet p = new Packet();
             p.Username = _username;
-            p.PasswordHash = _password;
+            p.PasswordHash = Helper.MurMur.Hash(Encoding.UTF8.GetBytes(_username + "|" + _password)).ToString();
 
             return p;
         }

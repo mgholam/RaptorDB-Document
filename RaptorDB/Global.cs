@@ -44,5 +44,9 @@ namespace RaptorDB
         /// How many items to process in a background view save event
         /// </summary>
         public static int BackgroundViewSaveBatchSize = 1000000;
+        /// <summary>
+        /// Check the restore folder for new backup files to restore
+        /// </summary>
+        public static int RestoreTimerSeconds = 10;
     }
 }

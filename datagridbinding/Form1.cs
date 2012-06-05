@@ -73,6 +73,7 @@ namespace datagridbinding
 
             dataGridView1.DataSource = res.ToList();
             toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;
+            toolStripStatusLabel1.Text = "Count = " + q.Count.ToString("#,0");
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -116,6 +117,12 @@ namespace datagridbinding
                 MessageBox.Show("Insert done in (sec) : " + FastDateTime.Now.Subtract(dt).TotalSeconds);
                 toolStripProgressBar1.Value = 0;
             }
+        }
+
+        private void backupToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            bool b = rap.Backup();
+            MessageBox.Show("Backup done");
         }
     }
 }

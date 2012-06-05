@@ -139,32 +139,45 @@ namespace RaptorDB
             return rh;
         }
 
-        public byte[] ReadData(int recnum)
+        internal byte[] ReadData(int recnum, out bool isdeleted)
         {
+            isdeleted = false;
             if (recnum >= _lastRecordNum)
                 return null;
 
             lock (_lock)
             {
-                if (_dirty)
-                {
-                    _datawrite.Flush();
-                    _recfilewrite.Flush();
-                }
-                long off = recnum * 8L;
-                byte[] b = new byte[8];
-
-                _recfileread.Seek(off, SeekOrigin.Begin);
-                _recfileread.Read(b, 0, 8);
-                off = Helper.ToInt64(b, 0);
-                if (off == 0)// kludge
-                    off = 6;
-
-                return internalReadData(off);
+                long off = ComputeOffset(recnum);
+                byte[] key;
+                return internalReadData(off, out key, out isdeleted);
             }
         }
 
-        private byte[] internalReadData(long offset)
+        private long ComputeOffset(int recnum)
+        {
+            if (_dirty)
+            {
+                _datawrite.Flush();
+                _recfilewrite.Flush();
+            }
+            long off = recnum * 8L;
+            byte[] b = new byte[8];
+
+            _recfileread.Seek(off, SeekOrigin.Begin);
+            _recfileread.Read(b, 0, 8);
+            off = Helper.ToInt64(b, 0);
+            if (off == 0)// kludge
+                off = 6;
+            return off;
+        }
+
+        public byte[] ReadData(int recnum)
+        {
+            bool isdel = false;
+            return ReadData(recnum, out isdel);
+        }
+
+        private byte[] internalReadData(long offset, out byte[] key, out bool isdeleted)
         {
             // seek offset in file
             byte[] hdr = new byte[_rowheader.Length];
@@ -174,13 +187,25 @@ namespace RaptorDB
             // check header
             if (CheckHeader(hdr))
             {
-                // skip key bytes
-                _dataread.Seek(hdr[(int)HDR_POS.KeyLen], System.IO.SeekOrigin.Current);
-                int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
-                byte[] data = new byte[dl];
-                // read data block
-                _dataread.Read(data, 0, dl);
-                return data;
+                isdeleted = false;
+                key = null;
+                if (isDeleted(hdr) == false)
+                {
+                    // skip key bytes
+                    _dataread.Seek(hdr[(int)HDR_POS.KeyLen], System.IO.SeekOrigin.Current);
+                    int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
+                    byte[] data = new byte[dl];
+                    // read data block
+                    _dataread.Read(data, 0, dl);
+                    return data;
+                }
+                else
+                {
+                    isdeleted = true;
+                    key = new byte[hdr[(int)HDR_POS.KeyLen]];
+                    _dataread.Read(key, 0, key.Length);
+                    return null;
+                }
             }
             else
                 throw new Exception("data header error at offset : " + offset + " data file size = " + _dataread.Length);
@@ -251,6 +276,29 @@ namespace RaptorDB
         private bool isDeleted(byte[] hdr)
         {
             return (hdr[(int)HDR_POS.Flags] & (byte)1) > 0;
+        }
+
+        internal int CopyTo(StorageFile<int> storageFile, int start)
+        {
+            // copy data here
+            lock (_lock)
+            {
+                long off = ComputeOffset(start);
+                _dataread.Seek(off, SeekOrigin.Begin);
+                Pump(_dataread, storageFile._datawrite);
+
+                return _lastRecordNum;                
+            }
+        }
+
+        private static void Pump(Stream input, Stream output)
+        {
+            byte[] bytes = new byte[4096 * 2];
+            int n;
+            while ((n = input.Read(bytes, 0, bytes.Length)) != 0)
+            {
+                output.Write(bytes, 0, n);
+            }
         }
     }
 }
