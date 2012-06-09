@@ -197,6 +197,14 @@ namespace RaptorDB
             return ret.OK;
         }
 
+        public bool AddUser(string username, string oldpassword, string newpassword)
+        {
+            Packet p = CreatePacket();
+            p.Command = "adduser";
+            p.Data = new object[] {username, oldpassword, newpassword };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return ret.OK;
+        }
         //public List<string> GetViews()
         //{
         //    return null;

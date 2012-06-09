@@ -96,5 +96,13 @@ namespace RaptorDB.Common
         /// <param name="fileid"></param>
         /// <returns></returns>
         bool DeleteBytes(Guid fileid);
+        /// <summary>
+        /// Add users
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="oldpassword"></param>
+        /// <param name="newpassword"></param>
+        /// <returns></returns>
+        bool AddUser(string username, string oldpassword, string newpassword);
     }
 }

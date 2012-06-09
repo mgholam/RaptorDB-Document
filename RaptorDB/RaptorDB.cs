@@ -38,6 +38,8 @@ namespace RaptorDB
         private bool _pauseindexer = false;
         private bool _enableBackup = false;
         private bool _backupDone = false;
+        private MethodInfo otherviews = null;
+        private MethodInfo save = null;
 
         internal string GetViewName(Type type)
         {
@@ -211,7 +213,7 @@ namespace RaptorDB
             _log.Debug("last record = " + _LastRecordNumberProcessed);
             File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
             _log.Debug("last backup record = " + _LastBackupRecordNumber);
-            File.WriteAllBytes(_Path + "Data\\_lastbackuprecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
+            File.WriteAllBytes(_Path + "Backup\\LastBackupRecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
             _log.Debug("Shutting down");
             _saveTimer.Stop();
             _viewManager.ShutDown();
@@ -232,9 +234,9 @@ namespace RaptorDB
             lock (_backuplock)
             {
                 _log.Debug("Backup Started");
-                string p = _Path + "Temp\\" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm");
-                Directory.CreateDirectory(p);
-                StorageFile<int> backup = new StorageFile<int>(p + "\\backup.mgdat");
+                string tempp = _Path + "Temp\\" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm");
+                Directory.CreateDirectory(tempp);
+                StorageFile<int> backup = new StorageFile<int>(tempp + "\\backup.mgdat");
                 _log.Debug("Copying data to backup");
                 if (_LastBackupRecordNumber == -1)
                     _LastBackupRecordNumber = 0;
@@ -243,19 +245,18 @@ namespace RaptorDB
                 _LastBackupRecordNumber = rec;
                 _log.Debug("Last backup rec# = " + rec);
 
-                // compress the tar
-                using (FileStream read = File.OpenRead(p+ "\\backup.mgdat"))
-                {
-                    using (FileStream outp = File.Create(p + "\\backup.mgdat.gz"))
-                    {
-                        Compress(read, outp);
-                    }
-                }
-                _log.Debug("Backup compressed and done");
-                File.Move(p + "\\backup.mgdat.gz", _Path + "Backup\\" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm") + ".mgdat.gz");
+                // compress the file
+                using (FileStream read = File.OpenRead(tempp + "\\backup.mgdat"))
+                using (FileStream outp = File.Create(tempp + "\\backup.mgdat.gz"))
+                    Compress(read, outp);
 
+                _log.Debug("Backup compressed and done");
+                File.Move(tempp + "\\backup.mgdat.gz", _Path + "Backup\\" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm") + ".mgdat.gz");
+
+                _log.Debug("last backup record = " + _LastBackupRecordNumber);
+                File.WriteAllBytes(_Path + "Backup\\LastBackupRecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
                 // cleanup temp folder
-                Directory.Delete(p, true);
+                Directory.Delete(tempp, true);
                 return true;
             }
         }
@@ -267,11 +268,49 @@ namespace RaptorDB
         {
             lock (_restoreLock)
             {
-                // FIX : do restore 
-                string[] files = Directory.GetFiles(_Path + "Restore\\");
+                // do restore 
+                string[] files = Directory.GetFiles(_Path + "Restore\\", "*.gz");
                 Array.Sort(files);
+                _log.Debug("Restoring file count = " + files.Length);
 
+                foreach (string file in files)
+                {
+                    string tmp = file.Replace(".gz", "");// FEATURE : to temp folder ??
+                    if (File.Exists(tmp))
+                        File.Delete(tmp);
+                    using (FileStream read = File.OpenRead(file))
+                    using (FileStream outp = File.Create(tmp))
+                        Decompress(read, outp);
+                    _log.Debug("Uncompress done : " + Path.GetFileName(tmp));
+                    StorageFile<int> sf = StorageFile<int>.ReadForward(tmp);
+                    foreach (var i in sf.Enumerate())
+                    {
+                        int len = Helper.ToInt32(i.Data, 0, false);
+                        byte[] key = new byte[len];
+                        Buffer.BlockCopy(i.Data, 4, key, 0, len);
+                        Guid g = new Guid(key);
+                        if (i.isDeleted)
+                            Delete(g);
+                        else
+                        {
+                            byte[] d = new byte[i.Data.Length - 4 - len];
+                            Buffer.BlockCopy(i.Data, 4 + len, d, 0, i.Data.Length - 4 - len);
+                            object obj = CreateObject(d);
+                            var m = save.MakeGenericMethod(new Type[] { obj.GetType() });
+                            m.Invoke(this, new object[] { g, obj });
+                        }
+                    }
+                    sf.Shutdown();
+                    _log.Debug("File restore complete : " + Path.GetFileName(tmp));
+                    File.Delete(tmp);
+                    File.Move(file, _Path + "\\Restore\\Done\\" + Path.GetFileName(file));
+                }
             }
+        }
+
+        public bool AddUser(string username, string oldpassword, string newpassword)
+        {
+            return false;
         }
 
         public void Dispose()
@@ -298,12 +337,22 @@ namespace RaptorDB
             // We must explicitly close the output stream, or GZipStream will not
             // write the compression's footer to the file.  So we'll get a file, but
             // we won't be able to decompress it.  We'll get back 0 bytes.
-            using (GZipStream output = new GZipStream(destination, CompressionMode.Compress))
+            using (GZipStream gz = new GZipStream(destination, CompressionMode.Compress))
             {
-                Pump(source, output);
+                Pump(source, gz);
             }
         }
 
+        private static void Decompress(Stream source, Stream destination)
+        {
+            // We must explicitly close the output stream, or GZipStream will not
+            // write the compression's footer to the file.  So we'll get a file, but
+            // we won't be able to decompress it.  We'll get back 0 bytes.
+            using (GZipStream gz = new GZipStream(source, CompressionMode.Decompress))
+            {
+                Pump(gz, destination);
+            }
+        }
 
         private void SaveToConsistentViews<T>(Guid docid, T data)
         {
@@ -387,14 +436,15 @@ namespace RaptorDB
                 _LastRecordNumberProcessed = Helper.ToInt32(b, 0, false);
             }
             // load _LastBackupRecordNumber 
-            if (File.Exists(_Path + "Data\\_lastbackuprecord.rec"))
+            if (File.Exists(_Path + "Backup\\LastBackupRecord.rec"))
             {
-                byte[] b = File.ReadAllBytes(_Path + "Data\\_lastbackuprecord.rec");
+                byte[] b = File.ReadAllBytes(_Path + "Backup\\LastBackupRecord.rec");
                 _LastBackupRecordNumber = Helper.ToInt32(b, 0, false);
             }
             _CurrentRecordNumber = _objStore.RecordCount();
 
             otherviews = this.GetType().GetMethod("SaveInOtherViews", BindingFlags.Instance | BindingFlags.NonPublic);
+            save = this.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
 
             // start backround save to views
             _saveTimer = new System.Timers.Timer(Global.BackgroundSaveViewTimer * 1000);
@@ -403,7 +453,7 @@ namespace RaptorDB
             _saveTimer.AutoReset = true;
             _saveTimer.Start();
         }
-        
+
         private void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             _log.Debug("appdomain closing");
@@ -412,7 +462,6 @@ namespace RaptorDB
         }
 
         private object _slock = new object();
-        MethodInfo otherviews = null;
         private void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             if (_shuttingdown)

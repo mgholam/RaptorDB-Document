@@ -128,6 +128,10 @@ namespace RaptorDB
                         ret.OK = true;
                         Task.Factory.StartNew(() => _raptor.Restore());
                         break;
+                    case "adduser":
+                        param = (object[])p.Data;
+                        ret.OK = AddUser((string)param[0], (string)param[1], (string)param[2]);
+                        break;
                 }
             }
             catch (Exception ex)
@@ -138,10 +142,31 @@ namespace RaptorDB
             return ret;
         }
 
+        private uint GenHash(string user, string pwd)
+        {
+            return Helper.MurMur.Hash(Encoding.UTF8.GetBytes(user.ToLower() + "|" + pwd));
+        }
+
+        private bool AddUser(string user, string oldpwd, string newpwd)
+        {
+            uint hash = 0;
+            if (_users.TryGetValue(user.ToLower(), out hash) == false)
+            {
+                _users.Add(user.ToLower(), GenHash(user, newpwd));
+                return true;
+            }
+            if (hash == GenHash(user, oldpwd))
+            {
+                _users[user.ToLower()] = GenHash(user, newpwd);
+                return true;
+            }
+            return false;
+        }
+
         private bool Authenticate(Packet p)
         {
             uint pwd;
-            if (_users.TryGetValue(p.Username, out pwd))
+            if (_users.TryGetValue(p.Username.ToLower(), out pwd))
             {
                 uint hash = uint.Parse(p.PasswordHash);
                 if (hash == pwd) return true;
@@ -160,13 +185,13 @@ namespace RaptorDB
                     if (line.Contains("#") == false)
                     {
                         string[] s = line.Split(',');
-                        _users.Add(s[0].Trim(), uint.Parse(s[1].Trim()));
+                        _users.Add(s[0].Trim().ToLower(), uint.Parse(s[1].Trim()));
                     }
                 }
             }
             // add default admin user if not exists
             if (_users.ContainsKey("admin") == false)
-                _users.Add("admin", Helper.MurMur.Hash(Encoding.UTF8.GetBytes("admin|admin")));
+                _users.Add("admin", GenHash("admin","admin"));
 
             // exe folder
             // |-Extensions

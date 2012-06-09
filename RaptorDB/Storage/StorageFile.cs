@@ -9,6 +9,13 @@ using RaptorDB.Common;
 
 namespace RaptorDB
 {
+    internal class StorageData
+    {
+        public byte[] Key;
+        public byte[] Data;
+        public bool isDeleted;
+    }
+
     internal class StorageFile<T>
     {
         FileStream _datawrite;
@@ -52,6 +59,16 @@ namespace RaptorDB
 
         public StorageFile(string filename)
         {
+            Initialize(filename, false);
+        }
+
+        public StorageFile(string filename, bool SkipChecking)
+        {
+            Initialize(filename, SkipChecking);
+        }
+
+        private void Initialize(string filename, bool SkipChecking)
+        {
             _T = RDBDataType<T>.ByteHandler();
             _filename = filename;
             if (File.Exists(filename) == false)
@@ -59,29 +76,33 @@ namespace RaptorDB
             else
                 _datawrite = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
 
-            // load rec pointers
-            _recfilename = filename.Substring(0, filename.LastIndexOf('.')) + ".mgrec";
-            if (File.Exists(_recfilename) == false)
-                _recfilewrite = new FileStream(_recfilename, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite);
-            else
-                _recfilewrite = new FileStream(_recfilename, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
-
-            _recfileread = new FileStream(_recfilename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-            if (_datawrite.Length == 0)
+            if (SkipChecking == false)
             {
-                // new file
-                _datawrite.Write(_fileheader, 0, _fileheader.Length);
-                _datawrite.Flush();
-                _lastWriteOffset = _fileheader.Length;
+                // load rec pointers
+                _recfilename = filename.Substring(0, filename.LastIndexOf('.')) + ".mgrec";
+                if (File.Exists(_recfilename) == false)
+                    _recfilewrite = new FileStream(_recfilename, FileMode.CreateNew, FileAccess.Write, FileShare.ReadWrite);
+                else
+                    _recfilewrite = new FileStream(_recfilename, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+
+                _recfileread = new FileStream(_recfilename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                if (_datawrite.Length == 0)
+                {
+                    // new file
+                    _datawrite.Write(_fileheader, 0, _fileheader.Length);
+                    _datawrite.Flush();
+                    _lastWriteOffset = _fileheader.Length;
+                }
+                else
+                {
+                    _lastWriteOffset = _datawrite.Seek(0L, SeekOrigin.End);
+                }
+                _lastRecordNum = (int)(_recfilewrite.Length / 8);
+                _recfilewrite.Seek(0L, SeekOrigin.End);
             }
-            else
-            {
-                _lastWriteOffset = _datawrite.Seek(0L, SeekOrigin.End);
-            }
-            _lastRecordNum = (int)(_recfilewrite.Length / 8);
-            _recfilewrite.Seek(0L, SeekOrigin.End);
         }
 
         public int Count()
@@ -127,6 +148,34 @@ namespace RaptorDB
             }
         }
 
+        public byte[] ReadData(int recnum)
+        {
+            bool isdel = false;
+            return ReadData(recnum, out isdel);
+        }
+
+        public void Shutdown()
+        {
+            FlushClose(_dataread);
+            FlushClose(_recfileread);
+            FlushClose(_recfilewrite);
+            FlushClose(_datawrite);
+
+            _dataread = null;
+            _recfileread = null;
+            _recfilewrite = null;
+            _datawrite = null;
+        }
+
+        public static StorageFile<int> ReadForward(string filename)
+        {
+            StorageFile<int> sf = new StorageFile<int>(filename, true);
+
+            return sf;
+        }
+
+        #region [ private / internal  ]
+
         private byte[] CreateRowHeader(int keylen, int datalen)
         {
             byte[] rh = new byte[_rowheader.Length];
@@ -171,12 +220,6 @@ namespace RaptorDB
             return off;
         }
 
-        public byte[] ReadData(int recnum)
-        {
-            bool isdel = false;
-            return ReadData(recnum, out isdel);
-        }
-
         private byte[] internalReadData(long offset, out byte[] key, out bool isdeleted)
         {
             // seek offset in file
@@ -217,19 +260,6 @@ namespace RaptorDB
             if (hdr[0] == (byte)'M' && hdr[1] == (byte)'G' && hdr[2] == (byte)'R' && hdr[(int)HDR_POS.CRC] == (byte)0)
                 return true;
             return false;
-        }
-
-        public void Shutdown()
-        {
-            FlushClose(_dataread);
-            FlushClose(_recfileread);
-            FlushClose(_recfilewrite);
-            FlushClose(_datawrite);
-
-            _dataread = null;
-            _recfileread = null;
-            _recfilewrite = null;
-            _datawrite = null;
         }
 
         private void FlushClose(FileStream st)
@@ -287,7 +317,7 @@ namespace RaptorDB
                 _dataread.Seek(off, SeekOrigin.Begin);
                 Pump(_dataread, storageFile._datawrite);
 
-                return _lastRecordNum;                
+                return _lastRecordNum;
             }
         }
 
@@ -296,9 +326,45 @@ namespace RaptorDB
             byte[] bytes = new byte[4096 * 2];
             int n;
             while ((n = input.Read(bytes, 0, bytes.Length)) != 0)
-            {
                 output.Write(bytes, 0, n);
+        }
+
+        internal IEnumerable<StorageData> Enumerate()
+        {
+            // FIX : read 
+            long offset = 6;
+            long size = _dataread.Length;
+            while (offset < size)
+            {
+                // skip header
+                _dataread.Seek(offset, SeekOrigin.Begin);
+                byte[] hdr = new byte[_rowheader.Length];
+                // read header
+                _dataread.Read(hdr, 0, _rowheader.Length);
+                offset += hdr.Length;
+                if (CheckHeader(hdr))
+                {
+                    StorageData sd = new StorageData();
+                    sd.isDeleted = isDeleted(hdr);
+                    byte kl = hdr[3];
+                    byte[] kbyte = new byte[kl];
+                    offset += kl;
+                    _dataread.Read(kbyte, 0, kl);
+                    sd.Key = kbyte;
+                    int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
+                    byte[] data = new byte[dl];
+                    // read data block
+                    _dataread.Read(data, 0, dl);
+                    sd.Data = data;
+                    offset += dl;
+                    yield return sd;
+                }
+                else
+                {
+                    throw new Exception("Data read failed");
+                }
             }
         }
+        #endregion
     }
 }

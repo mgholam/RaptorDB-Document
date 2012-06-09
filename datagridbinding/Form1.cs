@@ -124,5 +124,10 @@ namespace datagridbinding
             bool b = rap.Backup();
             MessageBox.Show("Backup done");
         }
+
+        private void restoreToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            rap.Restore();
+        }
     }
 }

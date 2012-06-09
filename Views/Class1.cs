@@ -83,7 +83,7 @@ namespace SampleViews
             this.isPrimaryList = false;
             this.isActive = true;
             this.BackgroundIndexing = true;
-
+            
             this.Schema = typeof(SalesItemRowsView.RowSchema);
 
             this.AddFireOnTypes(typeof(SalesInvoice));
