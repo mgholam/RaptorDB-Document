@@ -36,10 +36,9 @@ namespace RaptorDB
         private System.Timers.Timer _saveTimer;
         private bool _shuttingdown = false;
         private bool _pauseindexer = false;
-        private bool _enableBackup = false;
-        private bool _backupDone = false;
         private MethodInfo otherviews = null;
         private MethodInfo save = null;
+        private SafeDictionary<Type, MethodInfo> _savecache = new SafeDictionary<Type, MethodInfo>();
 
         internal string GetViewName(Type type)
         {
@@ -268,42 +267,50 @@ namespace RaptorDB
         {
             lock (_restoreLock)
             {
-                // do restore 
-                string[] files = Directory.GetFiles(_Path + "Restore\\", "*.gz");
-                Array.Sort(files);
-                _log.Debug("Restoring file count = " + files.Length);
-
-                foreach (string file in files)
+                try
                 {
-                    string tmp = file.Replace(".gz", "");// FEATURE : to temp folder ??
-                    if (File.Exists(tmp))
-                        File.Delete(tmp);
-                    using (FileStream read = File.OpenRead(file))
-                    using (FileStream outp = File.Create(tmp))
-                        Decompress(read, outp);
-                    _log.Debug("Uncompress done : " + Path.GetFileName(tmp));
-                    StorageFile<int> sf = StorageFile<int>.ReadForward(tmp);
-                    foreach (var i in sf.Enumerate())
+                    // do restore 
+                    string[] files = Directory.GetFiles(_Path + "Restore\\", "*.gz");
+                    Array.Sort(files);
+                    _log.Debug("Restoring file count = " + files.Length);
+
+                    foreach (string file in files)
                     {
-                        int len = Helper.ToInt32(i.Data, 0, false);
-                        byte[] key = new byte[len];
-                        Buffer.BlockCopy(i.Data, 4, key, 0, len);
-                        Guid g = new Guid(key);
-                        if (i.isDeleted)
-                            Delete(g);
-                        else
+                        string tmp = file.Replace(".gz", "");// FEATURE : to temp folder ??
+                        if (File.Exists(tmp))
+                            File.Delete(tmp);
+                        using (FileStream read = File.OpenRead(file))
+                        using (FileStream outp = File.Create(tmp))
+                            Decompress(read, outp);
+                        _log.Debug("Uncompress done : " + Path.GetFileName(tmp));
+                        StorageFile<int> sf = StorageFile<int>.ReadForward(tmp);
+                        foreach (var i in sf.Enumerate())
                         {
-                            byte[] d = new byte[i.Data.Length - 4 - len];
-                            Buffer.BlockCopy(i.Data, 4 + len, d, 0, i.Data.Length - 4 - len);
-                            object obj = CreateObject(d);
-                            var m = save.MakeGenericMethod(new Type[] { obj.GetType() });
-                            m.Invoke(this, new object[] { g, obj });
+                            int len = Helper.ToInt32(i.Data, 0, false);
+                            byte[] key = new byte[len];
+                            Buffer.BlockCopy(i.Data, 4, key, 0, len);
+                            Guid g = new Guid(key);
+                            if (i.isDeleted)
+                                Delete(g);
+                            else
+                            {
+                                byte[] d = new byte[i.Data.Length - 4 - len];
+                                Buffer.BlockCopy(i.Data, 4 + len, d, 0, i.Data.Length - 4 - len);
+                                object obj = CreateObject(d);
+                                var m = GetSave(obj.GetType());
+                                //var m = save.MakeGenericMethod(new Type[] { obj.GetType() });
+                                m.Invoke(this, new object[] { g, obj });
+                            }
                         }
+                        sf.Shutdown();
+                        _log.Debug("File restore complete : " + Path.GetFileName(tmp));
+                        File.Delete(tmp);
+                        File.Move(file, _Path + "\\Restore\\Done\\" + Path.GetFileName(file));
                     }
-                    sf.Shutdown();
-                    _log.Debug("File restore complete : " + Path.GetFileName(tmp));
-                    File.Delete(tmp);
-                    File.Move(file, _Path + "\\Restore\\Done\\" + Path.GetFileName(file));
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex);
                 }
             }
         }
@@ -327,31 +334,19 @@ namespace RaptorDB
             byte[] bytes = new byte[4096 * 2];
             int n;
             while ((n = input.Read(bytes, 0, bytes.Length)) != 0)
-            {
                 output.Write(bytes, 0, n);
-            }
         }
 
         private static void Compress(Stream source, Stream destination)
         {
-            // We must explicitly close the output stream, or GZipStream will not
-            // write the compression's footer to the file.  So we'll get a file, but
-            // we won't be able to decompress it.  We'll get back 0 bytes.
             using (GZipStream gz = new GZipStream(destination, CompressionMode.Compress))
-            {
                 Pump(source, gz);
-            }
         }
 
         private static void Decompress(Stream source, Stream destination)
         {
-            // We must explicitly close the output stream, or GZipStream will not
-            // write the compression's footer to the file.  So we'll get a file, but
-            // we won't be able to decompress it.  We'll get back 0 bytes.
             using (GZipStream gz = new GZipStream(source, CompressionMode.Decompress))
-            {
                 Pump(gz, destination);
-            }
         }
 
         private void SaveToConsistentViews<T>(Guid docid, T data)
@@ -510,6 +505,17 @@ namespace RaptorDB
                     batch--;
                 }
             }
+        }
+
+        private MethodInfo GetSave(Type type)
+        {
+            MethodInfo m = null;
+            if (_savecache.TryGetValue(type, out m))
+                return m;
+
+            m = save.MakeGenericMethod(new Type[] { type });
+            _savecache.Add(type, m);
+            return m;
         }
         #endregion
     }

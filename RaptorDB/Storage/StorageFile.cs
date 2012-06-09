@@ -331,7 +331,6 @@ namespace RaptorDB
 
         internal IEnumerable<StorageData> Enumerate()
         {
-            // FIX : read 
             long offset = 6;
             long size = _dataread.Length;
             while (offset < size)

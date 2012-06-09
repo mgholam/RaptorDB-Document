@@ -26,8 +26,16 @@ namespace RaptorDB
 
         private Dictionary<string, uint> _users = new Dictionary<string, uint>();
         private string _path = "";
+        private bool _backupDone = false;
+        private ILog log = LogManager.GetLogger(typeof(RaptorDBServer));
+        private NetworkServer _server;
+        private RaptorDB _raptor;
+        private MethodInfo register = null;
+        private MethodInfo save = null;
+        private SafeDictionary<Type, MethodInfo> _savecache = new SafeDictionary<Type, MethodInfo>();
+        private System.Timers.Timer _backupTimer;
 
-        Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             if (File.Exists(args.Name))
                 return Assembly.LoadFrom(args.Name);
@@ -40,13 +48,6 @@ namespace RaptorDB
                 return Assembly.LoadFrom(fname);
             else return null;
         }
-
-        private ILog log = LogManager.GetLogger(typeof(RaptorDBServer));
-        private NetworkServer _server;
-        private RaptorDB _raptor;
-        private MethodInfo register = null;
-        private MethodInfo save = null;
-        SafeDictionary<Type, MethodInfo> _savecache = new SafeDictionary<Type, MethodInfo>();
 
         private MethodInfo GetSave(Type type)
         {
@@ -191,7 +192,7 @@ namespace RaptorDB
             }
             // add default admin user if not exists
             if (_users.ContainsKey("admin") == false)
-                _users.Add("admin", GenHash("admin","admin"));
+                _users.Add("admin", GenHash("admin", "admin"));
 
             // exe folder
             // |-Extensions
@@ -221,6 +222,27 @@ namespace RaptorDB
                     }
                 }
             }
+
+            _backupTimer = new System.Timers.Timer();
+            _backupTimer.Elapsed += new System.Timers.ElapsedEventHandler(_backupTimer_Elapsed);
+            _backupTimer.AutoReset = true;
+            _backupTimer.Interval = 60 * 1000;
+            _backupTimer.Enabled = true;
+            _backupTimer.Start();
+        }
+
+        void _backupTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            DateTime dt = FastDateTime.Now;
+
+            if (dt.Hour == 0 && dt.Minute < 1 && _backupDone == false)
+            {
+                _backupDone = true;
+                _raptor.Backup();
+            }
+
+            if (dt.Hour == 1 && dt.Minute > 2 && _backupDone == true)
+                _backupDone = false;
         }
     }
 }

@@ -59,5 +59,7 @@ v1.5
 - added authentication via users.config file in server mode
 - Backup & Restore data
 - AddUser() method for user
--
+- handle isDeleted when restoring data and rebuilding View
+- Auto backup in server mode @ 00:00 time
+
 
