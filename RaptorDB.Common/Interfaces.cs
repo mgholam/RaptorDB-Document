@@ -29,15 +29,39 @@ namespace RaptorDB
         /// </summary>
         /// <param name="message"></param>
         void Log(string message);
+
+        /// <summary>
+        /// Query a view by it's name with a LINQ filter
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="ViewName"></param>
+        /// <param name="Filter"></param>
+        /// <returns></returns>
         Result Query<T>(string ViewName, Expression<Predicate<T>> Filter);//, int start, int count); // Query primary list
+        
+        /// <summary>
+        /// Query a view by it's type with a LINQ filter
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="View"></param>
+        /// <param name="Filter"></param>
+        /// <returns></returns>
         Result Query<T>(Type View, Expression<Predicate<T>> Filter);//, int start, int count); //Query other views
+        
+        /// <summary>
+        /// Fetch a document by it's Guid
+        /// </summary>
+        /// <param name="guid"></param>
+        /// <returns></returns>
         object Fetch(Guid guid);
+        
         /// <summary>
         /// Emit values, the ordering must match the view schema
         /// </summary>
         /// <param name="docid"></param>
         /// <param name="data"></param>
         void Emit(Guid docid, params object[] data);
+        
         /// <summary>
         /// Emits the object matching the view schema, you must make sure the object property names match the row schema
         /// </summary>

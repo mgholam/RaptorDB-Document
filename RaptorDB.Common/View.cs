@@ -75,7 +75,6 @@ namespace RaptorDB
         public delegate void MapFunctionDelgate<V>(IMapAPI api, Guid docid, V doc);
         public View()
         {
-            //DocID = Guid.NewGuid();
             isActive = true;
             FireOnTypes = new List<string>();
             DeleteBeforeInsert = true;

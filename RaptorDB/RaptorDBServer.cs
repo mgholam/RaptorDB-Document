@@ -226,7 +226,7 @@ namespace RaptorDB
             _backupTimer = new System.Timers.Timer();
             _backupTimer.Elapsed += new System.Timers.ElapsedEventHandler(_backupTimer_Elapsed);
             _backupTimer.AutoReset = true;
-            _backupTimer.Interval = 60 * 1000;
+            _backupTimer.Interval = 60 * 1000; // 1 min timer
             _backupTimer.Enabled = true;
             _backupTimer.Start();
         }
@@ -235,13 +235,13 @@ namespace RaptorDB
         {
             DateTime dt = FastDateTime.Now;
 
-            if (dt.Hour == 0 && dt.Minute < 1 && _backupDone == false)
+            if (dt.Hour == 0 && dt.Minute < 2 && _backupDone == false)
             {
                 _backupDone = true;
                 _raptor.Backup();
             }
 
-            if (dt.Hour == 1 && dt.Minute > 2 && _backupDone == true)
+            if (dt.Hour == 1 && dt.Minute > 3 && _backupDone == true)
                 _backupDone = false;
         }
     }
