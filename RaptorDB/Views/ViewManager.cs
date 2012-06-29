@@ -31,6 +31,7 @@ namespace RaptorDB.Views
         // other views type->list of view names to call
         private SafeDictionary<Type, List<string>> _otherViews = new SafeDictionary<Type, List<string>>();
         private TaskQueue _que = new TaskQueue();
+        private SafeDictionary<int, bool> _transactions = new SafeDictionary<int, bool>();
 
         internal Result Query<T>(Type objtype, Expression<Predicate<T>> filter)
         {
@@ -114,6 +115,24 @@ namespace RaptorDB.Views
                 return;
             }
             _log.Error("view not found", viewname);
+        }
+
+        internal bool InsertTransaction<T>(string viewname, Guid docid, T data)
+        {
+            ViewHandler vman = null;
+            // find view from name
+            if (_views.TryGetValue(viewname.ToLower(), out vman))
+            {
+                if (vman._view.isActive == false)
+                {
+                    _log.Debug("view is not active, skipping insert : " + viewname);
+                    return false;
+                }
+    
+                return vman.InsertTransaction<T>(docid, data);
+            }
+            _log.Error("view not found", viewname);
+            return false;
         }
 
         internal object Fetch(Guid guid)
@@ -231,6 +250,42 @@ namespace RaptorDB.Views
             // remove from all views
             foreach (var v in _views)
                 v.Value.Delete(docid);
+        }
+
+        internal void Rollback(int ID)
+        {
+            _log.Debug("ROLLBACK");
+            // rollback all views with tran id
+            foreach (var v in _views)
+                v.Value.RollBack(ID);
+
+            _transactions.Remove(ID);
+        }
+
+        internal void Commit(int ID)
+        {
+            _log.Debug("COMMIT");
+            // commit all data in vews with tran id
+            foreach (var v in _views)
+                v.Value.Commit(ID);
+            
+            _transactions.Remove(ID);
+        }
+
+        internal bool isTransaction(string viewname)
+        {
+            return _views[viewname.ToLower()]._view.TransactionMode;
+        }
+
+        internal bool inTransaction()
+        {
+            bool b = false;
+            return _transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out b);
+        }
+
+        internal void StartTransaction()
+        {
+            _transactions.Add(Thread.CurrentThread.ManagedThreadId, false);
         }
     }
 }

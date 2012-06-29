@@ -62,4 +62,7 @@ v1.5
 - handle isDeleted when restoring data and rebuilding View
 - Auto backup in server mode @ 00:00 time
 
-
+v1.6
+----
+- transaction support
+-

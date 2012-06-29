@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Collections;
 using System.IO;
-using System.Xml.Serialization;
 using System.Threading;
 using System.Text.RegularExpressions;
 using RaptorDB.Common;
@@ -14,6 +13,11 @@ namespace RaptorDB
     {
         private string _bmpext = ".mgbmp";
 
+        /// <summary>
+        /// File based constructor
+        /// </summary>
+        /// <param name="IndexPath"></param>
+        /// <param name="FileName"></param>
         public Hoot(string IndexPath, string FileName)
         {
             _Path = IndexPath;
@@ -38,7 +42,7 @@ namespace RaptorDB
         private object _lock = new object();
         private FileStream _bitmapFile;
         private long _lastBitmapOffset = 0;
-
+        private bool _inMemory = false;
 
         public void FreeMemory(bool freecache)
         {
@@ -86,48 +90,48 @@ namespace RaptorDB
             return Query(filter).GetBitIndexes();
         }
 
-        public void OptimizeIndex()
-        {
-            lock (_lock)
-            {
-                InternalSave();
-                _log.Debug("optimizing index..");
-                DateTime dt = FastDateTime.Now;
-                _lastBitmapOffset = 0;
-                _bitmapFile.Flush();
-                _bitmapFile.Close();
-                // compact bitmap index file to new file
-                _bitmapFile = new FileStream(_Path + _FileName + _bmpext + "$", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-                MemoryStream ms = new MemoryStream();
-                BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
-                // save words and bitmaps
-                using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Create))
-                {
-                    foreach (KeyValuePair<string, Cache> kv in _index)
-                    {
-                        bw.Write(kv.Key);
-                        uint[] ar = LoadBitmap(kv.Value.FileOffset);
-                        long offset = SaveBitmap(ar);
-                        kv.Value.FileOffset = offset;
-                        bw.Write(kv.Value.FileOffset);
-                    }
-                    // save words
-                    byte[] b = ms.ToArray();
-                    words.Write(b, 0, b.Length);
-                    words.Flush();
-                    words.Close();
-                }
-                // rename files
-                _bitmapFile.Flush();
-                _bitmapFile.Close();
-                File.Delete(_Path + _FileName + _bmpext);
-                File.Move(_Path + _FileName + _bmpext + "$", _Path + _FileName + _bmpext);
-                // reload everything
-                _bitmapFile = new FileStream(_Path + _FileName + _bmpext, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-                _lastBitmapOffset = _bitmapFile.Seek(0L, SeekOrigin.End);
-                _log.Debug("optimizing index done = " + DateTime.Now.Subtract(dt).TotalSeconds + " sec");
-            }
-        }
+        //public void OptimizeIndex()
+        //{
+        //    lock (_lock)
+        //    {
+        //        InternalSave();
+        //        _log.Debug("optimizing index..");
+        //        DateTime dt = FastDateTime.Now;
+        //        _lastBitmapOffset = 0;
+        //        _bitmapFile.Flush();
+        //        _bitmapFile.Close();
+        //        // compact bitmap index file to new file
+        //        _bitmapFile = new FileStream(_Path + _FileName + _bmpext + "$", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+        //        MemoryStream ms = new MemoryStream();
+        //        BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
+        //        // save words and bitmaps
+        //        using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Create))
+        //        {
+        //            foreach (KeyValuePair<string, Cache> kv in _index)
+        //            {
+        //                bw.Write(kv.Key);
+        //                uint[] ar = LoadBitmap(kv.Value.FileOffset);
+        //                long offset = SaveBitmap(ar);
+        //                kv.Value.FileOffset = offset;
+        //                bw.Write(kv.Value.FileOffset);
+        //            }
+        //            // save words
+        //            byte[] b = ms.ToArray();
+        //            words.Write(b, 0, b.Length);
+        //            words.Flush();
+        //            words.Close();
+        //        }
+        //        // rename files
+        //        _bitmapFile.Flush();
+        //        _bitmapFile.Close();
+        //        File.Delete(_Path + _FileName + _bmpext);
+        //        File.Move(_Path + _FileName + _bmpext + "$", _Path + _FileName + _bmpext);
+        //        // reload everything
+        //        _bitmapFile = new FileStream(_Path + _FileName + _bmpext, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+        //        _lastBitmapOffset = _bitmapFile.Seek(0L, SeekOrigin.End);
+        //        _log.Debug("optimizing index done = " + DateTime.Now.Subtract(dt).TotalSeconds + " sec");
+        //    }
+        //}
 
         #region [  P R I V A T E   M E T H O D S  ]
 
@@ -239,6 +243,9 @@ namespace RaptorDB
 
         private void InternalSave()
         {
+            if (_inMemory == true)
+                return;
+
             _log.Debug("saving index...");
             DateTime dt = FastDateTime.Now;
 
@@ -338,6 +345,9 @@ namespace RaptorDB
 
         private uint[] LoadBitmap(long offset)
         {
+            if (_inMemory == true)
+                return null;
+
             if (offset == -1)
                 return null;
 
@@ -394,6 +404,8 @@ namespace RaptorDB
 
         public void Shutdown()
         {
+            if (_inMemory == true)
+                return;
             Save();
             _bitmapFile.Flush();
             _bitmapFile.Close();

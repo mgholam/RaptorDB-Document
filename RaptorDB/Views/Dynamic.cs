@@ -76,10 +76,10 @@ namespace System.Linq.Dynamic
             return Expression.Lambda(parser.Parse(resultType), parameters);
         }
 
-        public static Expression<Func<T, S>> ParseLambda<T, S>(string expression, params object[] values)
-        {
-            return (Expression<Func<T, S>>)ParseLambda(typeof(T), typeof(S), expression, values);
-        }
+        //public static Expression<Func<T, S>> ParseLambda<T, S>(string expression, params object[] values)
+        //{
+        //    return (Expression<Func<T, S>>)ParseLambda(typeof(T), typeof(S), expression, values);
+        //}
 
         public static Type CreateClass(params DynamicProperty[] properties)
         {

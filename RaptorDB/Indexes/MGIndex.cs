@@ -276,7 +276,7 @@ namespace RaptorDB
                 int bn = page.tree[k].DuplicateBitmapNumber;
                 if (bn == -1)
                 {
-                    // FIX:
+                    // FEATURE :
                 }
 
                 if (k.CompareTo(key) > 0)
@@ -311,7 +311,7 @@ namespace RaptorDB
                 int bn = page.tree[k].DuplicateBitmapNumber;
                 if (bn == -1)
                 {
-                    // FIX:
+                    // FEATURE :
                 }
                 if (k.CompareTo(key) < 0)
                     result = result.Or(_index.GetDuplicateBitmap(bn));
@@ -332,7 +332,7 @@ namespace RaptorDB
                 int bn = k.DuplicateBitmapNumber;
                 if (bn == -1)
                 {
-                    // FIX:
+                    // FEATURE :
                 }
                 if (exp == RDBExpression.Equal)
                     return _index.GetDuplicateBitmap(bn);
@@ -352,7 +352,7 @@ namespace RaptorDB
                 int bn = page.tree[k].DuplicateBitmapNumber;
                 if (bn == -1)
                 {
-                    // FIX:
+                    // FEATURE :
                 }
                 res = res.Or(_index.GetDuplicateBitmap(bn));
             }

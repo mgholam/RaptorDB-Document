@@ -38,10 +38,13 @@ namespace RaptorDB
         private SafeDictionary<int, WAHBitArray> _cache = new SafeDictionary<int, WAHBitArray>();
         private SafeDictionary<int, long> _offsetCache = new SafeDictionary<int, long>();
         ILog log = LogManager.GetLogger(typeof(BitmapIndex));
+        private bool _inMemory = false;
 
         #region [  P U B L I C  ]
         public void Shutdown()
         {
+            if (_inMemory == true)
+                return;
             log.Debug("Shutdown BitmapIndex");
             bool d1 = false;
             bool d2 = false;
@@ -67,6 +70,8 @@ namespace RaptorDB
 
         public void Flush()
         {
+            if (_inMemory == true)
+                return;
             if (_recordFileWrite != null)
                 _recordFileWrite.Flush();
             if (_bitmapFileWrite != null)
@@ -113,6 +118,9 @@ namespace RaptorDB
             return internalGetBitmap(recno);//, true);
         }
 
+        #endregion
+
+        #region [  removed  ]
         //public void OptimizeIndex()
         //{
         //// FEATURE : optimize index here
@@ -154,9 +162,7 @@ namespace RaptorDB
         //    _internalOP = false;
         //}
         //}
-
         #endregion
-
 
         #region [  P R I V A T E  ]
 

@@ -89,12 +89,6 @@
     <Reference Include="System">
       <Name>System</Name>
     </Reference>
-    <Reference Include="System.Data">
-      <Name>System.Data</Name>
-    </Reference>
-    <Reference Include="System.Xml">
-      <Name>System.XML</Name>
-    </Reference>
     <ProjectReference Include="..\RaptorDB.Common\RaptorDB.Common.csproj">
       <Project>{32331D51-5BE0-41E2-AF1A-9B086C5AE809}</Project>
       <Name>RaptorDB.Common</Name>

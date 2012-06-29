@@ -17,6 +17,7 @@ namespace RaptorDB.Views
         private ILog _log = LogManager.GetLogger(typeof(apimapper));
         internal Dictionary<Guid, List<object[]>> emit = new Dictionary<Guid, List<object[]>>();
         internal Dictionary<Guid, List<object>> emitobj = new Dictionary<Guid, List<object>>();
+        internal bool _RollBack = false;
 
         public void Log(string message)
         {
@@ -88,6 +89,11 @@ namespace RaptorDB.Views
                     emitobj.Add(docid, d);
                 }
             }
+        }
+
+        public void RollBack()
+        {
+            _RollBack = true;
         }
     }
 }

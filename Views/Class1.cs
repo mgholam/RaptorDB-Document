@@ -1,4 +1,8 @@
-﻿using System;
+﻿// #ref 
+// RaptorDb.Common
+//
+// 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -53,6 +57,7 @@ namespace SampleViews
             this.isPrimaryList = true;
             this.isActive = true;
             this.BackgroundIndexing = true;
+            //this.TransactionMode = true;
 
             this.Schema = typeof(SalesInvoiceView.RowSchema);
 
@@ -60,6 +65,8 @@ namespace SampleViews
 
             this.Mapper = (api, docid, doc) =>
             {
+                if (doc.Serial == 0)
+                    api.RollBack();
                 api.EmitObject(docid, doc);//.CustomerName, doc.Date, doc.Address, doc.Serial, doc.Status);
             };
         }

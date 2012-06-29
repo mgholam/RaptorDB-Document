@@ -69,5 +69,10 @@ namespace RaptorDB
         /// <param name="docid"></param>
         /// <param name="doc"></param>
         void EmitObject<T>(Guid docid, T doc);
+
+        /// <summary>
+        /// Roll back the transaction if the primary view is in transaction mode
+        /// </summary>
+        void RollBack();
     }
 }

@@ -67,6 +67,7 @@ namespace RaptorDB
         private string _filename;
         private string _path;
         private object _lock = new object();
+        private bool _inMemory = false;
 
         public WAHBitArray GetBits()
         {
@@ -96,12 +97,14 @@ namespace RaptorDB
         public void Shutdown()
         {
             // shutdown
-            WriteFile();
+            if (_inMemory == false)
+                WriteFile();
         }
 
         public void SaveIndex()
         {
-            WriteFile();
+            if (_inMemory == false)
+                WriteFile();
         }
 
         public void InPlaceOR(WAHBitArray left)

@@ -85,21 +85,79 @@ namespace RaptorDB
                 return false;
             }
             _pauseindexer = true;
-
-            int recnum = SaveData(docid, data);
-            _CurrentRecordNumber = recnum;
-
-            SaveInPrimaryView(viewname, docid, data);
-
-            SaveToConsistentViews(docid, data);
-
-            if (Global.BackgroundSaveToOtherViews == false)
+            if (_viewManager.isTransaction(viewname))
             {
-                SaveInOtherViews(docid, data);
-                _LastRecordNumberProcessed = recnum;
+                _log.Debug("TRANSACTION started for docid : " + docid);
+                // add code here
+                _viewManager.StartTransaction();
+
+                bool b = SaveInPrimaryViewTransaction(viewname, docid, data);
+                if (b == true)
+                {
+                    b = SaveToConsistentViewsTransaction(docid, data);
+                    if (b == true)
+                    {
+                        b = SaveInOtherViewsTransaction(docid, data);
+                        if (b == true)
+                        {
+                            _viewManager.Commit(Thread.CurrentThread.ManagedThreadId);
+                            int recnum = SaveData(docid, data);
+                            _CurrentRecordNumber = recnum;
+                            _pauseindexer = false;
+                            return true;
+                        }
+                    }
+                }
+                _viewManager.Rollback(Thread.CurrentThread.ManagedThreadId);
+                _pauseindexer = false;
+                return false;
             }
-            _pauseindexer = false;
+            else
+            {
+                int recnum = SaveData(docid, data);
+                _CurrentRecordNumber = recnum;
+
+                SaveInPrimaryView(viewname, docid, data);
+
+                SaveToConsistentViews(docid, data);
+
+                if (Global.BackgroundSaveToOtherViews == false)
+                {
+                    SaveInOtherViews(docid, data);
+                    _LastRecordNumberProcessed = recnum;
+                }
+                _pauseindexer = false;
+                return true;
+            }
+        }
+
+        private bool SaveToView<T>(Guid docid, T data, List<string> list)
+        {
+            if (list != null)
+                foreach (string name in list)
+                {
+                    bool ret = _viewManager.InsertTransaction(name, docid, data);
+                    if (ret == false)
+                        return false;
+                }
             return true;
+        } 
+        
+        private bool SaveInOtherViewsTransaction<T>(Guid docid, T data)
+        {
+            List<string> list = _viewManager.GetOtherViewsList(data.GetType());
+            return SaveToView<T>(docid, data, list);
+        }
+
+        private bool SaveToConsistentViewsTransaction<T>(Guid docid, T data)
+        {
+            List<string> list = _viewManager.GetConsistentViews(data.GetType());
+            return SaveToView<T>(docid, data, list);
+        }
+
+        private bool SaveInPrimaryViewTransaction<T>(string viewname, Guid docid, T data)
+        {
+            return _viewManager.InsertTransaction(viewname, docid, data);
         }
 
         /// <summary>

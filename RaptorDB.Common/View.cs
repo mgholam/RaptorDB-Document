@@ -60,6 +60,12 @@ namespace RaptorDB
         public bool ConsistentSaveToThisView { get; set; }
 
         /// <summary>
+        /// Apply to a Primary View and all the mappings of all views will be done in a transaction.
+        /// You can use Rollback for failures.
+        /// </summary>
+        public bool TransactionMode { get; set; }
+        
+        /// <summary>
         /// Fire the mapper on these types
         /// </summary>
         /// <param name="type"></param>
@@ -79,6 +85,7 @@ namespace RaptorDB
             FireOnTypes = new List<string>();
             DeleteBeforeInsert = true;
             BackgroundIndexing = true;
+            //AllowTransactions = false;
         }
 
         /// <summary>
@@ -99,6 +106,8 @@ namespace RaptorDB
                 throw new Exception("A map function must be defined");
             if (FireOnTypes.Count == 0) 
                 throw new Exception("No types have been defined to fire on");
+            if (TransactionMode == true && isPrimaryList == false)
+                throw new Exception("Transaction mode can only be enabled on Primary Views");
             // FEATURE : add more verifications
             return new Result(true);
         }
