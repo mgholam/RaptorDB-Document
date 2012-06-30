@@ -64,5 +64,6 @@ v1.5
 
 v1.6
 ----
+- query lambda caching
 - transaction support
--
+- bug in datetime serialization

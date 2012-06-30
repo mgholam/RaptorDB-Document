@@ -57,6 +57,7 @@ namespace SampleViews
             this.isPrimaryList = true;
             this.isActive = true;
             this.BackgroundIndexing = true;
+            //// uncomment the following for transaction mode
             //this.TransactionMode = true;
 
             this.Schema = typeof(SalesInvoiceView.RowSchema);
@@ -67,7 +68,7 @@ namespace SampleViews
             {
                 if (doc.Serial == 0)
                     api.RollBack();
-                api.EmitObject(docid, doc);//.CustomerName, doc.Date, doc.Address, doc.Serial, doc.Status);
+                api.EmitObject(docid, doc);
             };
         }
     }
@@ -99,7 +100,7 @@ namespace SampleViews
             {
                 if (doc.Status == 3 && doc.Items != null)
                     foreach (var item in doc.Items)
-                        api.EmitObject(docid, item);//.Product, i.QTY, i.Price, i.Discount);
+                        api.EmitObject(docid, item);
             };
         }
     }
@@ -132,7 +133,7 @@ namespace SampleViews
             {
                 if (doc.Status == 3 && doc.Items != null)
                     foreach (var i in doc.Items)
-                        api.EmitObject(docid, i);//.Product, i.QTY, i.Price, i.Discount);
+                        api.EmitObject(docid, i);
             };
         }
     }

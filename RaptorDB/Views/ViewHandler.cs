@@ -157,8 +157,16 @@ namespace RaptorDB.Views
             apimapper api = new apimapper(_viewmanager);
             View<T> view = (View<T>)_view;
 
-            if (view.Mapper != null)
-                view.Mapper(api, docid, doc);
+            try
+            {
+                if (view.Mapper != null)
+                    view.Mapper(api, docid, doc);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex);
+                return false;
+            }
 
             if (api._RollBack == true)
                 return false;
@@ -180,13 +188,14 @@ namespace RaptorDB.Views
             return true;
         }
 
+        // FEATURE : add query caching here
         SafeDictionary<string, LambdaExpression> _lambdacache = new SafeDictionary<string, LambdaExpression>();
         internal Result Query(string filter)
         {
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
             _log.Debug("query : " + filter);
-            // FEATURE : add query caching here
+
             WAHBitArray ba = new WAHBitArray();
 
             LambdaExpression le = null;
@@ -205,11 +214,12 @@ namespace RaptorDB.Views
             return ReturnRows(ba);
         }
 
+        // FEATURE : add query caching here
         internal Result Query<T>(Expression<Predicate<T>> filter)
         {
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
-            // FEATURE : add query caching here
+
             WAHBitArray ba = new WAHBitArray();
 
             QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
@@ -219,10 +229,10 @@ namespace RaptorDB.Views
             {
                 // FIX : query from transaction own data
 
-                //var rows = null;
+                //Dictionary<Guid, List<object[]>> rows = null;
                 //if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
                 //{
-                //    var r = rows.Cast<T>().ToList().FindAll(filter.Compile());
+                //    var r = rows.Values.FindAll(filter.Compile());
                 //    if (r.Count > 0)
                 //    {
 

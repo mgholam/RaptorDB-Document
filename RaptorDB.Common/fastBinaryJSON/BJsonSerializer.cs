@@ -273,8 +273,7 @@ namespace fastBinaryJSON
 
         private void WriteDateTime(DateTime dateTime)
         {
-            DateTime dt = dateTime;
-            dt = dateTime.ToUniversalTime();
+            DateTime dt = dateTime;//.ToUniversalTime();
 
             _output.WriteByte(TOKENS.DATETIME);
             byte[] b = RaptorDB.Common.Helper.GetBytes(dt.Ticks, false);
