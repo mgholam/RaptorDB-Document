@@ -70,7 +70,8 @@ namespace datagridbinding
                           TotalQTY = grouped.Sum(product => product.QTY)
                       };
 
-            dataGridView1.DataSource = res.ToList();
+            var reslist = res.ToList();
+            dataGridView1.DataSource = reslist;
             toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;
             toolStripStatusLabel1.Text = "Count = " + q.Count.ToString("#,0");
         }
@@ -127,6 +128,15 @@ namespace datagridbinding
         private void restoreToolStripMenuItem_Click(object sender, EventArgs e)
         {
             rap.Restore();
+        }
+
+        private void serverSideSumQueryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DateTime dt = FastDateTime.Now;
+            var qq = rap.ServerSide(Views.ServerSide.Sum).ToList();
+            dataGridView1.DataSource = qq;
+            toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;
+            toolStripStatusLabel1.Text = "Count = " + qq.Count.ToString("#,0");
         }
     }
 }

@@ -33,6 +33,7 @@ namespace RaptorDB
         private MethodInfo register = null;
         private MethodInfo save = null;
         private SafeDictionary<Type, MethodInfo> _savecache = new SafeDictionary<Type, MethodInfo>();
+        private SafeDictionary<string, ServerSideFunc> _ssidecache = new SafeDictionary<string, ServerSideFunc>();
         private System.Timers.Timer _backupTimer;
 
         private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
@@ -133,6 +134,12 @@ namespace RaptorDB
                         param = (object[])p.Data;
                         ret.OK = AddUser((string)param[0], (string)param[1], (string)param[2]);
                         break;
+                    case "serverside":
+                        param = (object[])p.Data;
+                        ret.OK = true;
+                        ret.Data = _raptor.ServerSide(GetServerSideFuncCache(param[0].ToString(), param[1].ToString()));
+                        break;
+
                 }
             }
             catch (Exception ex)
@@ -141,6 +148,20 @@ namespace RaptorDB
                 log.Error(ex);
             }
             return ret;
+        }
+
+        private ServerSideFunc GetServerSideFuncCache(string type, string method)
+        {
+            ServerSideFunc func;
+
+            if (_ssidecache.TryGetValue(type + method, out func) == false)
+            {
+                Type tt = Type.GetType(type);
+
+                func = (ServerSideFunc)Delegate.CreateDelegate(typeof(ServerSideFunc), tt, method);
+                _ssidecache.Add(type + method, func);
+            }
+            return func;
         }
 
         private uint GenHash(string user, string pwd)

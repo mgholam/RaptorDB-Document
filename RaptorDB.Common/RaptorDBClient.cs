@@ -201,10 +201,21 @@ namespace RaptorDB
         {
             Packet p = CreatePacket();
             p.Command = "adduser";
-            p.Data = new object[] {username, oldpassword, newpassword };
+            p.Data = new object[] { username, oldpassword, newpassword };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return ret.OK;
         }
+
+        public object[] ServerSide(ServerSideFunc func)
+        {
+            Packet p = CreatePacket();
+            p.Command = "serverside";
+            p.Data = new object[] { func.Method.ReflectedType.AssemblyQualifiedName, func.Method.Name };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (object[]) ret.Data;
+        }
+
+
         //public List<string> GetViews()
         //{
         //    return null;
@@ -223,5 +234,6 @@ namespace RaptorDB
 
             return p;
         }
+
     }
 }

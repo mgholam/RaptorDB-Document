@@ -6,6 +6,8 @@ using System.Linq.Expressions;
 
 namespace RaptorDB.Common
 {
+    public delegate List<object> ServerSideFunc(IRaptorDB rap);
+
     public interface IRaptorDB
     {
         /// <summary>
@@ -104,5 +106,12 @@ namespace RaptorDB.Common
         /// <param name="newpassword"></param>
         /// <returns></returns>
         bool AddUser(string username, string oldpassword, string newpassword);
+
+        /// <summary>
+        /// Do server side data aggregate queries, so you don't transfer large data rows to clients for processing 
+        /// </summary>
+        /// <param name="func"></param>
+        /// <returns></returns>
+        object[] ServerSide(ServerSideFunc func);
     }
 }

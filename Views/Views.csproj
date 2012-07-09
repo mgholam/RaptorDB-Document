@@ -37,6 +37,7 @@
   <ItemGroup>
     <Compile Include="Class1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ServerSide.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RaptorDB.Common\RaptorDB.Common.csproj">

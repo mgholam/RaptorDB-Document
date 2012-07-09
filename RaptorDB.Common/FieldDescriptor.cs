@@ -5,9 +5,9 @@ using System.Text;
 using System.Reflection;
 using System.ComponentModel;
 
-namespace RaptorDB.Common
+namespace RaptorDB
 {
-    public class FieldPropertyDescriptor : PropertyDescriptor
+    internal class FieldPropertyDescriptor : PropertyDescriptor
     {
         private FieldInfo _field;
 
@@ -44,7 +44,7 @@ namespace RaptorDB.Common
         }
     }
 
-    public abstract class FieldsToPropertiesTypeDescriptor : ICustomTypeDescriptor
+    public abstract class BindableFields : ICustomTypeDescriptor
     {
         object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
         {

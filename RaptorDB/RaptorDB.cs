@@ -576,5 +576,11 @@ namespace RaptorDB
             return m;
         }
         #endregion
+
+
+        public object[] ServerSide(ServerSideFunc func)
+        {
+            return func(this).ToArray();
+        }
     }
 }
