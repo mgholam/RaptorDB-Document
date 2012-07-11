@@ -46,6 +46,12 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>md "$(SolutionDir)testing\bin\debug\Extensions"
+md "$(SolutionDir)RaptorDBServer\bin\debug\Extensions"
+copy "$(TargetDir)$(TargetFileName)" "$(SolutionDir)testing\bin\debug\Extensions\$(TargetFileName)"
+copy "$(TargetDir)$(TargetFileName)" "$(SolutionDir)RaptorDBServer\bin\debug\Extensions\$(TargetFileName)"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

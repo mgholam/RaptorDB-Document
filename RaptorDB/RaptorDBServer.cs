@@ -153,7 +153,7 @@ namespace RaptorDB
         private ServerSideFunc GetServerSideFuncCache(string type, string method)
         {
             ServerSideFunc func;
-
+            log.Debug("Calling Server side Function : " + method + " on type " + type);
             if (_ssidecache.TryGetValue(type + method, out func) == false)
             {
                 Type tt = Type.GetType(type);

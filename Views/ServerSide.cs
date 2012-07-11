@@ -16,7 +16,7 @@ namespace Views
             public decimal TotalQTY;
         }
 
-        public static List<object> Sum(IRaptorDB rap)
+        public static List<object> Sum_Product1_and_Product2(IRaptorDB rap)
         {
             var q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
 
