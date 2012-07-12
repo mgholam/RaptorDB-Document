@@ -126,6 +126,22 @@ namespace RaptorDB
         }
 
         /// <summary>
+        /// Query a view with filters
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="view">base entity type, or typeof the view </param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public Result Query(Type type, string filter)
+        {
+            Packet p = CreatePacket();
+            p.Command = "querytype";
+            p.Data = new object[] { type.AssemblyQualifiedName, filter};
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (Result)ret.Data;
+        }
+
+        /// <summary>
         /// Fetch a document by it's ID
         /// </summary>
         /// <param name="docID"></param>
@@ -206,15 +222,26 @@ namespace RaptorDB
             return ret.OK;
         }
 
-        public object[] ServerSide(ServerSideFunc func)
+        public object[] ServerSide(ServerSideFunc func, string filter)
         {
             Packet p = CreatePacket();
             p.Command = "serverside";
-            p.Data = new object[] { func.Method.ReflectedType.AssemblyQualifiedName, func.Method.Name };
+            p.Data = new object[] { func.Method.ReflectedType.AssemblyQualifiedName, func.Method.Name, filter };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (object[]) ret.Data;
+            return (object[])ret.Data;
         }
 
+        public object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+
+            Packet p = CreatePacket();
+            p.Command = "serverside";
+            p.Data = new object[] { func.Method.ReflectedType.AssemblyQualifiedName, func.Method.Name, ls.sb.ToString() };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (object[])ret.Data;
+        }
 
         //public List<string> GetViews()
         //{
@@ -234,6 +261,5 @@ namespace RaptorDB
 
             return p;
         }
-
     }
 }

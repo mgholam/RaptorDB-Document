@@ -137,7 +137,7 @@ namespace RaptorDB
                     case "serverside":
                         param = (object[])p.Data;
                         ret.OK = true;
-                        ret.Data = _raptor.ServerSide(GetServerSideFuncCache(param[0].ToString(), param[1].ToString()));
+                        ret.Data = _raptor.ServerSide(GetServerSideFuncCache(param[0].ToString(), param[1].ToString()), param[2].ToString());
                         break;
 
                 }

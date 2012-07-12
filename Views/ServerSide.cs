@@ -16,9 +16,9 @@ namespace Views
             public decimal TotalQTY;
         }
 
-        public static List<object> Sum_Product1_and_Product2(IRaptorDB rap)
+        public static List<object> Sum_Product1_and_Product2(IRaptorDB rap, string filter)
         {
-            var q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
+            var q = rap.Query(typeof(SalesItemRowsView), filter);
 
             List<SalesItemRowsView.RowSchema> list = q.Rows.Cast<SalesItemRowsView.RowSchema>().ToList();
             var res = from item in list

@@ -48,6 +48,21 @@ namespace RaptorDB.Views
             return new Result(false, new Exception("view not found : " + viewname));
         }
 
+        internal Result Query(Type objtype, string filter)
+        {
+            string viewname = null;
+            // find view from name
+            if (_primaryView.TryGetValue(objtype, out viewname))
+                return Query(viewname, filter);
+
+            // search for viewtype here
+            if (_otherViewTypes.TryGetValue(objtype, out viewname))
+                return Query(viewname, filter);
+
+            _log.Error("view not found", viewname);
+            return new Result(false, new Exception("view not found : " + viewname));
+        }
+
         internal Result Query(string viewname, string filter)
         {
             ViewHandler view = null;

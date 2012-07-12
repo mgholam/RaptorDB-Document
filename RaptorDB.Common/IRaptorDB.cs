@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace RaptorDB.Common
 {
-    public delegate List<object> ServerSideFunc(IRaptorDB rap);
+    public delegate List<object> ServerSideFunc(IRaptorDB rap, string filter);
 
     public interface IRaptorDB
     {
@@ -61,6 +61,14 @@ namespace RaptorDB.Common
         /// <returns></returns>
         Result Query<T>(Type type, Expression<Predicate<T>> filter);
         /// <summary>
+        /// Query a View Type with a string filter
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        Result Query(Type type, string filter);
+        /// <summary>
         /// Fetch a Document
         /// </summary>
         /// <param name="docID"></param>
@@ -112,6 +120,13 @@ namespace RaptorDB.Common
         /// </summary>
         /// <param name="func"></param>
         /// <returns></returns>
-        object[] ServerSide(ServerSideFunc func);
+        object[] ServerSide(ServerSideFunc func, string filter);
+
+        /// <summary>
+        /// Do server side data aggregate queries, so you don't transfer large data rows to clients for processing 
+        /// </summary>
+        /// <param name="func"></param>
+        /// <returns></returns>
+        object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter);
     }
 }

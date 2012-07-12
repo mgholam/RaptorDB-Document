@@ -222,6 +222,18 @@ namespace RaptorDB
         }
 
         /// <summary>
+        /// Query a view with filters
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="view">base entity type, or typeof the view </param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public Result Query(Type type, string filter)
+        {
+            return _viewManager.Query(type, filter);
+        }
+
+        /// <summary>
         /// Fetch a document by it's ID
         /// </summary>
         /// <param name="docID"></param>
@@ -578,9 +590,16 @@ namespace RaptorDB
         #endregion
 
 
-        public object[] ServerSide(ServerSideFunc func)
+        public object[] ServerSide(ServerSideFunc func, string filter)
         {
-            return func(this).ToArray();
+            return func(this, filter).ToArray();
+        }
+
+        public object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+            return func(this, ls.sb.ToString()).ToArray();
         }
     }
 }
