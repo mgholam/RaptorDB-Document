@@ -295,7 +295,7 @@ namespace fastBinaryJSON
                 m.Info.Add(c.ColumnName);
                 m.Info.Add(c.DataType.ToString());
             }
-            // TODO : serialize relations and constraints here
+            // FEATURE : serialize relations and constraints here
 
             return m;
         }
@@ -317,7 +317,7 @@ namespace fastBinaryJSON
                     m.Info.Add(c.DataType.ToString());
                 }
             }
-            // TODO : serialize relations and constraints here
+            // FEATURE : serialize relations and constraints here
 
             return m;
         }

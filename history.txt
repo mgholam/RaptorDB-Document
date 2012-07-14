@@ -72,4 +72,6 @@ v1.7
 ----
 - server side aggregate queries
 - fixed the build script for views to copy the dll to the extensions folder
--
+- server side queries can have filters
+- login form default buttons fix
+

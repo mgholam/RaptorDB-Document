@@ -120,7 +120,7 @@ namespace fastJSON
 
         private void WriteEnum(Enum e)
         {
-            // TODO : optimize enum write
+            // FEATURE : optimize enum write
             WriteStringFast(e.ToString());
         }
 

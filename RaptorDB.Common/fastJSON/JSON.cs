@@ -676,7 +676,7 @@ namespace fastJSON
 
         private object CreateEnum(Type pt, string v)
         {
-            // TODO : optimize create enum
+            // FEATURE : optimize create enum
 #if !SILVERLIGHT
             return Enum.Parse(pt, v);
 #else

@@ -57,6 +57,7 @@ namespace SampleViews
             this.isPrimaryList = true;
             this.isActive = true;
             this.BackgroundIndexing = true;
+            
             //// uncomment the following for transaction mode
             //this.TransactionMode = true;
 
