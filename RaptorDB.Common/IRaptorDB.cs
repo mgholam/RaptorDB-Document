@@ -128,5 +128,7 @@ namespace RaptorDB.Common
         /// <param name="func"></param>
         /// <returns></returns>
         object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter);
+
+        Result FullTextSearch(string filter);
     }
 }

@@ -13,12 +13,11 @@ using System.Reflection.Emit;
 using System.Xml;
 using System.Text;
 using fastJSON;
-using RaptorDB;
 using RaptorDB.Common;
 
 namespace fastBinaryJSON
 {
-    internal class TOKENS
+    public class TOKENS
     {
         public const byte DOC_START = 1;
         public const byte DOC_END = 2;
@@ -95,12 +94,14 @@ namespace fastBinaryJSON
 
         public byte[] ToBJSON(object obj, BJSONParameters param)
         {
+            Reflection.Instance.ShowReadOnlyProperties = param.ShowReadOnlyProperties;
             return new BJSONSerializer(param).ConvertToBJSON(obj);
         }
 
         public object Parse(byte[] json)
         {
             _params = Parameters;
+            Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
             return new BJsonParser(json).Decode();
         }
 
@@ -117,6 +118,7 @@ namespace fastBinaryJSON
         public object ToObject(byte[] json, Type type)
         {
             _params = Parameters;
+            Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
             var d = new BJsonParser(json).Decode();
             var ht = d as Dictionary<string, object>;
             if (ht == null) return d;
@@ -145,66 +147,8 @@ namespace fastBinaryJSON
         }
 #endif
 
-        #region [   PROPERTY GET SET CACHE   ]
-        SafeDictionary<Type, string> _tyname = new SafeDictionary<Type, string>();
-        internal string GetTypeAssemblyName(Type t)
-        {
-            string val = "";
-            if (_tyname.TryGetValue(t, out val))
-                return val;
-            else
-            {
-                string s = t.AssemblyQualifiedName;
-                _tyname.Add(t, s);
-                return s;
-            }
-        }
-
-        SafeDictionary<string, Type> _typecache = new SafeDictionary<string, Type>();
-        private Type GetTypeFromCache(string typename)
-        {
-            Type val = null;
-            if (_typecache.TryGetValue(typename, out val))
-                return val;
-            else
-            {
-                Type t = Type.GetType(typename);
-                _typecache.Add(typename, t);
-                return t;
-            }
-        }
-
-        SafeDictionary<Type, CreateObject> _constrcache = new SafeDictionary<Type, CreateObject>();
-        private delegate object CreateObject();
-        private object FastCreateInstance(Type objtype)
-        {
-            try
-            {
-                CreateObject c = null;
-                if (_constrcache.TryGetValue(objtype, out c))
-                {
-                    return c();
-                }
-                else
-                {
-                    DynamicMethod dynMethod = new DynamicMethod("_", objtype, null);
-                    ILGenerator ilGen = dynMethod.GetILGenerator();
-
-                    ilGen.Emit(OpCodes.Newobj, objtype.GetConstructor(Type.EmptyTypes));
-                    ilGen.Emit(OpCodes.Ret);
-                    c = (CreateObject)dynMethod.CreateDelegate(typeof(CreateObject));
-                    _constrcache.Add(objtype, c);
-                    return c();
-                }
-            }
-            catch (Exception exc)
-            {
-                throw new Exception(string.Format("Failed to fast create instance for type '{0}' from assemebly '{1}'",
-                    objtype.FullName, objtype.AssemblyQualifiedName), exc);
-            }
-        }
-
-        private struct myPropInfo
+        #region [   BJSON specific reflection   ]
+        internal struct myPropInfo
         {
             public bool filled;
             public Type pt;
@@ -214,22 +158,16 @@ namespace fastBinaryJSON
             public bool isGenericType;
             public bool isArray;
             public bool isByteArray;
-            //public bool isGuid;
 #if !SILVERLIGHT
             public bool isDataSet;
             public bool isDataTable;
             public bool isHashtable;
 #endif
-            public fastJSON.JSON.GenericSetter setter;
+            public Reflection.GenericSetter setter;
             public bool isEnum;
-            //public bool isDateTime;
             public Type[] GenericTypes;
-            //public bool isInt;
-            //public bool isLong;
-            //public bool isString;
-            //public bool isBool;
             public bool isClass;
-            public fastJSON.JSON.GenericGetter getter;
+            public Reflection.GenericGetter getter;
             public bool isStringDictionary;
             public string Name;
 #if CUSTOMTYPE
@@ -239,7 +177,7 @@ namespace fastBinaryJSON
         }
 
         SafeDictionary<string, SafeDictionary<string, myPropInfo>> _propertycache = new SafeDictionary<string, SafeDictionary<string, myPropInfo>>();
-        private SafeDictionary<string, myPropInfo> Getproperties(Type type, string typename)
+        internal SafeDictionary<string, myPropInfo> Getproperties(Type type, string typename)
         {
             SafeDictionary<string, myPropInfo> sd = null;
             if (_propertycache.TryGetValue(typename, out sd))
@@ -249,21 +187,21 @@ namespace fastBinaryJSON
             else
             {
                 sd = new SafeDictionary<string, myPropInfo>();
-                PropertyInfo[] pr = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                PropertyInfo[] pr = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                 foreach (PropertyInfo p in pr)
                 {
                     myPropInfo d = CreateMyProp(p.PropertyType, p.Name);
                     d.CanWrite = p.CanWrite;
-                    d.setter = CreateSetMethod(p);
-                    d.getter = CreateGetMethod(p);
+                    d.setter = Reflection.CreateSetMethod(type, p);
+                    d.getter = Reflection.CreateGetMethod(type, p);
                     sd.Add(p.Name, d);
                 }
-                FieldInfo[] fi = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+                FieldInfo[] fi = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                 foreach (FieldInfo f in fi)
                 {
                     myPropInfo d = CreateMyProp(f.FieldType, f.Name);
-                    d.setter = CreateSetField(type, f);
-                    d.getter = CreateGetField(type, f);
+                    d.setter = Reflection.CreateSetField(type, f);
+                    d.getter = Reflection.CreateGetField(type, f);
                     sd.Add(f.Name, d);
                 }
 
@@ -295,7 +233,6 @@ namespace fastBinaryJSON
             d.isDataSet = t == typeof(DataSet);
             d.isDataTable = t == typeof(DataTable);
 #endif
-            //d.isDateTime = t == typeof(DateTime);
             d.isEnum = t.IsEnum;
             d.isClass = t.IsClass;
 
@@ -308,142 +245,6 @@ namespace fastBinaryJSON
 #endif
             return d;
         }
-
-        //private delegate void GenericSetter(object target, object value);
-
-        private static fastJSON.JSON.GenericSetter CreateSetMethod(PropertyInfo propertyInfo)
-        {
-            MethodInfo setMethod = propertyInfo.GetSetMethod();
-            if (setMethod == null)
-                return null;
-
-            Type[] arguments = new Type[2];
-            arguments[0] = arguments[1] = typeof(object);
-
-            DynamicMethod setter = new DynamicMethod("_", typeof(void), arguments);
-            ILGenerator il = setter.GetILGenerator();
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Castclass, propertyInfo.DeclaringType);
-            il.Emit(OpCodes.Ldarg_1);
-
-            if (propertyInfo.PropertyType.IsClass)
-                il.Emit(OpCodes.Castclass, propertyInfo.PropertyType);
-            else
-                il.Emit(OpCodes.Unbox_Any, propertyInfo.PropertyType);
-
-            il.EmitCall(OpCodes.Callvirt, setMethod, null);
-            il.Emit(OpCodes.Ret);
-
-            return (fastJSON.JSON.GenericSetter)setter.CreateDelegate(typeof(fastJSON.JSON.GenericSetter));
-        }
-
-        //internal delegate object GenericGetter(object obj);
-
-        private static fastJSON.JSON.GenericGetter CreateGetField(Type type, FieldInfo fieldInfo)
-        {
-            DynamicMethod dynamicGet = new DynamicMethod("_", typeof(object), new Type[] { typeof(object) }, type, true);
-            ILGenerator il = dynamicGet.GetILGenerator();
-
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldfld, fieldInfo);
-            if (fieldInfo.FieldType.IsValueType)
-                il.Emit(OpCodes.Box, fieldInfo.FieldType);
-            il.Emit(OpCodes.Ret);
-
-            return (fastJSON.JSON.GenericGetter)dynamicGet.CreateDelegate(typeof(fastJSON.JSON.GenericGetter));
-        }
-
-        private static fastJSON.JSON.GenericSetter CreateSetField(Type type, FieldInfo fieldInfo)
-        {
-            Type[] arguments = new Type[2];
-            arguments[0] = arguments[1] = typeof(object);
-
-            DynamicMethod dynamicSet = new DynamicMethod("_", typeof(void), arguments, type, true);
-            ILGenerator il = dynamicSet.GetILGenerator();
-
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldarg_1);
-            if (fieldInfo.FieldType.IsValueType)
-                il.Emit(OpCodes.Unbox_Any, fieldInfo.FieldType);
-            il.Emit(OpCodes.Stfld, fieldInfo);
-            il.Emit(OpCodes.Ret);
-
-            return (fastJSON.JSON.GenericSetter)dynamicSet.CreateDelegate(typeof(fastJSON.JSON.GenericSetter));
-        }
-
-        private fastJSON.JSON.GenericGetter CreateGetMethod(PropertyInfo propertyInfo)
-        {
-            MethodInfo getMethod = propertyInfo.GetGetMethod();
-            if (getMethod == null)
-                return null;
-
-            Type[] arguments = new Type[1];
-            arguments[0] = typeof(object);
-
-            DynamicMethod getter = new DynamicMethod("_", typeof(object), arguments);
-            ILGenerator il = getter.GetILGenerator();
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Castclass, propertyInfo.DeclaringType);
-            il.EmitCall(OpCodes.Callvirt, getMethod, null);
-
-            if (!propertyInfo.PropertyType.IsClass)
-                il.Emit(OpCodes.Box, propertyInfo.PropertyType);
-
-            il.Emit(OpCodes.Ret);
-
-            return (fastJSON.JSON.GenericGetter)getter.CreateDelegate(typeof(fastJSON.JSON.GenericGetter));
-        }
-
-        readonly SafeDictionary<Type, List<Getters>> _getterscache = new SafeDictionary<Type, List<Getters>>();
-        public List<Getters> GetGetters(Type type)
-        {
-            List<Getters> val = null;
-            if (_getterscache.TryGetValue(type, out val))
-                return val;
-
-            PropertyInfo[] props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            List<Getters> getters = new List<Getters>();
-            foreach (PropertyInfo p in props)
-            {
-                if (!p.CanWrite && _params.ShowReadOnlyProperties == false) continue;
-
-                object[] att = p.GetCustomAttributes(typeof(System.Xml.Serialization.XmlIgnoreAttribute), false);
-                if (att != null && att.Length > 0)
-                    continue;
-
-                JSON.GenericGetter g = CreateGetMethod(p);
-                if (g != null)
-                {
-                    Getters gg = new Getters();
-                    gg.Name = p.Name;
-                    gg.Getter = g;
-                    gg.propertyType = p.PropertyType;
-                    getters.Add(gg);
-                }
-            }
-
-            FieldInfo[] fi = type.GetFields(BindingFlags.Instance | BindingFlags.Public);
-            foreach (var f in fi)
-            {
-                object[] att = f.GetCustomAttributes(typeof(System.Xml.Serialization.XmlIgnoreAttribute), false);
-                if (att != null && att.Length > 0)
-                    continue;
-
-                JSON.GenericGetter g = CreateGetField(type, f);
-                if (g != null)
-                {
-                    Getters gg = new Getters();
-                    gg.Name = f.Name;
-                    gg.Getter = g;
-                    gg.propertyType = f.FieldType;
-                    getters.Add(gg);
-                }
-            }
-
-            _getterscache.Add(type, getters);
-            return getters;
-        }
-
         #endregion
 
         private bool _globalTypes = false;
@@ -476,14 +277,14 @@ namespace fastBinaryJSON
                     if (globaltypes.TryGetValue((string)tn, out tname))
                         tn = tname;
                 }
-                type = GetTypeFromCache((string)tn);
+                type = Reflection.Instance.GetTypeFromCache((string)tn);
             }
 
             if (type == null)
                 throw new Exception("Cannot determine type");
 
             string typename = type.FullName;
-            object o = FastCreateInstance(type);
+            object o = Reflection.Instance.FastCreateInstance(type);
             SafeDictionary<string, myPropInfo> props = Getproperties(type, typename);
             foreach (string name in d.Keys)
             {
@@ -553,7 +354,7 @@ namespace fastBinaryJSON
 #endif
 
                         if (pi.CanWrite)
-                            pi.setter(o, oset);
+                            o = pi.setter(o, oset);
                     }
                 }
             }
@@ -571,7 +372,7 @@ namespace fastBinaryJSON
 
         private object CreateEnum(Type pt, string v)
         {
-            // FEATURE : optimize create enum
+            // TODO : optimize create enum
 #if !SILVERLIGHT
             return Enum.Parse(pt, v);
 #else
@@ -618,7 +419,7 @@ namespace fastBinaryJSON
         private object CreateGenericList(ArrayList data, Type pt, Type bt, Dictionary<string, object> globalTypes)
 #endif
         {
-            IList col = (IList)FastCreateInstance(pt);
+            IList col = (IList)Reflection.Instance.FastCreateInstance(pt);
             // create an array of objects
             foreach (object ob in data)
             {
@@ -639,7 +440,7 @@ namespace fastBinaryJSON
 
         private object CreateStringKeyDictionary(Dictionary<string, object> reader, Type pt, Type[] types, Dictionary<string, object> globalTypes)
         {
-            var col = (IDictionary)FastCreateInstance(pt);
+            var col = (IDictionary)Reflection.Instance.FastCreateInstance(pt);
             Type t1 = null;
             Type t2 = null;
             if (types != null)
@@ -668,7 +469,7 @@ namespace fastBinaryJSON
         private object CreateDictionary(ArrayList reader, Type pt, Type[] types, Dictionary<string, object> globalTypes)
 #endif
         {
-            IDictionary col = (IDictionary)FastCreateInstance(pt);
+            IDictionary col = (IDictionary)Reflection.Instance.FastCreateInstance(pt);
             Type t1 = null;
             Type t2 = null;
             if (types != null)

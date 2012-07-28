@@ -294,24 +294,27 @@ namespace RaptorDB
                 return;
             // load words
             byte[] b = File.ReadAllBytes(_Path + _FileName + ".words");
-            MemoryStream ms = new MemoryStream(b);
-            BinaryReader br = new BinaryReader(ms, Encoding.UTF8);
-            string s = br.ReadString();
-            while (s != "")
+            if (b.Length > 0)
             {
-                long off = br.ReadInt64();
-                Cache c = new Cache();
-                c.isLoaded = false;
-                c.isDirty = false;
-                c.FileOffset = off;
-                _index.Add(s, c);
-                try
+                MemoryStream ms = new MemoryStream(b);
+                BinaryReader br = new BinaryReader(ms, Encoding.UTF8);
+                string s = br.ReadString();
+                while (s != "")
                 {
-                    s = br.ReadString();
+                    long off = br.ReadInt64();
+                    Cache c = new Cache();
+                    c.isLoaded = false;
+                    c.isDirty = false;
+                    c.FileOffset = off;
+                    _index.Add(s, c);
+                    try
+                    {
+                        s = br.ReadString();
+                    }
+                    catch { s = ""; }
                 }
-                catch { s = ""; }
+                _log.Debug("Word Count = " + _index.Count);
             }
-            _log.Debug("Word Count = " + _index.Count);
         }
 
         //-----------------------------------------------------------------

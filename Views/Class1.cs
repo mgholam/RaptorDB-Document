@@ -1,5 +1,4 @@
-﻿// #ref 
-// RaptorDb.Common
+﻿// ref : RaptorDb.Common.dll
 //
 // 
 using System;

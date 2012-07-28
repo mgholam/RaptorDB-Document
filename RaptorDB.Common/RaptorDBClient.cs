@@ -242,7 +242,16 @@ namespace RaptorDB
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (object[])ret.Data;
         }
-
+        
+        public Result FullTextSearch(string filter)
+        {
+            Packet p = CreatePacket();
+            p.Command = "fulltext";
+            p.Data = new object[] { filter };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (Result)ret.Data;
+        }
+        
         //public List<string> GetViews()
         //{
         //    return null;
@@ -261,5 +270,6 @@ namespace RaptorDB
 
             return p;
         }
+
     }
 }

@@ -34,8 +34,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-	<Reference Include="System.Data" />
-	<Reference Include="System.Xml" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataTypes.cs" />
@@ -47,6 +47,7 @@
     <Compile Include="fastJSON\JSON.cs" />
     <Compile Include="fastJSON\JsonParser.cs" />
     <Compile Include="fastJSON\JsonSerializer.cs" />
+    <Compile Include="fastJSON\Reflection.cs" />
     <Compile Include="FieldDescriptor.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="IRaptorDB.cs" />

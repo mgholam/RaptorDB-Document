@@ -48,5 +48,9 @@ namespace RaptorDB
         /// Check the restore folder for new backup files to restore
         /// </summary>
         public static int RestoreTimerSeconds = 10;
+        /// <summary>
+        /// Timer for full text indexing of original documents
+        /// </summary>
+        public static int FullTextTimerSeconds = 60;
     }
 }

@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using fastJSON;
+using RaptorDB.Common;
 
 namespace fastBinaryJSON
 {
@@ -64,7 +65,7 @@ namespace fastBinaryJSON
             {
                 if (pendingSeparator) WriteComma();
 
-                WritePair(entry.Value.ToString(), entry.Key); // reverse 
+                WritePair(entry.Value.ToString(), entry.Key);
 
                 pendingSeparator = true;
             }
@@ -153,13 +154,13 @@ namespace fastBinaryJSON
         private void WriteUShort(ushort p)
         {
             _output.WriteByte(TOKENS.USHORT);
-            _output.Write(RaptorDB.Common.Helper.GetBytes(p, false), 0, 2);
+            _output.Write(Helper.GetBytes(p, false), 0, 2);
         }
 
         private void WriteShort(short p)
         {
             _output.WriteByte(TOKENS.SHORT);
-            _output.Write(RaptorDB.Common.Helper.GetBytes(p, false), 0, 2);
+            _output.Write(Helper.GetBytes(p, false), 0, 2);
         }
 
         private void WriteFloat(float p)
@@ -187,30 +188,30 @@ namespace fastBinaryJSON
             _output.WriteByte(TOKENS.DECIMAL);
             var b = decimal.GetBits(p);
             foreach (var c in b)
-                _output.Write(RaptorDB.Common.Helper.GetBytes(c, false), 0, 4);
+                _output.Write(Helper.GetBytes(c, false), 0, 4);
         }
 
         private void WriteULong(ulong p)
         {
             _output.WriteByte(TOKENS.ULONG);
-            _output.Write(RaptorDB.Common.Helper.GetBytes((long)p, false), 0, 8);
+            _output.Write(Helper.GetBytes((long)p, false), 0, 8);
         }
 
         private void WriteUInt(uint p)
         {
             _output.WriteByte(TOKENS.UINT);
-            _output.Write(RaptorDB.Common.Helper.GetBytes(p, false), 0, 4);
+            _output.Write(Helper.GetBytes(p, false), 0, 4);
         }
 
         private void WriteLong(long p)
         {
             _output.WriteByte(TOKENS.LONG);
-            _output.Write(RaptorDB.Common.Helper.GetBytes(p, false), 0, 8);
+            _output.Write(Helper.GetBytes(p, false), 0, 8);
         }
 
         private void WriteChar(char p)
         {
-            // TODO : char output 
+            // FIX : 
             //_output.WriteByte(TOKENS.CHAR);
             //_output.Write(Helper.GetBytes(
             throw new Exception("char not implemented yet");
@@ -219,7 +220,7 @@ namespace fastBinaryJSON
         private void WriteBytes(byte[] p)
         {
             _output.WriteByte(TOKENS.BYTEARRAY);
-            _output.Write(RaptorDB.Common.Helper.GetBytes(p.Length, false), 0, 4);
+            _output.Write(Helper.GetBytes(p.Length, false), 0, 4);
             _output.Write(p, 0, p.Length);
         }
 
@@ -262,7 +263,7 @@ namespace fastBinaryJSON
         private void WriteInt(int i)
         {
             _output.WriteByte(TOKENS.INT);
-            _output.Write(RaptorDB.Common.Helper.GetBytes(i, false), 0, 4);
+            _output.Write(Helper.GetBytes(i, false), 0, 4);
         }
 
         private void WriteGuid(Guid g)
@@ -273,10 +274,11 @@ namespace fastBinaryJSON
 
         private void WriteDateTime(DateTime dateTime)
         {
-            DateTime dt = dateTime;//.ToUniversalTime();
+            DateTime dt = dateTime;
+            dt = dateTime.ToUniversalTime();
 
             _output.WriteByte(TOKENS.DATETIME);
-            byte[] b = RaptorDB.Common.Helper.GetBytes(dt.Ticks, false);
+            byte[] b = Helper.GetBytes(dt.Ticks, false);
             _output.Write(b, 0, b.Length);
         }
 
@@ -295,7 +297,7 @@ namespace fastBinaryJSON
                 m.Info.Add(c.ColumnName);
                 m.Info.Add(c.DataType.ToString());
             }
-            // FEATURE : serialize relations and constraints here
+            // TODO : serialize relations and constraints here
 
             return m;
         }
@@ -317,7 +319,7 @@ namespace fastBinaryJSON
                     m.Info.Add(c.DataType.ToString());
                 }
             }
-            // FEATURE : serialize relations and constraints here
+            // TODO : serialize relations and constraints here
 
             return m;
         }
@@ -408,11 +410,11 @@ namespace fastBinaryJSON
             //if (useExtension)
             {
                 if (_params.UsingGlobalTypes == false)
-                    WritePairFast("$type", BJSON.Instance.GetTypeAssemblyName(t));
+                    WritePairFast("$type", Reflection.Instance.GetTypeAssemblyName(t));
                 else
                 {
                     int dt = 0;
-                    string ct = BJSON.Instance.GetTypeAssemblyName(t);
+                    string ct = Reflection.Instance.GetTypeAssemblyName(t);
                     if (_globalTypes.TryGetValue(ct, out dt) == false)
                     {
                         dt = _globalTypes.Count + 1;
@@ -423,7 +425,7 @@ namespace fastBinaryJSON
                 append = true;
             }
 
-            List<Getters> g = BJSON.Instance.GetGetters(t);
+            List<Getters> g = Reflection.Instance.GetGetters(t);
             foreach (var p in g)
             {
                 if (append)
@@ -540,7 +542,7 @@ namespace fastBinaryJSON
                 _output.WriteByte(TOKENS.STRING);
                 b = BJSON.Instance.utf8.GetBytes(s);
             }
-            _output.Write(RaptorDB.Common.Helper.GetBytes(b.Length, false), 0, 4);
+            _output.Write(Helper.GetBytes(b.Length, false), 0, 4);
             _output.Write(b, 0, b.Length);
         }
     }

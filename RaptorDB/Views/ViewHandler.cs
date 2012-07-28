@@ -13,6 +13,7 @@ using System.CodeDom.Compiler;
 using System.ComponentModel;
 using RaptorDB.Common;
 using System.Threading;
+using fastJSON;
 
 namespace RaptorDB.Views
 {
@@ -524,7 +525,7 @@ public class rf : RaptorDB.IRowFiller
             {
                 object[] r = new object[colcount];
                 int i = 0;
-                List<fastJSON.Getters> getters = fastBinaryJSON.BJSON.Instance.GetGetters(obj.GetType());
+                List<fastJSON.Getters> getters = Reflection.Instance.GetGetters(obj.GetType());
                 foreach (var c in _schema.Columns)
                 {
                     foreach (var g in getters)

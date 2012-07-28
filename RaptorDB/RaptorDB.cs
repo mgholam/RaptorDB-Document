@@ -31,14 +31,17 @@ namespace RaptorDB
         private KeyStoreGuid _fileStore;
         private string _Path = "";
         private int _LastRecordNumberProcessed = -1; // used by background saver
+        private int _LastFulltextIndexed = -1; // used by the fulltext indexer
         private int _LastBackupRecordNumber = -1;
         private int _CurrentRecordNumber = -1;
         private System.Timers.Timer _saveTimer;
+        private System.Timers.Timer _fulltextTimer;
         private bool _shuttingdown = false;
         private bool _pauseindexer = false;
         private MethodInfo otherviews = null;
         private MethodInfo save = null;
         private SafeDictionary<Type, MethodInfo> _savecache = new SafeDictionary<Type, MethodInfo>();
+        private FullTextIndex _fulltextindex;
 
         internal string GetViewName(Type type)
         {
@@ -141,8 +144,8 @@ namespace RaptorDB
                         return false;
                 }
             return true;
-        } 
-        
+        }
+
         private bool SaveInOtherViewsTransaction<T>(Guid docid, T data)
         {
             List<string> list = _viewManager.GetOtherViewsList(data.GetType());
@@ -273,18 +276,21 @@ namespace RaptorDB
 
         public void Shutdown()
         {
-
             if (_shuttingdown == true)
                 return;
 
             _shuttingdown = true;
+            _fulltextindex.Shutdown();
             // save records 
+            _log.Debug("last full text record = " + _LastFulltextIndexed);
+            File.WriteAllBytes(_Path + "Data\\_fulltext.rec", Helper.GetBytes(_LastFulltextIndexed, false));
             _log.Debug("last record = " + _LastRecordNumberProcessed);
             File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
             _log.Debug("last backup record = " + _LastBackupRecordNumber);
             File.WriteAllBytes(_Path + "Backup\\LastBackupRecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
             _log.Debug("Shutting down");
             _saveTimer.Stop();
+            _fulltextTimer.Stop();
             _viewManager.ShutDown();
             _objStore.Shutdown();
             _fileStore.Shutdown();
@@ -317,7 +323,7 @@ namespace RaptorDB
                 // compress the file
                 using (FileStream read = File.OpenRead(tempp + "\\backup.mgdat"))
                 using (FileStream outp = File.Create(tempp + "\\backup.mgdat.gz"))
-                    Compress(read, outp);
+                    CompressForBackup(read, outp);
 
                 _log.Debug("Backup compressed and done");
                 File.Move(tempp + "\\backup.mgdat.gz", _Path + "Backup\\" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm") + ".mgdat.gz");
@@ -351,7 +357,7 @@ namespace RaptorDB
                             File.Delete(tmp);
                         using (FileStream read = File.OpenRead(file))
                         using (FileStream outp = File.Create(tmp))
-                            Decompress(read, outp);
+                            DecompressForBackup(read, outp);
                         _log.Debug("Uncompress done : " + Path.GetFileName(tmp));
                         StorageFile<int> sf = StorageFile<int>.ReadForward(tmp);
                         foreach (var i in sf.Enumerate())
@@ -397,9 +403,31 @@ namespace RaptorDB
             GC.SuppressFinalize(this);
         }
 
+        public object[] ServerSide(ServerSideFunc func, string filter)
+        {
+            return func(this, filter).ToArray();
+        }
+
+        public object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+            return func(this, ls.sb.ToString()).ToArray();
+        }
+
+        public Result FullTextSearch(string filter)
+        {
+            // FIX: query full text here
+            Result r = new Result(false);
+            var wbmp = _fulltextindex.Query(filter);
+
+
+            return r;
+        }
+
         #region [            P R I V A T E     M E T H O D S              ]
 
-        private static void Pump(Stream input, Stream output)
+        private static void PumpDataForBackup(Stream input, Stream output)
         {
             byte[] bytes = new byte[4096 * 2];
             int n;
@@ -407,16 +435,16 @@ namespace RaptorDB
                 output.Write(bytes, 0, n);
         }
 
-        private static void Compress(Stream source, Stream destination)
+        private static void CompressForBackup(Stream source, Stream destination)
         {
             using (GZipStream gz = new GZipStream(destination, CompressionMode.Compress))
-                Pump(source, gz);
+                PumpDataForBackup(source, gz);
         }
 
-        private static void Decompress(Stream source, Stream destination)
+        private static void DecompressForBackup(Stream source, Stream destination)
         {
             using (GZipStream gz = new GZipStream(source, CompressionMode.Decompress))
-                Pump(gz, destination);
+                PumpDataForBackup(gz, destination);
         }
 
         private void SaveToConsistentViews<T>(Guid docid, T data)
@@ -476,6 +504,7 @@ namespace RaptorDB
             _Path = foldername;
 
             Directory.CreateDirectory(_Path + "Data");
+            Directory.CreateDirectory(_Path + "Data\\Fulltext");
             Directory.CreateDirectory(_Path + "Views");
             Directory.CreateDirectory(_Path + "Logs");
             Directory.CreateDirectory(_Path + "Temp");
@@ -494,6 +523,12 @@ namespace RaptorDB
 
             _viewManager = new Views.ViewManager(_Path + "Views", _objStore);
 
+            // load _LastFulltextIndexed 
+            if (File.Exists(_Path + "Data\\_fulltext.rec"))
+            {
+                byte[] b = File.ReadAllBytes(_Path + "Data\\_fulltext.rec");
+                _LastFulltextIndexed = Helper.ToInt32(b, 0, false);
+            }
             // load _LastRecordNumberProcessed 
             if (File.Exists(_Path + "Data\\_lastrecord.rec"))
             {
@@ -511,13 +546,23 @@ namespace RaptorDB
             otherviews = this.GetType().GetMethod("SaveInOtherViews", BindingFlags.Instance | BindingFlags.NonPublic);
             save = this.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
 
+            _fulltextindex = new FullTextIndex(_Path + "Data\\Fulltext", "fulltext");
+
             // start backround save to views
             _saveTimer = new System.Timers.Timer(Global.BackgroundSaveViewTimer * 1000);
             _saveTimer.Elapsed += new System.Timers.ElapsedEventHandler(_saveTimer_Elapsed);
             _saveTimer.Enabled = true;
             _saveTimer.AutoReset = true;
             _saveTimer.Start();
+
+            // start full text timer 
+            _fulltextTimer = new System.Timers.Timer(Global.FullTextTimerSeconds * 1000);
+            _fulltextTimer.Elapsed += new System.Timers.ElapsedEventHandler(_fulltextTimer_Elapsed);
+            _fulltextTimer.Enabled = true;
+            _fulltextTimer.AutoReset = true;
+            _fulltextTimer.Start();
         }
+
 
         private void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
@@ -577,6 +622,51 @@ namespace RaptorDB
             }
         }
 
+        private object _flock = new object();
+        void _fulltextTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            // FIX : disable for now
+            return;
+
+            if (_shuttingdown)
+                return;
+
+            if (_CurrentRecordNumber == 0)
+                return;
+
+            if (_CurrentRecordNumber == _LastFulltextIndexed)
+                return;
+
+            lock (_flock)
+            {
+                int batch = Global.BackgroundViewSaveBatchSize;
+                while (batch > 0)
+                {
+                    if (_shuttingdown)
+                        return;
+                    while (_pauseindexer) Thread.Sleep(0);
+                    if (_CurrentRecordNumber == _LastFulltextIndexed)
+                        return;
+                    _LastFulltextIndexed++;
+                    Guid docid;
+                    bool isdeleted = false;
+                    byte[] b = _objStore.Get(_LastFulltextIndexed, out docid, out isdeleted);
+                    if (isdeleted == false)
+                    {
+                        if (b != null)
+                        {
+                            // FIX : add full text code here
+                            // parse b -> bjson, json depending on type
+                            // foreach d in dictionary -> 
+                        }
+                    }
+                    batch--;
+                }
+
+                return;
+            }
+        }
+
         private MethodInfo GetSave(Type type)
         {
             MethodInfo m = null;
@@ -588,18 +678,5 @@ namespace RaptorDB
             return m;
         }
         #endregion
-
-
-        public object[] ServerSide(ServerSideFunc func, string filter)
-        {
-            return func(this, filter).ToArray();
-        }
-
-        public object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter)
-        {
-            LINQString ls = new LINQString();
-            ls.Visit(filter);
-            return func(this, ls.sb.ToString()).ToArray();
-        }
     }
 }
