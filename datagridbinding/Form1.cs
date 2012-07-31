@@ -135,6 +135,8 @@ namespace datagridbinding
         {
             string prod1 = "prod 1";
             DateTime dt = FastDateTime.Now;
+            //var q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == prod1 || l.Product == prod3));
+
             var qq = rap.ServerSide(Views.ServerSide.Sum_Products_based_on_filter,
                 //"product = \"prod 1\""
                 (LineItem l) => (l.Product == prod1 || l.Product == prod3)

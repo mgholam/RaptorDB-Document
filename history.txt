@@ -80,4 +80,5 @@ v1.8
 - upgrade to fastBinaryJSON v1.2 with struct support
 - upgrade to fastJSON v1.9.9 with struct support
 - bug fix hoot index loadwords when file size is zero
+- bug fix linq binding ServerSide -> c.val == stringvariable
 - bug fix linq binding -> c.val == stringvariable

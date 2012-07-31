@@ -83,7 +83,12 @@ namespace RaptorDB.Views
             if (c != null)
             {
                 Type t = c.Value.GetType();
-                var x = t.InvokeMember(m.Member.Name, BindingFlags.GetField, null, c.Value, null);
+                var x = t.InvokeMember(m.Member.Name, BindingFlags.GetField |
+                    BindingFlags.GetProperty |
+                    BindingFlags.Public |
+                    BindingFlags.NonPublic |
+                    BindingFlags.Instance |
+                    BindingFlags.Static, null, c.Value, null);
                 _stack.Push(x);
             }
             if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
@@ -107,9 +112,9 @@ namespace RaptorDB.Views
             }
             else
             {
-                _stack.Push(c.Value);
-                //if (Type.GetTypeCode(c.Value.GetType()) == TypeCode.Object)
-                //    _stack.Pop();
+                Type t = c.Value.GetType();
+                if (t.IsValueType)
+                    _stack.Push(c.Value);
             }
             return c;
         }
