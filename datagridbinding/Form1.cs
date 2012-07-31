@@ -130,12 +130,14 @@ namespace datagridbinding
             rap.Restore();
         }
 
+        string prod3 = "prod 3";
         private void serverSideSumQueryToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            string prod1 = "prod 1";
             DateTime dt = FastDateTime.Now;
             var qq = rap.ServerSide(Views.ServerSide.Sum_Products_based_on_filter,
                 //"product = \"prod 1\""
-                (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3")
+                (LineItem l) => (l.Product == prod1 || l.Product == prod3)
                 ).ToList();
             dataGridView1.DataSource = qq;
             toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;

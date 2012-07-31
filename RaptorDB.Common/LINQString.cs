@@ -73,8 +73,20 @@ namespace RaptorDB
 			if (c != null)
 			{
 				Type t = c.Value.GetType();
-				var x = t.InvokeMember(m.Member.Name, BindingFlags.GetField, null, c.Value, null);
-				sb.Append(x);
+				var x = t.InvokeMember(m.Member.Name, BindingFlags.GetField |
+                    BindingFlags.GetProperty |
+                    BindingFlags.Public | 
+                    BindingFlags.NonPublic | 
+                    BindingFlags.Instance |
+                    BindingFlags.Static, null, c.Value, null);
+                if (x is string)
+                {
+                    sb.Append("\"");
+                    sb.Append(x);
+                    sb.Append("\"");
+                }
+                else
+                    sb.Append(x);
 			}
 			if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
 			{
