@@ -113,7 +113,7 @@ namespace RaptorDB.Views
             else
             {
                 Type t = c.Value.GetType();
-                if (t.IsValueType)
+                if (t.IsValueType || t == typeof(string))
                     _stack.Push(c.Value);
             }
             return c;
