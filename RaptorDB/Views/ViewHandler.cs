@@ -265,7 +265,7 @@ namespace RaptorDB.Views
                 byte[] b = _viewData.ReadData(i);
                 if (b == null) continue;
                 object o = FastCreateObject(_view.Schema);
-                object[] data = ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray();
+                object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);//).ToArray();
                 rows.Add(_rowfiller.FillRow(o, data));
             }
 
@@ -369,7 +369,7 @@ public class rf : RaptorDB.IRowFiller
                 byte[] b = _viewData.ReadData(i);
                 if (b == null) continue;
                 object o = FastCreateObject(_view.Schema);
-                object[] data = ((ArrayList)fastBinaryJSON.BJSON.Instance.ToObject(b)).ToArray();
+                object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);//).ToArray();
                 rows.Add(_rowfiller.FillRow(o, data));
             }
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);

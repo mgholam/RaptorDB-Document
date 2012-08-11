@@ -72,6 +72,14 @@ namespace fastBinaryJSON
         /// Serialize Null values to the output (default = False)
         /// </summary>
         public bool SerializeNulls = false;
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool UseExtensions = true;
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool EnableAnonymousTypes = false;
     }
 
     public class BJSON
@@ -95,12 +103,19 @@ namespace fastBinaryJSON
         public byte[] ToBJSON(object obj, BJSONParameters param)
         {
             Reflection.Instance.ShowReadOnlyProperties = param.ShowReadOnlyProperties;
+            Type t = null;
+            if (obj.GetType().IsGenericType)
+                t = obj.GetType().GetGenericTypeDefinition();
+            if (t == typeof(Dictionary<,>) || t == typeof(List<>))
+                param.UsingGlobalTypes = false;
+            _globalTypes = param.UsingGlobalTypes;
             return new BJSONSerializer(param).ConvertToBJSON(obj);
         }
 
         public object Parse(byte[] json)
         {
             _params = Parameters;
+            _globalTypes = _params.UsingGlobalTypes;
             Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
             return new BJsonParser(json).Decode();
         }
@@ -118,11 +133,44 @@ namespace fastBinaryJSON
         public object ToObject(byte[] json, Type type)
         {
             _params = Parameters;
+            Type t = null;
+            if (type != null && type.IsGenericType)
+                t = type.GetGenericTypeDefinition();
+            if (t == typeof(Dictionary<,>) || t == typeof(List<>))
+                _params.UsingGlobalTypes = false;
+            _globalTypes = _params.UsingGlobalTypes;
+
             Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
-            var d = new BJsonParser(json).Decode();
-            var ht = d as Dictionary<string, object>;
-            if (ht == null) return d;
-            return ParseDictionary(ht, null, type);
+            
+            var o = new BJsonParser(json).Decode();
+            if (o is IDictionary)
+            {
+                if (type != null && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>)) // deserialize a dictionary
+                    return RootDictionary(o, type);
+                else // deserialize an object
+                    return ParseDictionary(o as Dictionary<string, object>, null, type, null);
+            }
+
+            if (o is List<object>)
+            {
+                if (type != null && type.GetGenericTypeDefinition() == typeof(Dictionary<,>)) // kv format
+                    return RootDictionary(o, type);
+
+                if (type != null && type.GetGenericTypeDefinition() == typeof(List<>)) // deserialize to generic list
+                    return RootList(o, type);
+                else
+                    return (o as List<object>).ToArray();
+            }
+            return o;
+        }
+
+        public object FillObject(object input, byte[] json)
+        {
+            _params = Parameters;
+            Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
+            Dictionary<string, object> ht = new BJsonParser(json).Decode() as Dictionary<string, object>;
+            if (ht == null) return null;
+            return ParseDictionary(ht, null, input.GetType(), input);
         }
 
 #if CUSTOMTYPE
@@ -247,8 +295,55 @@ namespace fastBinaryJSON
         }
         #endregion
 
+        private object RootList(object parse, Type type)
+        {
+            Type[] gtypes = type.GetGenericArguments();
+            IList o = (IList)Reflection.Instance.FastCreateInstance(type);
+            foreach (var k in (IList)parse)
+            {
+                _globalTypes = false;
+                object v = k;
+                if (k is Dictionary<string, object>)
+                    v = ParseDictionary(k as Dictionary<string, object>, null, gtypes[0], null);
+                else
+                    v = k;// ChangeType(k, gtypes[0]);
+
+                o.Add(v);
+            }
+            return o;
+        }
+
+        private object RootDictionary(object parse, Type type)
+        {
+            Type[] gtypes = type.GetGenericArguments();
+            if (parse is Dictionary<string, object>)
+            {
+                IDictionary o = (IDictionary)Reflection.Instance.FastCreateInstance(type);
+
+                foreach (var kv in (Dictionary<string, object>)parse)
+                {
+                    _globalTypes = false;
+                    object v;
+                    object k = kv.Key;// ChangeType(kv.Key, gtypes[0]);
+                    if (kv.Value is Dictionary<string, object>)
+                        v = ParseDictionary(kv.Value as Dictionary<string, object>, null, gtypes[1], null);
+                    else if (kv.Value is List<object>)
+                        v = CreateArray(kv.Value as List<object>, typeof(object), typeof(object), null);
+                    else
+                        v = kv.Value;// ChangeType(kv.Value, gtypes[1]);
+                    o.Add(k, v);
+                }
+
+                return o;
+            }
+            if (parse is List<object>)
+                return CreateDictionary(parse as List<object>, type, gtypes, null);
+
+            return null;
+        }
+
         private bool _globalTypes = false;
-        private object ParseDictionary(Dictionary<string, object> d, Dictionary<string, object> globaltypes, Type type)
+        private object ParseDictionary(Dictionary<string, object> d, Dictionary<string, object> globaltypes, Type type, object input)
         {
             object tn = "";
             if (d.TryGetValue("$types", out tn))
@@ -271,7 +366,7 @@ namespace fastBinaryJSON
 #endif
             if (found)
             {
-                if (_globalTypes)
+                if (_globalTypes && globaltypes!=null)
                 {
                     object tname = "";
                     if (globaltypes.TryGetValue((string)tn, out tname))
@@ -284,7 +379,9 @@ namespace fastBinaryJSON
                 throw new Exception("Cannot determine type");
 
             string typename = type.FullName;
-            object o = Reflection.Instance.FastCreateInstance(type);
+            object o = input;
+            if (o == null)
+                o = Reflection.Instance.FastCreateInstance(type);
             SafeDictionary<string, myPropInfo> props = Getproperties(type, typename);
             foreach (string name in d.Keys)
             {
@@ -305,20 +402,14 @@ namespace fastBinaryJSON
 #endif
 
                         if (pi.isGenericType && pi.isValueType == false && pi.isDictionary == false)
-#if SILVERLIGHT
                             oset = CreateGenericList((List<object>)v, pi.pt, pi.bt, globaltypes);
-#else
-                            oset = CreateGenericList((ArrayList)v, pi.pt, pi.bt, globaltypes);
-#endif
+
                         else if (pi.isByteArray)
                             oset = v;
 
                         else if (pi.isArray && pi.isValueType == false)
-#if SILVERLIGHT
                             oset = CreateArray((List<object>)v, pi.pt, pi.bt, globaltypes);
-#else
-                            oset = CreateArray((ArrayList)v, pi.pt, pi.bt, globaltypes);
-#endif
+
 
 #if !SILVERLIGHT
                         else if (pi.isDataSet)
@@ -331,27 +422,17 @@ namespace fastBinaryJSON
                         else if (pi.isStringDictionary)
                             oset = CreateStringKeyDictionary((Dictionary<string, object>)v, pi.pt, pi.GenericTypes, globaltypes);
 
-#if !SILVERLIGHT
                         else if (pi.isDictionary || pi.isHashtable)
-                            oset = CreateDictionary((ArrayList)v, pi.pt, pi.GenericTypes, globaltypes);
-#else 
-                        else if (pi.isDictionary)
                             oset = CreateDictionary((List<object>)v, pi.pt, pi.GenericTypes, globaltypes);
-#endif
 
                         else if (pi.isEnum)
                             oset = CreateEnum(pi.pt, (string)v);
 
                         else if (pi.isClass && v is Dictionary<string, object>)
-                            oset = ParseDictionary((Dictionary<string, object>)v, globaltypes, pi.pt);
+                            oset = ParseDictionary((Dictionary<string, object>)v, globaltypes, pi.pt, input);
 
-#if SILVERLIGHT
                         else if (v is List<object>)
                             oset = CreateArray((List<object>)v, pi.pt, typeof(object), globaltypes);
-#else
-                        else if (v is ArrayList)
-                            oset = CreateArray((ArrayList)v, pi.pt, typeof(object), globaltypes);
-#endif
 
                         if (pi.CanWrite)
                             o = pi.setter(o, oset);
@@ -380,7 +461,6 @@ namespace fastBinaryJSON
 #endif
         }
 
-#if SILVERLIGHT
         private object CreateArray(List<object> data, Type pt, Type bt, Dictionary<string, object> globalTypes)
         {
             Array col = Array.CreateInstance(bt, data.Count);
@@ -389,49 +469,26 @@ namespace fastBinaryJSON
             {
                 object ob = data[i];
                 if (ob is IDictionary)
-                    col.SetValue(ParseDictionary((Dictionary<string, object>)ob, globalTypes, bt), i);
+                    col.SetValue(ParseDictionary((Dictionary<string, object>)ob, globalTypes, bt, null), i);
                 else
                     col.SetValue(ob, i);
             }
 
             return col;
         }
-#else
-        private object CreateArray(ArrayList data, Type pt, Type bt, Dictionary<string, object> globalTypes)
-        {
-            ArrayList col = new ArrayList();
-            // create an array of objects
-            foreach (object ob in data)
-            {
-                if (ob is IDictionary)
-                    col.Add(ParseDictionary((Dictionary<string, object>)ob, globalTypes, bt));
-                else
-                    col.Add(ob);
-            }
-            return col.ToArray(bt);
-        }
-#endif
 
-
-#if SILVERLIGHT
         private object CreateGenericList(List<object> data, Type pt, Type bt, Dictionary<string, object> globalTypes)
-#else
-        private object CreateGenericList(ArrayList data, Type pt, Type bt, Dictionary<string, object> globalTypes)
-#endif
         {
             IList col = (IList)Reflection.Instance.FastCreateInstance(pt);
             // create an array of objects
             foreach (object ob in data)
             {
                 if (ob is IDictionary)
-                    col.Add(ParseDictionary((Dictionary<string, object>)ob, globalTypes, bt));
-#if SILVERLIGHT
+                    col.Add(ParseDictionary((Dictionary<string, object>)ob, globalTypes, bt, null));
+
                 else if (ob is List<object>)
                     col.Add(((List<object>)ob).ToArray());
-#else
-                else if (ob is ArrayList)
-                    col.Add(((ArrayList)ob).ToArray());
-#endif
+
                 else
                     col.Add(ob);
             }
@@ -454,7 +511,7 @@ namespace fastBinaryJSON
                 var key = values.Key;
                 object val = null;
                 if (values.Value is Dictionary<string, object>)
-                    val = ParseDictionary((Dictionary<string, object>)values.Value, globalTypes, t2);
+                    val = ParseDictionary((Dictionary<string, object>)values.Value, globalTypes, t2, null);
                 else
                     val = values.Value;
                 col.Add(key, val);
@@ -463,11 +520,7 @@ namespace fastBinaryJSON
             return col;
         }
 
-#if SILVERLIGHT
         private object CreateDictionary(List<object> reader, Type pt, Type[] types, Dictionary<string, object> globalTypes)
-#else
-        private object CreateDictionary(ArrayList reader, Type pt, Type[] types, Dictionary<string, object> globalTypes)
-#endif
         {
             IDictionary col = (IDictionary)Reflection.Instance.FastCreateInstance(pt);
             Type t1 = null;
@@ -484,10 +537,10 @@ namespace fastBinaryJSON
                 object val = values["v"];
 
                 if (key is Dictionary<string, object>)
-                    key = ParseDictionary((Dictionary<string, object>)key, globalTypes, t1);
+                    key = ParseDictionary((Dictionary<string, object>)key, globalTypes, t1, null);
 
                 if (val is Dictionary<string, object>)
-                    val = ParseDictionary((Dictionary<string, object>)val, globalTypes, t2);
+                    val = ParseDictionary((Dictionary<string, object>)val, globalTypes, t2, null);
 
                 col.Add(key, val);
             }
@@ -509,7 +562,7 @@ namespace fastBinaryJSON
             {
                 if (pair.Key == "$type" || pair.Key == "$schema") continue;
 
-                ArrayList rows = (ArrayList)pair.Value;
+                List<object> rows = (List<object>)pair.Value;
                 if (rows == null) continue;
 
                 DataTable dt = ds.Tables[pair.Key];
@@ -532,7 +585,7 @@ namespace fastBinaryJSON
             }
             else
             {
-                DatasetSchema ms = (DatasetSchema)ParseDictionary((Dictionary<string, object>)schema, globalTypes, typeof(DatasetSchema));
+                DatasetSchema ms = (DatasetSchema)ParseDictionary((Dictionary<string, object>)schema, globalTypes, typeof(DatasetSchema), null);
                 ds.DataSetName = ms.Name;
                 for (int i = 0; i < ms.Info.Count; i += 3)
                 {
@@ -543,12 +596,12 @@ namespace fastBinaryJSON
             }
         }
 
-        private void ReadDataTable(ArrayList rows, DataTable dt)
+        private void ReadDataTable(List<object> rows, DataTable dt)
         {
             dt.BeginInit();
             dt.BeginLoadData();
 
-            foreach (ArrayList row in rows)
+            foreach (List<object> row in rows)
             {
                 object[] v = new object[row.Count];
                 row.CopyTo(v, 0);
@@ -573,7 +626,7 @@ namespace fastBinaryJSON
             }
             else
             {
-                var ms = (DatasetSchema)this.ParseDictionary((Dictionary<string, object>)schema, globalTypes, typeof(DatasetSchema));
+                var ms = (DatasetSchema)this.ParseDictionary((Dictionary<string, object>)schema, globalTypes, typeof(DatasetSchema), null);
                 dt.TableName = ms.Info[0];
                 for (int i = 0; i < ms.Info.Count; i += 3)
                 {
@@ -586,7 +639,7 @@ namespace fastBinaryJSON
                 if (pair.Key == "$type" || pair.Key == "$schema")
                     continue;
 
-                var rows = (ArrayList)pair.Value;
+                var rows = (List<object>)pair.Value;
                 if (rows == null)
                     continue;
 

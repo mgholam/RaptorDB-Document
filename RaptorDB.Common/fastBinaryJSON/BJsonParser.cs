@@ -59,15 +59,10 @@ namespace fastBinaryJSON
             return s;
         }
 
-#if SILVERLIGHT
         private List<object> ParseArray()
         {
             List<object> array = new List<object>();
-#else
-        private ArrayList ParseArray()
-        {
-            ArrayList array = new ArrayList();
-#endif
+   
             bool breakparse = false;
             while (!breakparse)
             {

@@ -88,13 +88,16 @@ namespace RaptorDB
 
         public void Commit(bool freeMemory)
         {
-            foreach (KeyValuePair<int, WAHBitArray> kv in _cache)
+            List<int> keys = new List<int>(_cache.Keys());
+
+            foreach(int k in keys)
             {
-                if (kv.Value.isDirty)
+                var bmp = _cache[k];
+                if (bmp.isDirty)
                 {
-                    SaveBitmap(kv.Key, kv.Value);
-                    kv.Value.FreeMemory();
-                    kv.Value.isDirty = false;
+                    SaveBitmap(k, bmp);
+                    bmp.FreeMemory();
+                    bmp.isDirty = false;
                 }
             }
             Flush();
@@ -231,6 +234,7 @@ namespace RaptorDB
             b[0] = ((byte)'B');
             b[1] = ((byte)'M');
             Buffer.BlockCopy(Helper.GetBytes(bits.Length, false), 0, b, 2, 4);
+            // TODO : put index pointer list back??
             b[6] = (byte)(1);// (byte)(bmp.UsingIndexes == true ? 0 : 1);
             b[7] = (byte)(0);
 

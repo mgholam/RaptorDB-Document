@@ -34,7 +34,6 @@ namespace fastJSON
         private SafeDictionary<Type, List<Getters>> _getterscache = new SafeDictionary<Type, List<Getters>>();
 
         #region [   PROPERTY GET SET   ]
-       
         internal string GetTypeAssemblyName(Type t)
         {
             string val = "";
@@ -82,13 +81,13 @@ namespace fastJSON
                         _constrcache.Add(objtype, c);
                     }
                     else // structs
-                    {
+                    {     
                         DynamicMethod dynMethod = new DynamicMethod("_",
-                              MethodAttributes.Public | MethodAttributes.Static,
-                              CallingConventions.Standard,
-                              typeof(object),
-                              null,
-                              objtype, false);
+                            MethodAttributes.Public | MethodAttributes.Static,
+                            CallingConventions.Standard,
+                            typeof(object),
+                            null,
+                            objtype, false);
                         ILGenerator ilGen = dynMethod.GetILGenerator();
                         var lv = ilGen.DeclareLocal(objtype);
                         ilGen.Emit(OpCodes.Ldloca_S, lv);

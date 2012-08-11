@@ -83,3 +83,11 @@ v1.8
 - bug fix linq binding ServerSide -> c.val == stringvariable
 - bug fix linq binding -> c.val == stringvariable
 - bug fix reflection code in serializers
+
+v1.8.1
+------
+- speed increase WAH bitmap Set() code 
+- bug fix concurrent save bitmap index to disk
+- upgrade to fastBinaryJSON v1.3
+- upgrade to fastJSON v2.0.1
+- 
