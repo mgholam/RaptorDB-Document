@@ -129,11 +129,15 @@ namespace datagridbinding
         {
             rap.Restore();
         }
-
+        public class objclass
+        {
+            public string val;
+        }
         string prod3 = "prod 3";
         private void serverSideSumQueryToolStripMenuItem_Click(object sender, EventArgs e)
         {
             string prod1 = "prod 1";
+            objclass c = new objclass() { val = "prod 1" };
             DateTime dt = FastDateTime.Now;
             //var q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == prod1 || l.Product == prod3));
 

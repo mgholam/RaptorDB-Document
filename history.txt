@@ -90,4 +90,12 @@ v1.8.1
 - bug fix concurrent save bitmap index to disk
 - upgrade to fastBinaryJSON v1.3
 - upgrade to fastJSON v2.0.1
-- 
+
+v1.8.2
+------
+- bug fix linq binding -> c.val == obj.property
+- added lock to the bitmap index for concurrency
+- optimized $types output in JSON and BJSON
+- bug fix null check for SafeSortedList.Remove
+- bug fix server mode data transfer
+-

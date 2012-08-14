@@ -34,7 +34,6 @@ namespace RaptorDB
         private FileStream _recordFileWrite;
         private long _lastBitmapOffset = 0;
         private int _lastRecordNumber = 0;
-        //private object _lock = new object();
         private SafeDictionary<int, WAHBitArray> _cache = new SafeDictionary<int, WAHBitArray>();
         private SafeDictionary<int, long> _offsetCache = new SafeDictionary<int, long>();
         ILog log = LogManager.GetLogger(typeof(BitmapIndex));
@@ -168,51 +167,58 @@ namespace RaptorDB
         #endregion
 
         #region [  P R I V A T E  ]
-
+        private object _readlock = new object();
         private WAHBitArray internalGetBitmap(int recno)//, bool usecache)
         {
-            WAHBitArray ba = new WAHBitArray();
-            if (recno == -1)
-                return ba;
+            lock (_readlock)
+            {
+                WAHBitArray ba = new WAHBitArray();
+                if (recno == -1)
+                    return ba;
 
-            if (_cache.TryGetValue(recno, out ba))
-            {
-                return ba;
-            }
-            else
-            {
-                long offset = 0;
-                if (_offsetCache.TryGetValue(recno, out offset) == false)
+                if (_cache.TryGetValue(recno, out ba))
                 {
-                    byte[] b = new byte[8];
-                    long off = ((long)recno) * 8;
-                    _recordFileRead.Seek(off, SeekOrigin.Begin);
-                    _recordFileRead.Read(b, 0, 8);
-                    offset = Helper.ToInt64(b, 0);
-                    _offsetCache.Add(recno, offset);
+                    return ba;
                 }
-                ba = LoadBitmap(offset);
-                //if (usecache)
-                _cache.Add(recno, ba);
+                else
+                {
+                    long offset = 0;
+                    if (_offsetCache.TryGetValue(recno, out offset) == false)
+                    {
+                        byte[] b = new byte[8];
+                        long off = ((long)recno) * 8;
+                        _recordFileRead.Seek(off, SeekOrigin.Begin);
+                        _recordFileRead.Read(b, 0, 8);
+                        offset = Helper.ToInt64(b, 0);
+                        _offsetCache.Add(recno, offset);
+                    }
+                    ba = LoadBitmap(offset);
+                    //if (usecache)
+                    _cache.Add(recno, ba);
 
-                return ba;
+                    return ba;
+                }
             }
         }
 
+        private object _writelock = new object();
         private void SaveBitmap(int recno, WAHBitArray bmp)
         {
-            long offset = SaveBitmapToFile(bmp);
-            long v;
-            if (_offsetCache.TryGetValue(recno, out v))
-                _offsetCache[recno] = offset;
-            else
-                _offsetCache.Add(recno, offset);
+            lock (_writelock)
+            {
+                long offset = SaveBitmapToFile(bmp);
+                long v;
+                if (_offsetCache.TryGetValue(recno, out v))
+                    _offsetCache[recno] = offset;
+                else
+                    _offsetCache.Add(recno, offset);
 
-            long pointer = ((long)recno) * 8;
-            _recordFileWrite.Seek(pointer, SeekOrigin.Begin);
-            byte[] b = new byte[8];
-            b = Helper.GetBytes(offset, false);
-            _recordFileWrite.Write(b, 0, 8);
+                long pointer = ((long)recno) * 8;
+                _recordFileWrite.Seek(pointer, SeekOrigin.Begin);
+                byte[] b = new byte[8];
+                b = Helper.GetBytes(offset, false);
+                _recordFileWrite.Write(b, 0, 8);
+            }
         }
 
         //-----------------------------------------------------------------

@@ -91,10 +91,22 @@ namespace RaptorDB.Views
                     BindingFlags.Static, null, c.Value, null);
                 _stack.Push(x);
             }
-            if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
+
+            if (m.Expression != null)
             {
-                _stack.Push(m.Member.Name);
-                return e;
+                if (m.Expression.NodeType == ExpressionType.Parameter) // property
+                    _stack.Push(m.Member.Name);
+                else if (m.Expression.NodeType == ExpressionType.MemberAccess) // obj.property
+                {
+                    Type t = m.Expression.Type;
+                    var val = t.InvokeMember(m.Member.Name, BindingFlags.GetField |
+                        BindingFlags.GetProperty |
+                        BindingFlags.Public |
+                        BindingFlags.NonPublic |
+                        BindingFlags.Instance |
+                        BindingFlags.Static, null, _stack.Pop(), null);
+                    _stack.Push(val);
+                }
             }
             return e;
         }

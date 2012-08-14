@@ -68,7 +68,7 @@ namespace fastJSON
         /// </summary>
         public JSONParameters Parameters = new JSONParameters();
         private JSONParameters _params;
-        // FIX : extensions off should not output $types 
+
         public string ToJSON(object obj)
         {
             _params = Parameters;

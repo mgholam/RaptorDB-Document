@@ -88,11 +88,26 @@ namespace RaptorDB
                 else
                     sb.Append(x);
 			}
-			if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
-			{
-				sb.Append(m.Member.Name);
-				return e;
-			}
+
+            if (m.Expression != null)
+            {
+                if (m.Expression.NodeType == ExpressionType.Parameter) // property
+                    sb.Append(m.Member.Name);
+                // FIX : c.name = obj.property linq 
+
+                //else if (m.Expression.NodeType == ExpressionType.MemberAccess) // obj.property
+                //{
+                //    Type t = m.Expression.Type;
+                //    var f = m.Expression as MemberExpression;
+                //    var val = t.InvokeMember(m.Member.Name, BindingFlags.GetField |
+                //        BindingFlags.GetProperty |
+                //        BindingFlags.Public |
+                //        BindingFlags.NonPublic |
+                //        BindingFlags.Instance |
+                //        BindingFlags.Static, null, f.Member, null);
+                //    sb.Append(val);
+                //}
+            }
 			return e;
 		}
 

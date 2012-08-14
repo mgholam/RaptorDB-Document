@@ -17,6 +17,7 @@ namespace fastBinaryJSON
     internal class BJSONSerializer
     {
         private MemoryStream _output = new MemoryStream();
+        private MemoryStream _before = new MemoryStream();
         readonly int _MAX_DEPTH = 10;
         int _current_depth = 0;
         private Dictionary<string, int> _globalTypes = new Dictionary<string, int>();
@@ -31,25 +32,17 @@ namespace fastBinaryJSON
         {
             WriteValue(obj);
             // add $types
-            if (_params.UsingGlobalTypes)
+            if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count > 0)
             {
-                if (_typesposition > -1)
-                {
-                    byte[] buffer = _output.ToArray();
-                    byte[] before = new byte[_typesposition];
-                    Buffer.BlockCopy(buffer, 0, before, 0, _typesposition);
+                byte[] after = _output.ToArray();
+                _output = _before;
+                WriteName("$types");
+                WriteColon();
+                WriteTypes(_globalTypes);
+                WriteComma();
+                _output.Write(after, 0, after.Length);
 
-                    _output = new MemoryStream();
-                    _output.Write(before, 0, (int)_typesposition);
-                    WriteName("$types");
-                    WriteColon();
-                    WriteTypes(_globalTypes);
-                    WriteComma();
-                    _output.Write(buffer, _typesposition, buffer.Length - _typesposition);
-                    byte[] types = _output.ToArray();
-
-                    return types;
-                }
+                return _output.ToArray();
             }
 
             return _output.ToArray();
@@ -392,15 +385,25 @@ namespace fastBinaryJSON
             _output.WriteByte(TOKENS.DOC_END);
         }
 #endif
-        bool _firstWritten = false;
-        int _typesposition = -1;
+        bool _TypesWritten = false;
 
         private void WriteObject(object obj)
         {
-            _output.WriteByte(TOKENS.DOC_START);
-            if (_firstWritten == false && _params.UsingGlobalTypes == true)
-                _typesposition = (int)_output.Position; // save position
-            _firstWritten = true;
+            if (_params.UsingGlobalTypes == false)
+                _output.WriteByte(TOKENS.DOC_START);
+            else
+            {
+                if (_TypesWritten == false)
+                {
+                    _output.WriteByte(TOKENS.DOC_START);
+                    _output.Flush();
+                    _before = _output;
+                    _output = new MemoryStream();
+                }
+                else
+                    _output.WriteByte(TOKENS.DOC_START);
+            } 
+            _TypesWritten = true;
             _current_depth++;
             if (_current_depth > _MAX_DEPTH)
                 throw new Exception("Serializer encountered maximum depth of " + _MAX_DEPTH);

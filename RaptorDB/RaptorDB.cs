@@ -134,35 +134,6 @@ namespace RaptorDB
             }
         }
 
-        private bool SaveToView<T>(Guid docid, T data, List<string> list)
-        {
-            if (list != null)
-                foreach (string name in list)
-                {
-                    bool ret = _viewManager.InsertTransaction(name, docid, data);
-                    if (ret == false)
-                        return false;
-                }
-            return true;
-        }
-
-        private bool SaveInOtherViewsTransaction<T>(Guid docid, T data)
-        {
-            List<string> list = _viewManager.GetOtherViewsList(data.GetType());
-            return SaveToView<T>(docid, data, list);
-        }
-
-        private bool SaveToConsistentViewsTransaction<T>(Guid docid, T data)
-        {
-            List<string> list = _viewManager.GetConsistentViews(data.GetType());
-            return SaveToView<T>(docid, data, list);
-        }
-
-        private bool SaveInPrimaryViewTransaction<T>(string viewname, Guid docid, T data)
-        {
-            return _viewManager.InsertTransaction(viewname, docid, data);
-        }
-
         /// <summary>
         /// Query any view -> get all rows
         /// </summary>
@@ -335,6 +306,7 @@ namespace RaptorDB
                 return true;
             }
         }
+
         private object _restoreLock = new object();
         /// <summary>
         /// Start background restore of backups in the "Restore" folder
@@ -374,7 +346,6 @@ namespace RaptorDB
                                 Buffer.BlockCopy(i.Data, 4 + len, d, 0, i.Data.Length - 4 - len);
                                 object obj = CreateObject(d);
                                 var m = GetSave(obj.GetType());
-                                //var m = save.MakeGenericMethod(new Type[] { obj.GetType() });
                                 m.Invoke(this, new object[] { g, obj });
                             }
                         }
@@ -426,6 +397,35 @@ namespace RaptorDB
         }
 
         #region [            P R I V A T E     M E T H O D S              ]
+
+        private bool SaveToView<T>(Guid docid, T data, List<string> list)
+        {
+            if (list != null)
+                foreach (string name in list)
+                {
+                    bool ret = _viewManager.InsertTransaction(name, docid, data);
+                    if (ret == false)
+                        return false;
+                }
+            return true;
+        }
+
+        private bool SaveInOtherViewsTransaction<T>(Guid docid, T data)
+        {
+            List<string> list = _viewManager.GetOtherViewsList(data.GetType());
+            return SaveToView<T>(docid, data, list);
+        }
+
+        private bool SaveToConsistentViewsTransaction<T>(Guid docid, T data)
+        {
+            List<string> list = _viewManager.GetConsistentViews(data.GetType());
+            return SaveToView<T>(docid, data, list);
+        }
+
+        private bool SaveInPrimaryViewTransaction<T>(string viewname, Guid docid, T data)
+        {
+            return _viewManager.InsertTransaction(viewname, docid, data);
+        }
 
         private static void PumpDataForBackup(Stream input, Stream output)
         {

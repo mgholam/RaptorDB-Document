@@ -92,7 +92,7 @@ namespace RaptorDB
             ReturnPacket ret = new ReturnPacket(true);
             try
             {
-                object[] param = (object[])p.Data;
+                object[] param = null;
 
                 switch (p.Command)
                 {
@@ -103,6 +103,7 @@ namespace RaptorDB
                     case "savebytes":
                         break;
                     case "querytype":
+                        param = (object[])p.Data;
                         Type t = Type.GetType((string)param[0]);
                         string viewname = _raptor.GetViewName(t);
                         ret.OK = true;
@@ -134,13 +135,16 @@ namespace RaptorDB
                         Task.Factory.StartNew(() => _raptor.Restore());
                         break;
                     case "adduser":
+                        param = (object[])p.Data;
                         ret.OK = AddUser((string)param[0], (string)param[1], (string)param[2]);
                         break;
                     case "serverside":
+                        param = (object[])p.Data;
                         ret.OK = true;
                         ret.Data = _raptor.ServerSide(GetServerSideFuncCache(param[0].ToString(), param[1].ToString()), param[2].ToString());
                         break;
                     case "fulltext":
+                        param = (object[])p.Data;
                         ret.OK = true;
                         ret.Data = _raptor.FullTextSearch("" + param[0]);
                         break;

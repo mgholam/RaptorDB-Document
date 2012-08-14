@@ -101,6 +101,8 @@ namespace RaptorDB.Common
 
         public void Remove(T key)
         {
+            if (key == null)
+                return;
             lock (_padlock)
                 _list.Remove(key);
         }
