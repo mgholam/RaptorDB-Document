@@ -93,7 +93,7 @@ v1.8.1
 
 v1.8.2
 ------
-- bug fix linq binding -> c.val == obj.property
+- bug fix linq binding -> c.val == obj.property (Thanks to Joe Dluzen) 
 - added lock to the bitmap index for concurrency
 - optimized $types output in JSON and BJSON
 - bug fix null check for SafeSortedList.Remove

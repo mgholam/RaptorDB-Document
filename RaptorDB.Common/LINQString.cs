@@ -66,50 +66,52 @@ namespace RaptorDB
 			return m;
 		}
 
-		protected override Expression VisitMember(MemberExpression m)
-		{
-			var e = base.VisitMember(m);
-			var c = m.Expression as ConstantExpression;
-			if (c != null)
-			{
-				Type t = c.Value.GetType();
-				var x = t.InvokeMember(m.Member.Name, BindingFlags.GetField |
+        Stack<object> _stack = new Stack<object>();
+        protected override Expression VisitMember(MemberExpression m)
+        {
+            var e = base.VisitMember(m);
+            var c = m.Expression as ConstantExpression;
+            if (c != null)
+            {
+                Type t = c.Value.GetType();
+                var x = t.InvokeMember(m.Member.Name, BindingFlags.GetField |
                     BindingFlags.GetProperty |
-                    BindingFlags.Public | 
-                    BindingFlags.NonPublic | 
+                    BindingFlags.Public |
+                    BindingFlags.NonPublic |
                     BindingFlags.Instance |
                     BindingFlags.Static, null, c.Value, null);
                 if (x is string)
-                {
-                    sb.Append("\"");
+                    sb.Append("\"").Append(x).Append("\"");
+                else if (!x.GetType().IsClass) //FIX: check for complex structs
                     sb.Append(x);
-                    sb.Append("\"");
-                }
                 else
-                    sb.Append(x);
-			}
+                    _stack.Push(x);
+            }
 
             if (m.Expression != null)
             {
                 if (m.Expression.NodeType == ExpressionType.Parameter) // property
                     sb.Append(m.Member.Name);
-                // FIX : c.name = obj.property linq 
-
-                //else if (m.Expression.NodeType == ExpressionType.MemberAccess) // obj.property
-                //{
-                //    Type t = m.Expression.Type;
-                //    var f = m.Expression as MemberExpression;
-                //    var val = t.InvokeMember(m.Member.Name, BindingFlags.GetField |
-                //        BindingFlags.GetProperty |
-                //        BindingFlags.Public |
-                //        BindingFlags.NonPublic |
-                //        BindingFlags.Instance |
-                //        BindingFlags.Static, null, f.Member, null);
-                //    sb.Append(val);
-                //}
+                else if (m.Expression.NodeType == ExpressionType.MemberAccess) // obj.property
+                {
+                    Type t = m.Expression.Type;
+                    var f = m.Expression as MemberExpression;
+                    var val = t.InvokeMember(m.Member.Name, BindingFlags.GetField |
+                        BindingFlags.GetProperty |
+                        BindingFlags.Public |
+                        BindingFlags.NonPublic |
+                        BindingFlags.Instance |
+                        BindingFlags.Static, null, _stack.Pop(), null);
+                    if (val is string)
+                        sb.Append("\"").Append(val).Append("\"");
+                    else if (!val.GetType().IsClass) //FIX: check for complex structs
+                        sb.Append(val);
+                    else
+                        _stack.Push(val);
+                }
             }
-			return e;
-		}
+            return e;
+        }
 
 		protected override Expression VisitConstant(ConstantExpression c)
 		{
