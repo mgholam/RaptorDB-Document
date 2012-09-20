@@ -14,7 +14,7 @@ using RaptorDB.Common;
 
 namespace fastBinaryJSON
 {
-    internal class BJSONSerializer
+    internal sealed class BJSONSerializer
     {
         private MemoryStream _output = new MemoryStream();
         private MemoryStream _before = new MemoryStream();
@@ -32,7 +32,7 @@ namespace fastBinaryJSON
         {
             WriteValue(obj);
             // add $types
-            if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count > 0)
+            if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count>0)
             {
                 byte[] after = _output.ToArray();
                 _output = _before;
@@ -396,13 +396,13 @@ namespace fastBinaryJSON
                 if (_TypesWritten == false)
                 {
                     _output.WriteByte(TOKENS.DOC_START);
-                    _output.Flush();
                     _before = _output;
                     _output = new MemoryStream();
                 }
                 else
                     _output.WriteByte(TOKENS.DOC_START);
-            } 
+
+            }
             _TypesWritten = true;
             _current_depth++;
             if (_current_depth > _MAX_DEPTH)
@@ -429,15 +429,20 @@ namespace fastBinaryJSON
             }
 
             List<Getters> g = Reflection.Instance.GetGetters(t);
+            int c = g.Count;
+            int i = c;
             foreach (var p in g)
             {
-                if (append)
+                i--;
+                if (append && i>0)
                     WriteComma();
                 var o = p.Getter(obj);
                 if ((o == null || o is DBNull) && _params.SerializeNulls == false)
                     append = false;
                 else
                 {
+                    if (i == 0 && c>1) // last non null
+                        WriteComma();
                     WritePair(p.Name, o);
                     append = true;
                 }

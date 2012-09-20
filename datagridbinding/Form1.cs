@@ -96,12 +96,12 @@ namespace datagridbinding
                 int count = 100000;
                 int step = 5000;
                 toolStripProgressBar1.Maximum = (count / step) + 1;
-
+                Random r = new Random();
                 for (int i = 0; i < count; i++)
                 {
                     var inv = new SalesInvoice()
                     {
-                        Date = FastDateTime.Now,
+                        Date = FastDateTime.Now.AddMinutes(r.Next(60)),
                         Serial = i % 10000,
                         CustomerName = "me " + i % 10,
                         Status = (byte)(i % 4),
@@ -129,6 +129,7 @@ namespace datagridbinding
         {
             rap.Restore();
         }
+
         public class objclass
         {
             public string val;
@@ -137,13 +138,13 @@ namespace datagridbinding
         private void serverSideSumQueryToolStripMenuItem_Click(object sender, EventArgs e)
         {
             string prod1 = "prod 1";
-            objclass c = new objclass() { val = "prod 1" };
+            objclass c = new objclass() { val = "prod 3" };
             DateTime dt = FastDateTime.Now;
             //var q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == prod1 || l.Product == prod3));
 
             var qq = rap.ServerSide(Views.ServerSide.Sum_Products_based_on_filter,
                 //"product = \"prod 1\""
-                (LineItem l) => (l.Product == c.val || l.Product == prod3)
+                (LineItem l) => (l.Product == c.val || l.Product == prod3 )
                 ).ToList();
             dataGridView1.DataSource = qq;
             toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;

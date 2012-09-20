@@ -98,4 +98,14 @@ v1.8.2
 - optimized $types output in JSON and BJSON
 - bug fix null check for SafeSortedList.Remove
 - bug fix server mode data transfer
--
+
+v1.8.3
+------
+- upgrade to fastJSON v2.0.6
+- upgrade to fastBinaryJSON v1.3.4
+- bug fix linq2string with date,guid parameters
+- added double,float types to the indexer valid data types
+- added a lock to the IndexFile for concurrency issues (thanks to Antonello Oliveri)
+- fixed lock on _que in the logger for concurrency (thanks to Antonello Oliveri)
+- fixed the reflection binding to the insert method (thanks to Antonello Oliveri)
+- 

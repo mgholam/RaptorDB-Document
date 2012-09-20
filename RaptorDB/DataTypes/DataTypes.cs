@@ -6,31 +6,14 @@ using RaptorDB.Common;
 
 namespace RaptorDB
 {    
-    ///// <summary>
-    ///// Used for the indexer -> hOOt full text indexing
-    ///// </summary>
-    //[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    //public class FullTextAttribute : Attribute
-    //{
-    //}
-
     internal class FullTextString 
     {
 
     }
 
-    ///// <summary>
-    ///// Base for row schemas : implements a docid property and is bindable
-    ///// </summary>
-    //public abstract class RDBSchema : FieldsToPropertiesTypeDescriptor 
-    //{
-    //    public Guid docid;
-    //}
-
     public interface IRowFiller
     {
         object FillRow(object row, object[] data);
-        //object[] ExtractRow(object doc);
     }
 
     internal interface IGetBytes<T>
@@ -45,35 +28,29 @@ namespace RaptorDB
         {
             Type type = typeof(T);
 
-            if (type == typeof(int))
-                return (IGetBytes<T>)new inthandler<T>();
+            if (type == typeof(int))            return (IGetBytes<T>)new int_handler<T>();
 
-            else if (type == typeof(uint))
-                return (IGetBytes<T>)new uinthandler<T>();
+            else if (type == typeof(uint))      return (IGetBytes<T>)new uint_handler<T>();
 
-            else if (type == typeof(long))
-                return (IGetBytes<T>)new longhandler<T>();
+            else if (type == typeof(long))      return (IGetBytes<T>)new long_handler<T>();
 
-            else if (type == typeof(Guid))
-                return (IGetBytes<T>)new guidhandler<T>();
+            else if (type == typeof(Guid))      return (IGetBytes<T>)new guid_handler<T>();
 
-            else if (type == typeof(string))
-                return (IGetBytes<T>)new stringhandler<T>();
+            else if (type == typeof(string))    return (IGetBytes<T>)new string_handler<T>();
 
-            else if (type == typeof(DateTime))
-                return (IGetBytes<T>)new datetimehandler<T>();
+            else if (type == typeof(DateTime))  return (IGetBytes<T>)new datetime_handler<T>();
 
-            else if (type == typeof(decimal))
-                return (IGetBytes<T>)new decimalhandler<T>();
+            else if (type == typeof(decimal))   return (IGetBytes<T>)new decimal_handler<T>();
 
-            else if (type == typeof(short))
-                return (IGetBytes<T>)new shorthandler<T>();
+            else if (type == typeof(short))     return (IGetBytes<T>)new short_handler<T>();
 
-            else if (type == typeof(float))
-                return (IGetBytes<T>)new floathandler<T>();
+            else if (type == typeof(float))     return (IGetBytes<T>)new float_handler<T>();
 
-            else if (type == typeof(byte))
-                return (IGetBytes<T>)new bytehandler<T>();
+            else if (type == typeof(byte))      return (IGetBytes<T>)new byte_handler<T>();
+            
+            else if (type == typeof(double))    return (IGetBytes<T>)new double_handler<T>();
+
+            else if (type == typeof(float))     return (IGetBytes<T>)new float_handler<T>();
 
             return null;
         }
@@ -103,6 +80,10 @@ namespace RaptorDB
                 size = keysize;
             if (t == typeof(byte))
                 size = 1;
+            if (t == typeof(double))
+                size = 8;
+            if (t == typeof(float))
+                size = 4;
 
             return size;
         }
@@ -119,7 +100,21 @@ namespace RaptorDB
     }
 
     #region [  handlers  ]
-    internal class bytehandler<T> : IGetBytes<byte>
+
+    internal class double_handler<T> : IGetBytes<double>
+    {
+        public byte[] GetBytes(double obj)
+        {
+            return BitConverter.GetBytes(obj);
+        }
+
+        public double GetObject(byte[] buffer, int offset, int count)
+        {
+            return BitConverter.ToDouble(buffer, offset);
+        }
+    }
+
+    internal class byte_handler<T> : IGetBytes<byte>
     {
         public byte[] GetBytes(byte obj)
         {
@@ -132,7 +127,7 @@ namespace RaptorDB
         }
     }
 
-    internal class floathandler<T> : IGetBytes<float>
+    internal class float_handler<T> : IGetBytes<float>
     {
         public byte[] GetBytes(float obj)
         {
@@ -145,7 +140,7 @@ namespace RaptorDB
         }
     }
 
-    internal class decimalhandler<T> : IGetBytes<decimal>
+    internal class decimal_handler<T> : IGetBytes<decimal>
     {
         public byte[] GetBytes(decimal obj)
         {
@@ -178,7 +173,7 @@ namespace RaptorDB
         }
     }
 
-    internal class shorthandler<T> : IGetBytes<short>
+    internal class short_handler<T> : IGetBytes<short>
     {
         public byte[] GetBytes(short obj)
         {
@@ -191,7 +186,7 @@ namespace RaptorDB
         }
     }
 
-    internal class stringhandler<T> : IGetBytes<string>
+    internal class string_handler<T> : IGetBytes<string>
     {
         public byte[] GetBytes(string obj)
         {
@@ -204,7 +199,7 @@ namespace RaptorDB
         }
     }
 
-    internal class inthandler<T> : IGetBytes<int>
+    internal class int_handler<T> : IGetBytes<int>
     {
         public byte[] GetBytes(int obj)
         {
@@ -217,7 +212,7 @@ namespace RaptorDB
         }
     }
 
-    internal class uinthandler<T> : IGetBytes<uint>
+    internal class uint_handler<T> : IGetBytes<uint>
     {
         public byte[] GetBytes(uint obj)
         {
@@ -230,7 +225,7 @@ namespace RaptorDB
         }
     }
 
-    internal class longhandler<T> : IGetBytes<long>
+    internal class long_handler<T> : IGetBytes<long>
     {
         public byte[] GetBytes(long obj)
         {
@@ -243,7 +238,7 @@ namespace RaptorDB
         }
     }
 
-    internal class guidhandler<T> : IGetBytes<Guid>
+    internal class guid_handler<T> : IGetBytes<Guid>
     {
         public byte[] GetBytes(Guid obj)
         {
@@ -258,7 +253,7 @@ namespace RaptorDB
         }
     }
 
-    internal class datetimehandler<T> : IGetBytes<DateTime>
+    internal class datetime_handler<T> : IGetBytes<DateTime>
     {
         public byte[] GetBytes(DateTime obj)
         {

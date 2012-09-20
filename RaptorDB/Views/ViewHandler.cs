@@ -121,7 +121,7 @@ namespace RaptorDB.Views
         }
 
         internal void RollBack(int ID)
-        { 
+        {
             // remove in memory data
             _transactions.Remove(ID);
         }
@@ -176,7 +176,7 @@ namespace RaptorDB.Views
             foreach (var d in api.emitobj)
                 api.emit.Add(d.Key, ExtractRows(d.Value));
 
-            Dictionary<Guid, List<object[]>> rows = new Dictionary<Guid,List<object[]>>();
+            Dictionary<Guid, List<object[]>> rows = new Dictionary<Guid, List<object[]>>();
             if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
             {
                 // FIX : exists -> merge data
@@ -212,7 +212,7 @@ namespace RaptorDB.Views
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return ReturnRows(ba);
+            return ReturnRows<object>(ba, null);
         }
 
         // FEATURE : add query caching here
@@ -226,26 +226,30 @@ namespace RaptorDB.Views
             QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
             qv.Visit(filter);
             ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+            List<T> trows = null;
             if (_viewmanager.inTransaction())
             {
                 // FIX : query from transaction own data
-
-                //Dictionary<Guid, List<object[]>> rows = null;
-                //if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
-                //{
-                //    var r = rows.Values.FindAll(filter.Compile());
-                //    if (r.Count > 0)
-                //    {
-
-                //    }
-                //}
-
+                Dictionary<Guid, List<object[]>> rows = null;
+                if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
+                {
+                    List<T> rrows = new List<T>();
+                    foreach (var kv in rows)
+                    {
+                        foreach (var r in kv.Value)
+                        {
+                            object o = FastCreateObject(_view.Schema);
+                            rrows.Add((T)_rowfiller.FillRow(o, r));
+                        }
+                    }
+                    trows = rrows.FindAll(filter.Compile());
+                }
             }
 
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return ReturnRows(ba);
+            return ReturnRows(ba, trows);
         }
 
         internal Result Query()
@@ -300,22 +304,15 @@ namespace RaptorDB.Views
         {
             DeleteRowsWith(docid);
         }
-        
+
         #region [  private methods  ]
 
         private void CreateResultRowFiller()
         {
             // create a row filler class
-            string str = @"using System;
-public class rf : RaptorDB.IRowFiller
-{
-    public object FillRow(object roww, object[] data)
-    {
-        {0} row = ({0}) roww;
-        {1}
-        return row;
-    }
-}";
+            string str = @"using System; public class rf : RaptorDB.IRowFiller { public object FillRow(object roww, object[] data) {
+        {0} row = ({0}) roww; {1} return row; } }";
+
             string src = str.Replace("{0}", _view.Schema.FullName.Replace("+", ".")).Replace("{1}", GenerateRowString());
             CSharpCodeProvider provider = new CSharpCodeProvider();
             var param = new CompilerParameters();
@@ -359,7 +356,7 @@ public class rf : RaptorDB.IRowFiller
             return sb.ToString();
         }
 
-        private Result ReturnRows(WAHBitArray ba)
+        private Result ReturnRows<T>(WAHBitArray ba, List<T> trows)
         {
             DateTime dt = FastDateTime.Now;
             List<object> rows = new List<object>();
@@ -372,6 +369,9 @@ public class rf : RaptorDB.IRowFiller
                 object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);//).ToArray();
                 rows.Add(_rowfiller.FillRow(o, data));
             }
+            if (trows != null)
+                foreach (var o in trows)
+                    rows.Add(o);
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             _log.Debug("query rows count : " + rows.Count);
             ret.OK = true;
@@ -410,7 +410,7 @@ public class rf : RaptorDB.IRowFiller
         MethodInfo view = null;
         private void RebuildFromScratch(KeyStoreGuid docs)
         {
-            view = this.GetType().GetMethod("Insert", BindingFlags.Instance | BindingFlags.Public);
+            view = this.GetType().GetMethod("Insert", BindingFlags.Instance | BindingFlags.NonPublic);
             _log.Debug("Rebuilding view from scratch...");
             _log.Debug("View = " + _view.Name);
             DateTime dt = FastDateTime.Now;
@@ -519,7 +519,7 @@ public class rf : RaptorDB.IRowFiller
             List<object[]> output = new List<object[]>();
             // reflection match object properties to the schema row
 
-            int colcount = _schema.Columns.Count ;
+            int colcount = _schema.Columns.Count;
 
             foreach (var obj in rows)
             {

@@ -80,12 +80,12 @@ namespace RaptorDB
             }
         }
 
-        object _writelock = new object();
+        //object _writelock = new object();
         private void WriteData()
         {
             if (_output == null)
                 return;
-            lock (_writelock)
+            lock (_que)
             {
                 while (_que.Count > 0)
                 {
@@ -172,14 +172,13 @@ namespace RaptorDB
             return sb.ToString();
         }
 
-        private object _lock = new object();
+        //private object _lock = new object();
         public void Log(string logtype, string type, string meth, string msg, params object[] objs)
         {
-            lock (_lock)
+            lock (_que)
                 _que.Enqueue(FormatLog(logtype, type, meth, msg, objs));
         }
     }
-
 
     internal class logger : ILog
     {
@@ -248,5 +247,4 @@ namespace RaptorDB
             FileLogger.Instance.ShutDown();
         }
     }
-
 }
