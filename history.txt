@@ -108,4 +108,6 @@ v1.8.3
 - added a lock to the IndexFile for concurrency issues (thanks to Antonello Oliveri)
 - fixed lock on _que in the logger for concurrency (thanks to Antonello Oliveri)
 - fixed the reflection binding to the insert method (thanks to Antonello Oliveri)
-- 
+- added Count() on views
+- added support for paging of results
+- the mapper can now see changes it has made in it's own thread in transaction mode while quering

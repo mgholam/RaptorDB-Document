@@ -48,12 +48,7 @@ namespace RaptorDB
         /// <returns></returns>
         public Result Query(string viewname)
         {
-            Packet p = CreatePacket();
-            p.Command = "querystr";
-            p.Viewname = viewname;
-            p.Data = "";
-            ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return Query(viewname, 0, 0);
         }
 
         /// <summary>
@@ -64,11 +59,7 @@ namespace RaptorDB
         /// <returns></returns>
         public Result Query(Type view)
         {
-            Packet p = CreatePacket();
-            p.Command = "querytype";
-            p.Data = new object[] { view.AssemblyQualifiedName, "" };
-            ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return Query(view, 0, 0);
         }
 
         /// <summary>
@@ -79,12 +70,7 @@ namespace RaptorDB
         /// <returns></returns>
         public Result Query(string viewname, string filter)
         {
-            Packet p = CreatePacket();
-            p.Command = "querystr";
-            p.Viewname = viewname;
-            p.Data = filter;
-            ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return Query(viewname, filter, 0, 0);
         }
 
         // FEATURE : add paging to queries -> start, count
@@ -97,14 +83,7 @@ namespace RaptorDB
         /// <returns></returns>
         public Result Query<T>(string viewname, Expression<Predicate<T>> filter)
         {
-            LINQString ls = new LINQString();
-            ls.Visit(filter);
-            Packet p = CreatePacket();
-            p.Command = "querystr";
-            p.Viewname = viewname;
-            p.Data = ls.sb.ToString();
-            ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return Query(viewname, filter, 0, 0);
         }
 
         /// <summary>
@@ -116,13 +95,7 @@ namespace RaptorDB
         /// <returns></returns>
         public Result Query<T>(Type type, Expression<Predicate<T>> filter)
         {
-            LINQString ls = new LINQString();
-            ls.Visit(filter);
-            Packet p = CreatePacket();
-            p.Command = "querytype";
-            p.Data = new object[] { type.AssemblyQualifiedName, ls.sb.ToString() };
-            ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return Query(type, filter, 0, 0);
         }
 
         /// <summary>
@@ -134,11 +107,7 @@ namespace RaptorDB
         /// <returns></returns>
         public Result Query(Type type, string filter)
         {
-            Packet p = CreatePacket();
-            p.Command = "querytype";
-            p.Data = new object[] { type.AssemblyQualifiedName, filter};
-            ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return Query(type, filter, 0, 0);
         }
 
         /// <summary>
@@ -242,7 +211,7 @@ namespace RaptorDB
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (object[])ret.Data;
         }
-        
+
         public Result FullTextSearch(string filter)
         {
             Packet p = CreatePacket();
@@ -251,7 +220,7 @@ namespace RaptorDB
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (Result)ret.Data;
         }
-        
+
         //public List<string> GetViews()
         //{
         //    return null;
@@ -271,5 +240,214 @@ namespace RaptorDB
             return p;
         }
 
+        /// <summary>
+        /// Query all data in a view with paging
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Result Query(string viewname, int start, int count)
+        {
+            Packet p = CreatePacket();
+            p.Command = "querystr";
+            p.Viewname = viewname;
+            p.Data = "";
+            p.Start = start;
+            p.Count = count;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (Result)ret.Data;
+        }
+
+        /// <summary>
+        /// Query all data associated with the Documnet Type or the View Type with paging
+        /// </summary>
+        /// <param name="view"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Result Query(Type view, int start, int count)
+        {
+            Packet p = CreatePacket();
+            p.Command = "querytype";
+            p.Start = start;
+            p.Count = count;
+            p.Data = new object[] { view.AssemblyQualifiedName, "" };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (Result)ret.Data;
+        }
+
+        /// <summary>
+        /// Query a View with a string filter with paging
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Result Query(string viewname, string filter, int start, int count)
+        {
+            Packet p = CreatePacket();
+            p.Command = "querystr";
+            p.Viewname = viewname;
+            p.Data = filter;
+            p.Start = start;
+            p.Count = count;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (Result)ret.Data;
+        }
+
+        /// <summary>
+        /// Query a View with a LINQ filter with paging
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Result Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+            Packet p = CreatePacket();
+            p.Command = "querystr";
+            p.Viewname = viewname;
+            p.Start = start;
+            p.Count = count;
+            p.Data = ls.sb.ToString();
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (Result)ret.Data;
+        }
+
+        /// <summary>
+        /// Query a View Type with a LINQ filter with paging
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Result Query<T>(Type type, Expression<Predicate<T>> filter, int start, int count)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+            Packet p = CreatePacket();
+            p.Command = "querytype";
+            p.Start = start;
+            p.Count = count;
+            p.Data = new object[] { type.AssemblyQualifiedName, ls.sb.ToString() };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (Result)ret.Data;
+        }
+
+
+        /// <summary>
+        /// Query a View Type with a string filter with paging
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Result Query(Type type, string filter, int start, int count)
+        {
+            Packet p = CreatePacket();
+            p.Command = "querytype";
+            p.Start = start;
+            p.Count = count;
+            p.Data = new object[] { type.AssemblyQualifiedName, filter };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (Result)ret.Data;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public int Count(Type type)
+        {
+            return Count(type, "");
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public int Count(Type type, string filter)
+        {
+            Packet p = CreatePacket();
+            p.Command = "counttype";
+            p.Data = new object[] { type.AssemblyQualifiedName, filter };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (int)ret.Data;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public int Count<T>(Type type, Expression<Predicate<T>> filter)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+            Packet p = CreatePacket();
+            p.Command = "counttype";
+            p.Data = new object[] { type.AssemblyQualifiedName, ls.sb.ToString() };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (int)ret.Data;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <returns></returns>
+        public int Count(string viewname)
+        {
+            return Count(viewname, "");
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public int Count(string viewname, string filter)
+        {
+            Packet p = CreatePacket();
+            p.Command = "countstr";
+            p.Viewname = viewname;
+            p.Data = filter;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (int)ret.Data;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public int Count<T>(string viewname, Expression<Predicate<T>> filter)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+            Packet p = CreatePacket();
+            p.Command = "countstr";
+            p.Viewname = viewname;
+            p.Data = ls.sb.ToString();
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (int)ret.Data;
+        }
     }
 }

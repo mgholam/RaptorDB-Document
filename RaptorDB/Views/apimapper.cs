@@ -24,14 +24,14 @@ namespace RaptorDB.Views
             _log.Debug(message);
         }
 
-        public Result Query<T>(string ViewName, Expression<Predicate<T>> Filter)//, int start, int count)
+        public Result Query<T>(string ViewName, Expression<Predicate<T>> Filter)
         {
-            return _viewmanager.Query(ViewName, Filter);//, start, count);
+            return _viewmanager.Query(ViewName, Filter, 0, 0);
         }
 
-        public Result Query<T>(Type View, Expression<Predicate<T>> Filter)//, int start, int count)
+        public Result Query<T>(Type View, Expression<Predicate<T>> Filter)
         {
-            return _viewmanager.Query(View, Filter);//, start, count);
+            return _viewmanager.Query(View, Filter, 0, 0);
         }
 
         public object Fetch(Guid guid)
@@ -94,6 +94,47 @@ namespace RaptorDB.Views
         public void RollBack()
         {
             _RollBack = true;
+        }
+
+
+        public Result Query<T>(string ViewName, Expression<Predicate<T>> Filter, int start, int count)
+        {
+            return _viewmanager.Query(ViewName, Filter, start, count);
+        }
+
+        public Result Query<T>(Type View, Expression<Predicate<T>> Filter, int start, int count)
+        {
+            return _viewmanager.Query(View, Filter, start, count);
+        }
+
+        public int Count(Type type)
+        {
+            return _viewmanager.Count(type, "");
+        }
+
+        public int Count(string viewname)
+        {
+            return _viewmanager.Count(viewname, "");
+        }
+
+        public int Count<T>(Type type, Expression<Predicate<T>> Filter)
+        {
+            return _viewmanager.Count(type, Filter);
+        }
+
+        public int Count<T>(string ViewName, Expression<Predicate<T>> Filter)
+        {
+            return _viewmanager.Count(ViewName, Filter);
+        }
+
+        public int Count(string ViewName, string Filter)
+        {
+            return _viewmanager.Count(ViewName, Filter);
+        }
+
+        public int Count<T>(Type type, string Filter)
+        {
+            return _viewmanager.Count(type, Filter);
         }
     }
 }

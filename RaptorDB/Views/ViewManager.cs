@@ -33,79 +33,131 @@ namespace RaptorDB.Views
         private TaskQueue _que = new TaskQueue();
         private SafeDictionary<int, bool> _transactions = new SafeDictionary<int, bool>();
 
-        internal Result Query<T>(Type objtype, Expression<Predicate<T>> filter)
+        internal int Count<T>(Type objtype, Expression<Predicate<T>> filter)
         {
             string viewname = null;
             // find view from name
             if (_primaryView.TryGetValue(objtype, out viewname))
-                return Query(viewname, filter);
+                return Count(viewname, filter);
 
             // search for viewtype here
             if (_otherViewTypes.TryGetValue(objtype, out viewname))
-                return Query(viewname, filter);
+                return Count(viewname, filter);
 
             _log.Error("view not found", viewname);
-            return new Result(false, new Exception("view not found : " + viewname));
+            return 0;
         }
-
-        internal Result Query(Type objtype, string filter)
+             
+        internal int Count(Type objtype, string filter)
         {
             string viewname = null;
             // find view from name
             if (_primaryView.TryGetValue(objtype, out viewname))
-                return Query(viewname, filter);
+                return Count(viewname, filter);
 
             // search for viewtype here
             if (_otherViewTypes.TryGetValue(objtype, out viewname))
-                return Query(viewname, filter);
+                return Count(viewname, filter);
 
             _log.Error("view not found", viewname);
-            return new Result(false, new Exception("view not found : " + viewname));
+            return 0;
         }
 
-        internal Result Query(string viewname, string filter)
+        internal int Count<T>(string viewname, Expression<Predicate<T>> filter)
         {
             ViewHandler view = null;
             // find view from name
             if (_views.TryGetValue(viewname.ToLower(), out view))
-                return view.Query(filter);
+                return view.Count(filter);
 
             _log.Error("view not found", viewname);
-            return new Result(false, new Exception("view not found : " + viewname));
+            return 0;
         }
 
-        internal Result Query<T>(string viewname, Expression<Predicate<T>> filter)
+        internal int Count(string  viewname, string filter)
         {
             ViewHandler view = null;
             // find view from name
             if (_views.TryGetValue(viewname.ToLower(), out view))
-                return view.Query(filter);
+                return view.Count(filter);
+
+            _log.Error("view not found", viewname);
+            return 0;
+        }
+
+        internal Result Query<T>(Type objtype, Expression<Predicate<T>> filter, int start, int count)
+        {
+            string viewname = null;
+            // find view from name
+            if (_primaryView.TryGetValue(objtype, out viewname))
+                return Query(viewname, filter, start, count);
+
+            // search for viewtype here
+            if (_otherViewTypes.TryGetValue(objtype, out viewname))
+                return Query(viewname, filter, start, count);
 
             _log.Error("view not found", viewname);
             return new Result(false, new Exception("view not found : " + viewname));
         }
 
-        internal Result Query(string viewname)
+        internal Result Query(Type objtype, string filter, int start, int count)
+        {
+            string viewname = null;
+            // find view from name
+            if (_primaryView.TryGetValue(objtype, out viewname))
+                return Query(viewname, filter, start, count);
+
+            // search for viewtype here
+            if (_otherViewTypes.TryGetValue(objtype, out viewname))
+                return Query(viewname, filter, start, count);
+
+            _log.Error("view not found", viewname);
+            return new Result(false, new Exception("view not found : " + viewname));
+        }
+
+        internal Result Query(string viewname, string filter, int start, int count)
         {
             ViewHandler view = null;
             // find view from name
             if (_views.TryGetValue(viewname.ToLower(), out view))
-                return view.Query();
+                return view.Query(filter, start, count);
 
             _log.Error("view not found", viewname);
             return new Result(false, new Exception("view not found : " + viewname));
         }
 
-        internal Result Query(Type view)
+        internal Result Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
+        {
+            ViewHandler view = null;
+            // find view from name
+            if (_views.TryGetValue(viewname.ToLower(), out view))
+                return view.Query(filter, start, count);
+
+            _log.Error("view not found", viewname);
+            return new Result(false, new Exception("view not found : " + viewname));
+        }
+
+        internal Result Query(string viewname, int start, int count)
+        {
+            ViewHandler view = null;
+            // find view from name
+            if (_views.TryGetValue(viewname.ToLower(), out view))
+                return view.Query(start, count);
+
+            _log.Error("view not found", viewname);
+            return new Result(false, new Exception("view not found : " + viewname));
+        }
+
+        internal Result Query(Type view, int start, int count)
         {
             string viewname = null;
             // find view from name
             if (_primaryView.TryGetValue(view, out viewname))
-                return Query(viewname);
+                return Query(viewname, start, count);
 
             // search for viewtype here
             if (_otherViewTypes.TryGetValue(view, out viewname))
-                return Query(viewname);
+                return Query(viewname, start, count);
 
             _log.Error("view not found", viewname);
             return new Result(false, new Exception("view not found : " + viewname));

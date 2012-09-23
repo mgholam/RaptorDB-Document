@@ -29,28 +29,16 @@ namespace RaptorDB
             Type type = typeof(T);
 
             if (type == typeof(int))            return (IGetBytes<T>)new int_handler<T>();
-
             else if (type == typeof(uint))      return (IGetBytes<T>)new uint_handler<T>();
-
             else if (type == typeof(long))      return (IGetBytes<T>)new long_handler<T>();
-
             else if (type == typeof(Guid))      return (IGetBytes<T>)new guid_handler<T>();
-
             else if (type == typeof(string))    return (IGetBytes<T>)new string_handler<T>();
-
             else if (type == typeof(DateTime))  return (IGetBytes<T>)new datetime_handler<T>();
-
             else if (type == typeof(decimal))   return (IGetBytes<T>)new decimal_handler<T>();
-
             else if (type == typeof(short))     return (IGetBytes<T>)new short_handler<T>();
-
             else if (type == typeof(float))     return (IGetBytes<T>)new float_handler<T>();
-
             else if (type == typeof(byte))      return (IGetBytes<T>)new byte_handler<T>();
-            
             else if (type == typeof(double))    return (IGetBytes<T>)new double_handler<T>();
-
-            else if (type == typeof(float))     return (IGetBytes<T>)new float_handler<T>();
 
             return null;
         }
@@ -60,30 +48,17 @@ namespace RaptorDB
             byte size = 4;
             Type t = typeof(T);
 
-            if (t == typeof(int))
-                size = 4;
-            if (t == typeof(uint))
-                size = 4;
-            if (t == typeof(long))
-                size = 8;
-            if (t == typeof(Guid))
-                size = 16;
-            if (t == typeof(DateTime))
-                size = 8;
-            if (t == typeof(decimal))
-                size = 16;
-            if (t == typeof(float))
-                size = 4;
-            if (t == typeof(short))
-                size = 2;
-            if (t == typeof(string))
-                size = keysize;
-            if (t == typeof(byte))
-                size = 1;
-            if (t == typeof(double))
-                size = 8;
-            if (t == typeof(float))
-                size = 4;
+            if (t == typeof(int))      size = 4;
+            if (t == typeof(uint))     size = 4;
+            if (t == typeof(long))     size = 8;
+            if (t == typeof(Guid))     size = 16;
+            if (t == typeof(DateTime)) size = 8;
+            if (t == typeof(decimal))  size = 16;
+            if (t == typeof(float))    size = 4;
+            if (t == typeof(short))    size = 2;
+            if (t == typeof(string))   size = keysize;
+            if (t == typeof(byte))     size = 1;
+            if (t == typeof(double))   size = 8;
 
             return size;
         }

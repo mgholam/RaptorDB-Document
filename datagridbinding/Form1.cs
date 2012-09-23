@@ -57,6 +57,8 @@ namespace datagridbinding
 
         private void sumQueryToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            //int c = rap.Count("SalesItemRows", "product = \"prod 1\"");
+
             DateTime dt = FastDateTime.Now;
             var q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
 

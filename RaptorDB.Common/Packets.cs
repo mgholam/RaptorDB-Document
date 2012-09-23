@@ -15,6 +15,8 @@ namespace RaptorDB.Common
         public object Data { get; set; }
         public Guid Docid { get; set; }
         public string Viewname { get; set; }
+        public int Start { get; set; }
+        public int Count { get; set; }
     }
 
     public class ReturnPacket

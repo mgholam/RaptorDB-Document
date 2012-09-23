@@ -1,7 +1,4 @@
-﻿// ref : RaptorDb.Common.dll
-//
-// 
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -66,6 +63,7 @@ namespace SampleViews
 
             this.Mapper = (api, docid, doc) =>
             {
+                //int c = api.Count("SalesItemRows", "product = \"prod 1\"");
                 if (doc.Serial == 0)
                     api.RollBack();
                 api.EmitObject(docid, doc);

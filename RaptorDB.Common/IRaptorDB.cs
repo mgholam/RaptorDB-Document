@@ -32,11 +32,27 @@ namespace RaptorDB.Common
         /// <returns></returns>
         Result Query(string viewname);
         /// <summary>
+        /// Query all data in a view with paging
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        Result Query(string viewname, int start, int count);
+        /// <summary>
         /// Query all data associated with the Documnet Type or the View Type
         /// </summary>
         /// <param name="view"></param>
         /// <returns></returns>
         Result Query(Type view);
+        /// <summary>
+        /// Query all data associated with the Documnet Type or the View Type with paging
+        /// </summary>
+        /// <param name="view"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        Result Query(Type view, int start, int count);
         /// <summary>
         /// Query a View with a string filter
         /// </summary>
@@ -44,6 +60,15 @@ namespace RaptorDB.Common
         /// <param name="filter"></param>
         /// <returns></returns>
         Result Query(string viewname, string filter);
+        /// <summary>
+        /// Query a View with a string filter with paging
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        Result Query(string viewname, string filter, int start, int count);
         /// <summary>
         /// Query a View with a LINQ filter
         /// </summary>
@@ -53,6 +78,16 @@ namespace RaptorDB.Common
         /// <returns></returns>
         Result Query<T>(string viewname, Expression<Predicate<T>> filter);
         /// <summary>
+        /// Query a View with a LINQ filter with paging
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        Result Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count);
+        /// <summary>
         /// Query a View Type with a LINQ filter
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -61,6 +96,16 @@ namespace RaptorDB.Common
         /// <returns></returns>
         Result Query<T>(Type type, Expression<Predicate<T>> filter);
         /// <summary>
+        /// Query a View Type with a LINQ filter with paging
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="type"></param>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        Result Query<T>(Type type, Expression<Predicate<T>> filter, int start, int count);
+        /// <summary>
         /// Query a View Type with a string filter
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -68,6 +113,54 @@ namespace RaptorDB.Common
         /// <param name="filter"></param>
         /// <returns></returns>
         Result Query(Type type, string filter);
+        /// <summary>
+        /// Query a View Type with a string filter with paging
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        Result Query(Type type, string filter, int start , int count);
+        /// <summary>
+        /// Count all data associated with the Documnet Type or the View Type
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        int Count(Type type);
+        /// <summary>
+        /// Count all data associated with the Documnet Type or the View Type with a string filter
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        int Count(Type type, string filter);
+        /// <summary>
+        /// Count all data associated with the Documnet Type or the View Type with a LINQ filter
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        int Count<T>(Type type, Expression<Predicate<T>> filter);
+        /// <summary>
+        /// Count all data associated with View name
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <returns></returns>
+        int Count(string viewname);
+        /// <summary>
+        /// Count all data associated with View name and string filter
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        int Count(string viewname, string filter);
+        /// <summary>
+        /// Count all data associated with View name and LINQ filter
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        int Count<T>(string viewname, Expression<Predicate<T>> filter);
         /// <summary>
         /// Fetch a Document
         /// </summary>

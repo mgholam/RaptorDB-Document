@@ -191,7 +191,7 @@ namespace RaptorDB.Views
 
         // FEATURE : add query caching here
         SafeDictionary<string, LambdaExpression> _lambdacache = new SafeDictionary<string, LambdaExpression>();
-        internal Result Query(string filter)
+        internal Result Query(string filter, int start, int count)
         {
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
@@ -212,11 +212,11 @@ namespace RaptorDB.Views
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return ReturnRows<object>(ba, null);
+            return ReturnRows<object>(ba, null, start, count);
         }
 
         // FEATURE : add query caching here
-        internal Result Query<T>(Expression<Predicate<T>> filter)
+        internal Result Query<T>(Expression<Predicate<T>> filter, int start, int count)
         {
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
@@ -249,28 +249,39 @@ namespace RaptorDB.Views
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return ReturnRows(ba, trows);
+            return ReturnRows(ba, trows, start, count);
         }
 
-        internal Result Query()
+        internal Result Query(int start, int count)
         {
             // no filter query -> just show all the data
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
-            int count = _viewData.Count();
+            int c = _viewData.Count();
             List<object> rows = new List<object>();
             Result ret = new Result();
-
+            int skip = start;
+            int cc = 0;
             WAHBitArray del = _deletedRows.GetBits();
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < c; i++)
             {
                 if (del.Get(i) == true)
                     continue;
+                if (skip > 0)
+                {
+                    skip--;
+                    continue;
+                }
                 byte[] b = _viewData.ReadData(i);
                 if (b == null) continue;
                 object o = FastCreateObject(_view.Schema);
-                object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);//).ToArray();
+                object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
                 rows.Add(_rowfiller.FillRow(o, data));
+                if (count > 0)
+                {
+                    cc++;
+                    if (cc == count) break;
+                }
             }
 
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
@@ -356,18 +367,30 @@ namespace RaptorDB.Views
             return sb.ToString();
         }
 
-        private Result ReturnRows<T>(WAHBitArray ba, List<T> trows)
+        private Result ReturnRows<T>(WAHBitArray ba, List<T> trows, int start , int count)
         {
             DateTime dt = FastDateTime.Now;
             List<object> rows = new List<object>();
             Result ret = new Result();
+            int skip = start;
+            int c = 0;
             foreach (int i in ba.GetBitIndexes())
             {
+                if (skip > 0)
+                {
+                    skip--;
+                    continue;
+                }
                 byte[] b = _viewData.ReadData(i);
                 if (b == null) continue;
                 object o = FastCreateObject(_view.Schema);
                 object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);//).ToArray();
                 rows.Add(_rowfiller.FillRow(o, data));
+                if (count > 0)
+                {
+                    c++;
+                    if (c == count) break;
+                }
             }
             if (trows != null)
                 foreach (var o in trows)
@@ -582,5 +605,68 @@ namespace RaptorDB.Views
             return _indexes[colname].Query(exp, from);
         }
         #endregion
+
+        internal int Count<T>(Expression<Predicate<T>> filter)
+        {             
+            int totcount = 0;
+            DateTime dt = FastDateTime.Now;
+            if (filter == null)
+                totcount = internalCount();
+            else
+            {
+                WAHBitArray ba = new WAHBitArray();
+
+                QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
+                qv.Visit(filter);
+                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+
+                totcount = (int)ba.CountOnes();
+            }
+            _log.Debug("Count items = " + totcount);
+            _log.Debug("Count time (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            return totcount;
+        }
+
+        internal int Count(string filter)
+        {
+            int totcount = 0;
+            DateTime dt = FastDateTime.Now;
+            if (filter == null || filter == "")
+                totcount = internalCount();
+            else
+            {
+                _log.Debug("Count filter : " + filter);
+                WAHBitArray ba = new WAHBitArray();
+
+                LambdaExpression le = null;
+                if (_lambdacache.TryGetValue(filter, out le) == false)
+                {
+                    le = System.Linq.Dynamic.DynamicExpression.ParseLambda(_view.Schema, typeof(bool), filter, null);
+                    _lambdacache.Add(filter, le);
+                }
+                QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
+                qv.Visit(le.Body);
+                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+
+                totcount = (int)ba.CountOnes();
+            }
+            _log.Debug("Count items = " + totcount);
+            _log.Debug("Count time (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            return totcount;
+        }
+
+        private int internalCount()
+        {
+            int totcount = 0;
+            int c = _viewData.Count();
+            WAHBitArray del = _deletedRows.GetBits();
+            for (int i = 0; i < c; i++)
+            {
+                if (del.Get(i) == true)
+                    continue;
+                totcount++;
+            }
+            return totcount;
+        }
     }
 }

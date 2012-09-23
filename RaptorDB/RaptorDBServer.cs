@@ -107,11 +107,11 @@ namespace RaptorDB
                         Type t = Type.GetType((string)param[0]);
                         string viewname = _raptor.GetViewName(t);
                         ret.OK = true;
-                        ret.Data = _raptor.Query(viewname, (string)param[1]);
+                        ret.Data = _raptor.Query(viewname, (string)param[1], p.Start, p.Count);
                         break;
                     case "querystr":
                         ret.OK = true;
-                        ret.Data = _raptor.Query(p.Viewname, (string)p.Data);
+                        ret.Data = _raptor.Query(p.Viewname, (string)p.Data, p.Start, p.Count);
                         break;
                     case "fetch":
                         ret.OK = true;
@@ -147,6 +147,19 @@ namespace RaptorDB
                         param = (object[])p.Data;
                         ret.OK = true;
                         ret.Data = _raptor.FullTextSearch("" + param[0]);
+                        break;
+                    case "counttype":
+                        // count type
+                        param = (object[])p.Data;
+                        Type tt = Type.GetType((string)param[0]);
+                        string viewname2 = _raptor.GetViewName(tt);
+                        ret.OK = true;
+                        ret.Data = _raptor.Count(viewname2, (string)param[1]);
+                        break;
+                    case "countstr":
+                        // count str
+                        ret.OK = true;
+                        ret.Data = _raptor.Count(p.Viewname, (string)p.Data);
                         break;
                 }
             }
