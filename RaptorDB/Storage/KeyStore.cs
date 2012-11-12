@@ -409,8 +409,8 @@ namespace RaptorDB
             Directory.CreateDirectory(_Path);
 
             _FileName = Path.GetFileNameWithoutExtension(filename);
-            string db = _Path + "\\" + _FileName + _datExtension;
-            string idx = _Path + "\\" + _FileName + _idxExtension;
+            string db = _Path + Path.DirectorySeparatorChar + _FileName + _datExtension;
+            string idx = _Path + Path.DirectorySeparatorChar + _FileName + _idxExtension;
 
             _index = new MGIndex<T>(_Path, _FileName + _idxExtension, _MaxKeySize, Global.PageItemCount, AllowDuplicateKeys);
 

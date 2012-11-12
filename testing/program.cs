@@ -24,6 +24,8 @@ namespace testing
         {
             //program2.Main2(args);
             //return;
+
+
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
             server = new RaptorDBServer(90, @"..\..\..\RaptorDBdata");
             Console.WriteLine("Server started on port 90");

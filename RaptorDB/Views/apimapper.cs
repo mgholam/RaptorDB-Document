@@ -24,12 +24,12 @@ namespace RaptorDB.Views
             _log.Debug(message);
         }
 
-        public Result Query<T>(string ViewName, Expression<Predicate<T>> Filter)
+        public Result<object> Query<T>(string ViewName, Expression<Predicate<T>> Filter)
         {
-            return _viewmanager.Query(ViewName, Filter, 0, 0);
+            return _viewmanager.Query<T>(ViewName, Filter, 0, 0);
         }
 
-        public Result Query<T>(Type View, Expression<Predicate<T>> Filter)
+        public Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter)
         {
             return _viewmanager.Query(View, Filter, 0, 0);
         }
@@ -97,14 +97,14 @@ namespace RaptorDB.Views
         }
 
 
-        public Result Query<T>(string ViewName, Expression<Predicate<T>> Filter, int start, int count)
+        public Result<object> Query<T>(string ViewName, Expression<Predicate<T>> Filter, int start, int count)
         {
-            return _viewmanager.Query(ViewName, Filter, start, count);
+            return _viewmanager.Query<T>(ViewName, Filter, start, count);
         }
 
-        public Result Query<T>(Type View, Expression<Predicate<T>> Filter, int start, int count)
+        public Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter, int start, int count)
         {
-            return _viewmanager.Query(View, Filter, start, count);
+            return _viewmanager.Query<T>(View, Filter, start, count);
         }
 
         public int Count(Type type)

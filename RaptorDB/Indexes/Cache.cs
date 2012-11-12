@@ -44,6 +44,15 @@ namespace RaptorDB
                 return null;
         }
 
+        public uint[] GetCompressedBits(out WAHBitArray.TYPE type)
+        {
+            type = WAHBitArray.TYPE.WAH;
+            if (_bits != null)
+                return _bits.GetCompressed(out type);
+            else
+                return null;
+        }
+
         public void FreeMemory(bool unload)
         {
             if (_bits != null)
@@ -58,7 +67,7 @@ namespace RaptorDB
 
         public void SetCompressedBits(uint[] bits)
         {
-            _bits = new WAHBitArray(WAHBitArray.TYPE.Compressed_WAH, bits);
+            _bits = new WAHBitArray(WAHBitArray.TYPE.WAH, bits);
             LastBitSaveLength = bits.Length;
             isLoaded = true;
             isDirty = false;

@@ -9,7 +9,7 @@ namespace RaptorDB.Views
 {
     //FEATURE : handle Contains, StartsWith, Between predicates
 
-    //delegate WAHBitArray QueryFromTo(string colname, object from, object to);
+    delegate WAHBitArray QueryFromTo(string colname, object from, object to);
     delegate WAHBitArray QueryExpression(string colname, RDBExpression exp, object from);
 
     internal class QueryVisitor : ExpressionVisitor
@@ -20,7 +20,7 @@ namespace RaptorDB.Views
         }
         public Stack<object> _stack = new Stack<object>();
         public Stack<object> _bitmap = new Stack<object>();
-        //QueryFromTo qfromto;
+        QueryFromTo qfromto;
         QueryExpression qexpression;
 
         protected override Expression VisitBinary(BinaryExpression b)
@@ -57,14 +57,21 @@ namespace RaptorDB.Views
             if (t == ExpressionType.And || t == ExpressionType.AndAlso ||
                 t == ExpressionType.Or || t == ExpressionType.OrElse)
             {
-                // do bitmap operations 
-                WAHBitArray r = (WAHBitArray)_bitmap.Pop();
-                WAHBitArray l = (WAHBitArray)_bitmap.Pop();
+                if (_bitmap.Count > 1)
+                {
+                    // do bitmap operations 
+                    WAHBitArray r = (WAHBitArray)_bitmap.Pop();
+                    WAHBitArray l = (WAHBitArray)_bitmap.Pop();
 
-                if (t == ExpressionType.And || t == ExpressionType.AndAlso)
-                    _bitmap.Push(r.And(l));
-                if (t == ExpressionType.Or || t == ExpressionType.OrElse)
-                    _bitmap.Push(r.Or(l));
+                    if (t == ExpressionType.And || t == ExpressionType.AndAlso)
+                        _bitmap.Push(r.And(l));
+                    if (t == ExpressionType.Or || t == ExpressionType.OrElse)
+                        _bitmap.Push(r.Or(l));
+                }
+                else
+                {
+                    // single bitmap operation
+                }
             }
             return b;
         }
@@ -72,8 +79,41 @@ namespace RaptorDB.Views
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
             string s = m.ToString();
-            _stack.Push(s.Substring(s.IndexOf('.') + 1));
+            string mc = s.Substring(s.IndexOf('.') + 1);
+            if (mc.Contains("Between"))
+            {
+                // FIX : add code for between parsing here
+
+                string name = m.Arguments[0].ToString().Split('.')[1];
+                object from = GetValueForMember(m.Arguments[1]);
+                object to = GetValueForMember(m.Arguments[2]);
+                //var bits = qfromto(name, from, to);
+            }
+            else
+                _stack.Push(mc);
+
             return m;
+        }
+
+        private object GetValueForMember(object m)
+        {
+            object val = null;
+            var f = m as ConstantExpression;
+            if (f != null)
+                return f.Value;
+
+            var mm = m as MemberExpression;
+            if (mm.NodeType == ExpressionType.MemberAccess)
+            {
+                Type tt = mm.Expression.Type;
+                val = tt.InvokeMember(mm.Member.Name, BindingFlags.GetField |
+                    BindingFlags.GetProperty |
+                    BindingFlags.Public |
+                    BindingFlags.NonPublic |
+                    BindingFlags.Instance |
+                    BindingFlags.Static, null, (mm.Expression as ConstantExpression).Value, null);
+            }
+            return val;
         }
 
         protected override Expression VisitMember(MemberExpression m)

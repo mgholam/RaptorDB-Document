@@ -37,13 +37,14 @@
             this.toolStripProgressBar1 = new System.Windows.Forms.ToolStripProgressBar();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.sumQueryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.serverSideSumQueryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insert100000DocumentsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.backupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.restoreToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
-            this.serverSideSumQueryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).BeginInit();
             this.statusStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
@@ -88,7 +89,8 @@
             this.insert100000DocumentsToolStripMenuItem,
             this.backupToolStripMenuItem,
             this.restoreToolStripMenuItem,
-            this.exitToolStripMenuItem});
+            this.exitToolStripMenuItem,
+            this.testToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(693, 24);
@@ -101,6 +103,13 @@
             this.sumQueryToolStripMenuItem.Size = new System.Drawing.Size(78, 20);
             this.sumQueryToolStripMenuItem.Text = "Sum Query";
             this.sumQueryToolStripMenuItem.Click += new System.EventHandler(this.sumQueryToolStripMenuItem_Click);
+            // 
+            // serverSideSumQueryToolStripMenuItem
+            // 
+            this.serverSideSumQueryToolStripMenuItem.Name = "serverSideSumQueryToolStripMenuItem";
+            this.serverSideSumQueryToolStripMenuItem.Size = new System.Drawing.Size(138, 20);
+            this.serverSideSumQueryToolStripMenuItem.Text = "Server Side Sum Query";
+            this.serverSideSumQueryToolStripMenuItem.Click += new System.EventHandler(this.serverSideSumQueryToolStripMenuItem_Click);
             // 
             // insert100000DocumentsToolStripMenuItem
             // 
@@ -154,12 +163,12 @@
             this.dataGridView1.Size = new System.Drawing.Size(693, 317);
             this.dataGridView1.TabIndex = 7;
             // 
-            // serverSideSumQueryToolStripMenuItem
+            // testToolStripMenuItem
             // 
-            this.serverSideSumQueryToolStripMenuItem.Name = "serverSideSumQueryToolStripMenuItem";
-            this.serverSideSumQueryToolStripMenuItem.Size = new System.Drawing.Size(138, 20);
-            this.serverSideSumQueryToolStripMenuItem.Text = "Server Side Sum Query";
-            this.serverSideSumQueryToolStripMenuItem.Click += new System.EventHandler(this.serverSideSumQueryToolStripMenuItem_Click);
+            this.testToolStripMenuItem.Name = "testToolStripMenuItem";
+            this.testToolStripMenuItem.Size = new System.Drawing.Size(38, 20);
+            this.testToolStripMenuItem.Text = "test";
+            this.testToolStripMenuItem.Click += new System.EventHandler(this.testToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -203,6 +212,7 @@
         private System.Windows.Forms.ToolStripMenuItem backupToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem restoreToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem serverSideSumQueryToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem testToolStripMenuItem;
     }
 }
 

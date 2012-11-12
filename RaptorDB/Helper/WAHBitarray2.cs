@@ -9,9 +9,9 @@ namespace RaptorDB
     {
         public enum TYPE
         {
-            Compressed_WAH,
-            Uncompressed_WAH,
-            Indexes
+            WAH = 1,
+            Bitarray = 0,
+            Indexes = 2
         }
 
         public WAHBitArray()
@@ -24,34 +24,34 @@ namespace RaptorDB
             _usingOffsets = false;
             switch (type)
             {
-                case TYPE.Compressed_WAH:
+                case TYPE.WAH:
                     _compressed = ints;
                     break;
-                case TYPE.Uncompressed_WAH:
+                case TYPE.Bitarray:
                     _uncompressed = ints;
                     break;
                 case TYPE.Indexes:
-                    _offsets = new Dictionary<int, bool>();
+                    _offsets = new Dictionary<uint, bool>();
                     _usingOffsets = true;
+                    foreach (var i in ints)
+                        _offsets.Add(i, true);
                     break;
             }
         }
 
         private uint[] _compressed;
         private uint[] _uncompressed;
-        private Dictionary<int, bool> _offsets = new Dictionary<int, bool>();
+        private Dictionary<uint, bool> _offsets = new Dictionary<uint, bool>();
         private bool _usingOffsets = true;
         private uint _curMax = 0;
         public bool isDirty = false;
-
-        //public bool UsingIndexes { get { return _usingIndexes; } }
 
         public WAHBitArray Copy()
         {
             lock (_lock)
             {
-                uint[] i = GetUncompressed();
-                return new WAHBitArray(TYPE.Uncompressed_WAH, i);
+                uint[] i = GetBitArray();
+                return new WAHBitArray(TYPE.Bitarray, i);
             }
         }
 
@@ -60,7 +60,7 @@ namespace RaptorDB
             if (_usingOffsets)
             {
                 bool b = false;
-                var f = _offsets.TryGetValue(index, out b);
+                var f = _offsets.TryGetValue((uint)index, out b);
                 if (f)
                     return b;
                 else
@@ -85,15 +85,15 @@ namespace RaptorDB
                     if (val == true)
                     {
                         bool b = false;
-                        if (_offsets.TryGetValue(index, out b) == false)
-                            _offsets.Add(index, true);
+                        if (_offsets.TryGetValue((uint)index, out b) == false)
+                            _offsets.Add((uint)index, true);
                         // set max
                         if (index > _curMax)
                             _curMax = (uint)index;
                     }
                     else
                     {
-                        _offsets.Remove(index);
+                        _offsets.Remove((uint)index);
                     }
 
                     ChangeTypeIfNeeded();
@@ -131,10 +131,10 @@ namespace RaptorDB
                 if (_usingOffsets)
                 {
                     if (_offsets.Count == 0) return 0;
-                    int[] k = GetOffsets();
+                    uint[] k = GetOffsets();
 
-                    int l = k[k.Length - 1];
-                    return l;
+                    uint l = k[k.Length - 1];
+                    return (int)l;
                 }
                 CheckBitArray();
                 return _uncompressed.Length << 5;
@@ -153,7 +153,7 @@ namespace RaptorDB
                 for (int i = 0; i < left.Length; i++)
                     left[i] &= right[i];
 
-                return new WAHBitArray(TYPE.Uncompressed_WAH, left);
+                return new WAHBitArray(TYPE.Bitarray, left);
             }
         }
 
@@ -168,7 +168,7 @@ namespace RaptorDB
                 for (int i = 0; i < left.Length; i++)
                     left[i] &= ~right[i];
 
-                return new WAHBitArray(TYPE.Uncompressed_WAH, left);
+                return new WAHBitArray(TYPE.Bitarray, left);
             }
         }
 
@@ -183,7 +183,7 @@ namespace RaptorDB
                 for (int i = 0; i < left.Length; i++)
                     left[i] |= right[i];
 
-                return new WAHBitArray(TYPE.Uncompressed_WAH, left);
+                return new WAHBitArray(TYPE.Bitarray, left);
             }
         }
 
@@ -193,12 +193,12 @@ namespace RaptorDB
             {
                 this.CheckBitArray();
 
-                uint[] left = this.GetUncompressed();
+                uint[] left = this.GetBitArray();
 
                 for (int i = 0; i < left.Length; i++)
                     left[i] = ~left[i];
 
-                return new WAHBitArray(TYPE.Uncompressed_WAH, left);
+                return new WAHBitArray(TYPE.Bitarray, left);
             }
         }
 
@@ -213,10 +213,18 @@ namespace RaptorDB
                 for (int i = 0; i < left.Length; i++)
                     left[i] ^= right[i];
 
-                return new WAHBitArray(TYPE.Uncompressed_WAH, left);
+                return new WAHBitArray(TYPE.Bitarray, left);
             }
         }
         #endregion
+
+        private static int BitCount(uint n)
+        { // 32-bit recursive reduction using SWAR
+            n -= ((n >> 1) & 0x55555555);
+            n = (((n >> 2) & 0x33333333) + (n & 0x33333333));
+            n = (((n >> 4) + n) & 0x0f0f0f0f);
+            return (int)((n * 0x01010101) >> 24);
+        }
 
         public long CountOnes()
         {
@@ -229,19 +237,8 @@ namespace RaptorDB
             CheckBitArray();
 
             foreach (uint i in _uncompressed)
-            {
-                if (i != 0)
-                {
-                    uint m = 1;
-                    for (int j = 0; j < 32; j++)
-                    {
-                        uint o = i & m;
-                        if (o != 0)
-                            c++;
-                        m <<= 1;
-                    }
-                }
-            }
+                c += BitCount(i);
+
             return c;
         }
 
@@ -250,7 +247,7 @@ namespace RaptorDB
             if (_usingOffsets)
             {
                 long ones = _offsets.Count;
-                int[] k = GetOffsets();
+                uint[] k = GetOffsets();
                 long l = k[k.Length - 1];
                 return l - ones;
             }
@@ -273,7 +270,25 @@ namespace RaptorDB
         {
             uint[] data = _uncompressed;
             if (_usingOffsets)
+            {
                 data = UnpackOffsets();
+            }
+            else if (_uncompressed == null)
+                return new uint[] { 0 };
+            Compress(data);
+            return _compressed;
+        }
+
+        public uint[] GetCompressed(out TYPE type)
+        {
+            type = TYPE.WAH;
+            uint[] data = _uncompressed;
+            if (_usingOffsets)
+            {
+                //data = UnpackOffsets();
+                type = TYPE.Indexes;
+                return GetOffsets();
+            }
             else if (_uncompressed == null)
                 return new uint[] { 0 };
             Compress(data);
@@ -284,7 +299,7 @@ namespace RaptorDB
         {
             if (_usingOffsets)
             {
-                foreach (int i in GetOffsets()) 
+                foreach (int i in GetOffsets())
                     yield return i;
             }
             else
@@ -308,9 +323,9 @@ namespace RaptorDB
         }
 
         #region [  P R I V A T E  ]
-        private int[] GetOffsets()
+        private uint[] GetOffsets()
         {
-            int[] k = new int[_offsets.Count];
+            uint[] k = new uint[_offsets.Count];
             _offsets.Keys.CopyTo(k, 0);
             Array.Sort(k);
             return k;
@@ -320,8 +335,8 @@ namespace RaptorDB
         {
             this.CheckBitArray();
 
-            left = this.GetUncompressed();
-            right = op.GetUncompressed();
+            left = this.GetBitArray();
+            right = op.GetBitArray();
             int ic = left.Length;
             int uc = right.Length;
             if (ic > uc)
@@ -338,7 +353,7 @@ namespace RaptorDB
             }
         }
 
-        internal uint[] GetUncompressed()
+        internal uint[] GetBitArray()
         {
             lock (_lock)
             {
@@ -356,9 +371,9 @@ namespace RaptorDB
         private uint[] UnpackOffsets()
         {
             // return bitmap uints 
-            int max = 0;
+            uint max = 0;
             if (_offsets.Count == 0) return new uint[0];
-            int[] k = GetOffsets();
+            uint[] k = GetOffsets();
             max = k[k.Length - 1];
 
             uint[] ints = new uint[(max >> 5) + 1];
@@ -391,7 +406,7 @@ namespace RaptorDB
                 foreach (var i in _offsets.Keys)
                     Set((int)i, true);
                 // clear list
-                _offsets = new Dictionary<int, bool>();
+                _offsets = new Dictionary<uint, bool>();
             }
         }
 

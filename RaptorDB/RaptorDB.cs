@@ -24,7 +24,7 @@ namespace RaptorDB
         {
             return new RaptorDB(FolderPath);
         }
-
+        private string _S = Path.DirectorySeparatorChar.ToString();
         private ILog _log = LogManager.GetLogger(typeof(RaptorDB));
         private Views.ViewManager _viewManager;
         private KeyStoreGuid _objStore;
@@ -46,6 +46,11 @@ namespace RaptorDB
         internal string GetViewName(Type type)
         {
             return _viewManager.GetViewName(type);
+        }
+
+        internal string GetView(string typefullname)
+        {
+            return _viewManager.GetViewName(typefullname);
         }
 
         /// <summary>
@@ -140,7 +145,7 @@ namespace RaptorDB
         /// <typeparam name="T"></typeparam>
         /// <param name="viewname"></param>
         /// <returns></returns>
-        public Result Query(string viewname)
+        public Result<object> Query(string viewname)
         {
             return _viewManager.Query(viewname, 0, 0);
         }
@@ -151,7 +156,7 @@ namespace RaptorDB
         /// <typeparam name="T"></typeparam>
         /// <param name="view"></param>
         /// <returns></returns>
-        public Result Query(Type view)
+        public Result<object> Query(Type view)
         {
             return _viewManager.Query(view, 0, 0);
         }
@@ -162,7 +167,7 @@ namespace RaptorDB
         /// <param name="viewname"></param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result Query(string viewname, string filter)
+        public Result<object> Query(string viewname, string filter)
         {
             if (filter == "")
                 return _viewManager.Query(viewname, 0, 0);
@@ -178,9 +183,9 @@ namespace RaptorDB
         /// <param name="viewname">view name</param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result Query<T>(string viewname, Expression<Predicate<T>> filter)
+        public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter)
         {
-            return _viewManager.Query(viewname, filter, 0, 0);
+            return _viewManager.Query<T>(viewname, filter, 0, 0);
         }
 
         /// <summary>
@@ -190,9 +195,9 @@ namespace RaptorDB
         /// <param name="view">base entity type, or typeof the view </param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result Query<T>(Type type, Expression<Predicate<T>> filter)
+        public Result<object> Query<T>(Type type, Expression<Predicate<T>> filter)
         {
-            return _viewManager.Query(type, filter, 0, 0);
+            return _viewManager.Query<T>(type, filter, 0, 0);
         }
 
         /// <summary>
@@ -202,7 +207,7 @@ namespace RaptorDB
         /// <param name="view">base entity type, or typeof the view </param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result Query(Type type, string filter)
+        public Result<object> Query(Type type, string filter)
         {
             return _viewManager.Query(type, filter, 0, 0);
         }
@@ -254,11 +259,11 @@ namespace RaptorDB
             _fulltextindex.Shutdown();
             // save records 
             _log.Debug("last full text record = " + _LastFulltextIndexed);
-            File.WriteAllBytes(_Path + "Data\\_fulltext.rec", Helper.GetBytes(_LastFulltextIndexed, false));
+            File.WriteAllBytes(_Path + "Data" + _S + "_fulltext.rec", Helper.GetBytes(_LastFulltextIndexed, false));
             _log.Debug("last record = " + _LastRecordNumberProcessed);
-            File.WriteAllBytes(_Path + "Data\\_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
+            File.WriteAllBytes(_Path + "Data" + _S + "_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
             _log.Debug("last backup record = " + _LastBackupRecordNumber);
-            File.WriteAllBytes(_Path + "Backup\\LastBackupRecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
+            File.WriteAllBytes(_Path + "Backup" + _S + "LastBackupRecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
             _log.Debug("Shutting down");
             _saveTimer.Stop();
             _fulltextTimer.Stop();
@@ -280,9 +285,9 @@ namespace RaptorDB
             lock (_backuplock)
             {
                 _log.Debug("Backup Started");
-                string tempp = _Path + "Temp\\" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm");
+                string tempp = _Path + "Temp" + _S + DateTime.Now.ToString("yyyy-MM-dd-HH-mm");
                 Directory.CreateDirectory(tempp);
-                StorageFile<int> backup = new StorageFile<int>(tempp + "\\backup.mgdat");
+                StorageFile<int> backup = new StorageFile<int>(tempp + _S + "backup.mgdat");
                 _log.Debug("Copying data to backup");
                 if (_LastBackupRecordNumber == -1)
                     _LastBackupRecordNumber = 0;
@@ -292,15 +297,15 @@ namespace RaptorDB
                 _log.Debug("Last backup rec# = " + rec);
 
                 // compress the file
-                using (FileStream read = File.OpenRead(tempp + "\\backup.mgdat"))
-                using (FileStream outp = File.Create(tempp + "\\backup.mgdat.gz"))
+                using (FileStream read = File.OpenRead(tempp + _S + "backup.mgdat"))
+                using (FileStream outp = File.Create(tempp + _S + "backup.mgdat.gz"))
                     CompressForBackup(read, outp);
 
                 _log.Debug("Backup compressed and done");
-                File.Move(tempp + "\\backup.mgdat.gz", _Path + "Backup\\" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm") + ".mgdat.gz");
+                File.Move(tempp + _S + "backup.mgdat.gz", _Path + "Backup" + _S + DateTime.Now.ToString("yyyy-MM-dd-HH-mm") + ".mgdat.gz");
 
                 _log.Debug("last backup record = " + _LastBackupRecordNumber);
-                File.WriteAllBytes(_Path + "Backup\\LastBackupRecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
+                File.WriteAllBytes(_Path + "Backup" + _S + "LastBackupRecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
                 // cleanup temp folder
                 Directory.Delete(tempp, true);
                 return true;
@@ -318,7 +323,7 @@ namespace RaptorDB
                 try
                 {
                     // do restore 
-                    string[] files = Directory.GetFiles(_Path + "Restore\\", "*.gz");
+                    string[] files = Directory.GetFiles(_Path + "Restore" + _S, "*.gz");
                     Array.Sort(files);
                     _log.Debug("Restoring file count = " + files.Length);
 
@@ -352,7 +357,7 @@ namespace RaptorDB
                         sf.Shutdown();
                         _log.Debug("File restore complete : " + Path.GetFileName(tmp));
                         File.Delete(tmp);
-                        File.Move(file, _Path + "\\Restore\\Done\\" + Path.GetFileName(file));
+                        File.Move(file, _Path + _S + "Restore" + _S + "Done" + _S + Path.GetFileName(file));
                     }
                 }
                 catch (Exception ex)
@@ -386,16 +391,40 @@ namespace RaptorDB
             return func(this, ls.sb.ToString()).ToArray();
         }
 
-        public Result FullTextSearch(string filter)
+        public Result<object> FullTextSearch(string filter)
         {
             // FIX: query full text here
-            Result r = new Result(false);
+            Result<object> r = new Result<object>(false);
             var wbmp = _fulltextindex.Query(filter);
 
 
             return r;
         }
 
+        public Result<T> Query<T>(Expression<Predicate<T>> filter)
+        {
+            return _viewManager.Query<T>(filter, 0, 0);
+        }
+
+        public Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count)
+        {
+            return _viewManager.Query<T>(filter, start, count);
+        }
+
+        public Result<T> Query<T>(string filter)
+        {
+            return _viewManager.Query<T>(filter, 0, 0);
+        }
+
+        public Result<T> Query<T>(string filter, int start, int count)
+        {
+            return _viewManager.Query<T>(filter, start, count);
+        }
+
+        public int Count<T>(Expression<Predicate<T>> filter)
+        {
+            return _viewManager.Count<T>(filter);
+        }
         #region [            P R I V A T E     M E T H O D S              ]
 
         private bool SaveToView<T>(Guid docid, T data, List<string> list)
@@ -499,46 +528,46 @@ namespace RaptorDB
             // create folders 
             Directory.CreateDirectory(foldername);
             foldername = Path.GetFullPath(foldername);
-            if (foldername.EndsWith("\\") == false)
-                foldername += "\\";
+            if (foldername.EndsWith(_S) == false)
+                foldername += _S;
             _Path = foldername;
 
             Directory.CreateDirectory(_Path + "Data");
-            Directory.CreateDirectory(_Path + "Data\\Fulltext");
+            Directory.CreateDirectory(_Path + "Data" + _S + "Fulltext");
             Directory.CreateDirectory(_Path + "Views");
             Directory.CreateDirectory(_Path + "Logs");
             Directory.CreateDirectory(_Path + "Temp");
             Directory.CreateDirectory(_Path + "Backup");
             Directory.CreateDirectory(_Path + "Restore");
-            Directory.CreateDirectory(_Path + "Restore\\Done");
+            Directory.CreateDirectory(_Path + "Restore" + _S + "Done");
             // load logger
-            LogManager.Configure(_Path + "Logs\\log.txt", 500, false);
+            LogManager.Configure(_Path + "Logs" + _S + "log.txt", 500, false);
 
             _log.Debug("RaptorDB starting...");
             _log.Debug("RaptorDB data folder = " + _Path);
 
 
-            _objStore = new KeyStoreGuid(_Path + "Data\\data");
-            _fileStore = new KeyStoreGuid(_Path + "Data\\files");
+            _objStore = new KeyStoreGuid(_Path + "Data"+_S+"data");
+            _fileStore = new KeyStoreGuid(_Path + "Data"+_S+"files");
 
             _viewManager = new Views.ViewManager(_Path + "Views", _objStore);
 
             // load _LastFulltextIndexed 
-            if (File.Exists(_Path + "Data\\_fulltext.rec"))
+            if (File.Exists(_Path + "Data"+_S+"_fulltext.rec"))
             {
-                byte[] b = File.ReadAllBytes(_Path + "Data\\_fulltext.rec");
+                byte[] b = File.ReadAllBytes(_Path + "Data"+_S+"_fulltext.rec");
                 _LastFulltextIndexed = Helper.ToInt32(b, 0, false);
             }
             // load _LastRecordNumberProcessed 
-            if (File.Exists(_Path + "Data\\_lastrecord.rec"))
+            if (File.Exists(_Path + "Data"+_S+"_lastrecord.rec"))
             {
-                byte[] b = File.ReadAllBytes(_Path + "Data\\_lastrecord.rec");
+                byte[] b = File.ReadAllBytes(_Path + "Data"+_S+"_lastrecord.rec");
                 _LastRecordNumberProcessed = Helper.ToInt32(b, 0, false);
             }
             // load _LastBackupRecordNumber 
-            if (File.Exists(_Path + "Backup\\LastBackupRecord.rec"))
+            if (File.Exists(_Path + "Backup"+_S+"LastBackupRecord.rec"))
             {
-                byte[] b = File.ReadAllBytes(_Path + "Backup\\LastBackupRecord.rec");
+                byte[] b = File.ReadAllBytes(_Path + "Backup"+_S+"LastBackupRecord.rec");
                 _LastBackupRecordNumber = Helper.ToInt32(b, 0, false);
             }
             _CurrentRecordNumber = _objStore.RecordCount();
@@ -546,7 +575,7 @@ namespace RaptorDB
             otherviews = this.GetType().GetMethod("SaveInOtherViews", BindingFlags.Instance | BindingFlags.NonPublic);
             save = this.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
 
-            _fulltextindex = new FullTextIndex(_Path + "Data\\Fulltext", "fulltext");
+            _fulltextindex = new FullTextIndex(_Path + "Data"+_S+"Fulltext", "fulltext");
 
             // start backround save to views
             _saveTimer = new System.Timers.Timer(Global.BackgroundSaveViewTimer * 1000);
@@ -687,7 +716,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query(string viewname, int start, int count)
+        public Result<object> Query(string viewname, int start, int count)
         {
             return _viewManager.Query(viewname, start, count);
         }
@@ -699,7 +728,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query(Type view, int start, int count)
+        public Result<object> Query(Type view, int start, int count)
         {
             return _viewManager.Query(view, start, count);
         }
@@ -712,7 +741,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query(string viewname, string filter, int start, int count)
+        public Result<object> Query(string viewname, string filter, int start, int count)
         {
             return _viewManager.Query(viewname, filter, start, count);
         }
@@ -726,7 +755,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
+        public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
         {
             return _viewManager.Query(viewname, filter, start, count);
         }
@@ -740,7 +769,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query<T>(Type type, Expression<Predicate<T>> filter, int start, int count)
+        public Result<object> Query<T>(Type type, Expression<Predicate<T>> filter, int start, int count)
         {
             return _viewManager.Query(type, filter, start, count);
         }
@@ -753,7 +782,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query(Type type, string filter, int start, int count)
+        public Result<object> Query(Type type, string filter, int start, int count)
         {
             return _viewManager.Query(type, filter, start, count);
         }

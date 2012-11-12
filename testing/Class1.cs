@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 
 namespace testing
 {
+    /*
     public class program2
     {
         static RaptorDB.RaptorDB rd;
@@ -29,6 +30,7 @@ namespace testing
                 System.Console.WriteLine("Params: numthreads insertsforthreads (numthreads =  0 for insertion in the main thread )");
                 return;
             }
+            DateTime dt = FastDateTime.Now;
             int maxThread = int.Parse(args[0]);
             int maxDataToInsert = int.Parse(args[1]);
             RepositoryStart();
@@ -46,13 +48,14 @@ namespace testing
                 }
                 Task.WaitAll(tasks);
             }
-            System.Console.Write((maxDataToInsert * (maxThread == 0 ? 1 : maxThread)).ToString("#,###") + " inserted press a key to continue... ");
-            System.Console.ReadLine();
+            //System.Console.Write((maxDataToInsert * (maxThread == 0 ? 1 : maxThread)).ToString("#,###") + " inserted press a key to continue... ");
+            //System.Console.ReadLine();
             RepositoryStop();
             System.Console.WriteLine("Re-opening RaptorDB for objects count....");
             RepositoryStart();
-            System.Console.WriteLine(rd.Query(typeof(InvoiceView)).Count);
+            System.Console.WriteLine(rd.Count(typeof(InvoiceView)));
             RepositoryStop();
+            Console.WriteLine("time = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
             return;
         }
 
@@ -202,4 +205,5 @@ namespace testing
             }
         }
     }
+    */
 }

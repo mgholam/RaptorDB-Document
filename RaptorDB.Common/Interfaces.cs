@@ -6,6 +6,33 @@ using System.Linq.Expressions;
 
 namespace RaptorDB
 {
+    public static class RDBExtensions
+    {
+        /// <summary>
+        /// For RaptorDB optimized range queries
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="obj"></param>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <returns></returns>
+        public static bool Between<T>(this T obj, T from, T to)
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// For RaptorDB full text search queries
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="what"></param>
+        /// <returns></returns>
+        public static bool Contains(this string obj, string what)
+        {
+            return true;
+        }
+    }
+
     /// <summary>
     /// Used for the indexer -> hOOt full text indexing
     /// </summary>
@@ -37,7 +64,7 @@ namespace RaptorDB
         /// <param name="ViewName"></param>
         /// <param name="Filter"></param>
         /// <returns></returns>
-        Result Query<T>(string ViewName, Expression<Predicate<T>> Filter); // Query primary list
+        Result<object> Query<T>(string ViewName, Expression<Predicate<T>> Filter); // Query primary list
 
         /// <summary>
         /// Query a View with a LINQ filter with paging
@@ -48,7 +75,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        Result Query<T>(string ViewName, Expression<Predicate<T>> Filter, int start, int count); // Query primary list
+        Result<object> Query<T>(string ViewName, Expression<Predicate<T>> Filter, int start, int count); // Query primary list
 
         /// <summary>
         /// Query a view by it's type with a LINQ filter
@@ -57,7 +84,7 @@ namespace RaptorDB
         /// <param name="View"></param>
         /// <param name="Filter"></param>
         /// <returns></returns>
-        Result Query<T>(Type View, Expression<Predicate<T>> Filter); //Query other views
+        Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter); //Query other views
         
         /// <summary>
         /// Query a View Type with a LINQ filter with paging
@@ -68,7 +95,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        Result Query<T>(Type View, Expression<Predicate<T>> Filter, int start, int count); //Query other views
+        Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter, int start, int count); //Query other views
 
         /// <summary>
         /// Count all data associated with the Documnet Type or the View Type

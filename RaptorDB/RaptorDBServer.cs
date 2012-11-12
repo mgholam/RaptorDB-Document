@@ -24,6 +24,7 @@ namespace RaptorDB
             _server.Start(port, processpayload);
         }
 
+        private string _S = Path.DirectorySeparatorChar.ToString();
         private Dictionary<string, uint> _users = new Dictionary<string, uint>();
         private string _path = "";
         private bool _backupDone = false;
@@ -44,7 +45,7 @@ namespace RaptorDB
             string fname = ss[0] + ".dll";
             if (File.Exists(fname))
                 return Assembly.LoadFrom(fname);
-            fname = "Extensions\\" + fname;
+            fname = "Extensions" + _S + fname;
             if (File.Exists(fname))
                 return Assembly.LoadFrom(fname);
             else return null;
@@ -79,7 +80,7 @@ namespace RaptorDB
                 sb.AppendLine(kv.Key + " , " + kv.Value);
             }
 
-            File.WriteAllText(_path + "\\users.config", sb.ToString());
+            File.WriteAllText(_path + _S + "users.config", sb.ToString());
         }
 
         private object processpayload(object data)
@@ -106,6 +107,7 @@ namespace RaptorDB
                         param = (object[])p.Data;
                         Type t = Type.GetType((string)param[0]);
                         string viewname = _raptor.GetViewName(t);
+                        if (viewname == "") viewname = _raptor.GetView((string)param[0]);
                         ret.OK = true;
                         ret.Data = _raptor.Query(viewname, (string)param[1], p.Start, p.Count);
                         break;
@@ -153,6 +155,7 @@ namespace RaptorDB
                         param = (object[])p.Data;
                         Type tt = Type.GetType((string)param[0]);
                         string viewname2 = _raptor.GetViewName(tt);
+                        if (viewname2 == "") viewname2 = _raptor.GetView((string)param[0]);
                         ret.OK = true;
                         ret.Data = _raptor.Count(viewname2, (string)param[1]);
                         break;
@@ -160,6 +163,14 @@ namespace RaptorDB
                         // count str
                         ret.OK = true;
                         ret.Data = _raptor.Count(p.Viewname, (string)p.Data);
+                        break;
+                    case "gcount":
+                        //param = (object[])p.Data;
+                        Type ttt = Type.GetType(p.Viewname);
+                        string viewname3 = _raptor.GetViewName(ttt);
+                        if (viewname3 == "") viewname3 = _raptor.GetView(p.Viewname);
+                        ret.OK = true;
+                        ret.Data = _raptor.Count(viewname3, (string)p.Data);
                         break;
                 }
             }
@@ -221,9 +232,9 @@ namespace RaptorDB
         private void Initialize()
         {
             // load users here
-            if (File.Exists(_path + "\\users.config"))
+            if (File.Exists(_path + _S + "users.config"))
             {
-                foreach (string line in File.ReadAllLines(_path + "\\users.config"))
+                foreach (string line in File.ReadAllLines(_path + _S + "users.config"))
                 {
                     if (line.Contains("#") == false)
                     {
@@ -238,10 +249,10 @@ namespace RaptorDB
 
             // exe folder
             // |-Extensions
-            Directory.CreateDirectory(_path + "\\Extensions");
+            Directory.CreateDirectory(_path + _S + "Extensions");
 
             // open extensions folder
-            string path = _path + "\\Extensions";
+            string path = _path + _S+ "Extensions";
 
             foreach (var f in Directory.GetFiles(path, "*.dll"))
             {

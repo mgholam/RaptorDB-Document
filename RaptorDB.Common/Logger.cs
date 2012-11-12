@@ -49,8 +49,8 @@ namespace RaptorDB
             if (_FilePath != "")
             {
                 _FilePath = Directory.CreateDirectory(_FilePath).FullName;
-                if (_FilePath.EndsWith("\\") == false)
-                    _FilePath += "\\";
+                if (_FilePath.EndsWith(Path.DirectorySeparatorChar.ToString()) == false)
+                    _FilePath += Path.DirectorySeparatorChar.ToString();
             }
             _output = new StreamWriter(filename, true);
             FileInfo fi = new FileInfo(filename);

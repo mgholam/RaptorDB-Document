@@ -57,22 +57,18 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RaptorDB.Common\RaptorDB.Common.csproj">
-      <Project>{32331D51-5BE0-41E2-AF1A-9B086C5AE809}</Project>
-      <Name>RaptorDB.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\RaptorDB\RaptorDB.csproj">
-      <Project>{45F6BE30-989A-4749-B6A0-69099C8661F4}</Project>
-      <Name>RaptorDB</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Service1.resx">
       <DependentUpon>Service1.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RaptorDB\RaptorDB.csproj">
+      <Project>{45F6BE30-989A-4749-B6A0-69099C8661F4}</Project>
+      <Name>RaptorDB</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

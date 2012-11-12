@@ -32,6 +32,7 @@ namespace RaptorDB.Views
         private SafeDictionary<Type, List<string>> _otherViews = new SafeDictionary<Type, List<string>>();
         private TaskQueue _que = new TaskQueue();
         private SafeDictionary<int, bool> _transactions = new SafeDictionary<int, bool>();
+        private SafeDictionary<string, string> _viewAQFNmapping = new SafeDictionary<string, string>();
 
         internal int Count<T>(Type objtype, Expression<Predicate<T>> filter)
         {
@@ -85,7 +86,7 @@ namespace RaptorDB.Views
             return 0;
         }
 
-        internal Result Query<T>(Type objtype, Expression<Predicate<T>> filter, int start, int count)
+        internal Result<object> Query<T>(Type objtype, Expression<Predicate<T>> filter, int start, int count)
         {
             string viewname = null;
             // find view from name
@@ -97,25 +98,29 @@ namespace RaptorDB.Views
                 return Query(viewname, filter, start, count);
 
             _log.Error("view not found", viewname);
-            return new Result(false, new Exception("view not found : " + viewname));
+            return new Result<object>(false, new Exception("view not found : " + viewname));
         }
 
-        internal Result Query(Type objtype, string filter, int start, int count)
+        internal Result<object> Query(Type objtype, string filter, int start, int count)
         {
-            string viewname = null;
+            string viewname = GetViewName(objtype);
+
             // find view from name
-            if (_primaryView.TryGetValue(objtype, out viewname))
+            if (viewname!="") //_primaryView.TryGetValue(objtype, out viewname))
                 return Query(viewname, filter, start, count);
 
-            // search for viewtype here
-            if (_otherViewTypes.TryGetValue(objtype, out viewname))
-                return Query(viewname, filter, start, count);
+            //// search for viewtype here
+            //if (_otherViewTypes.TryGetValue(objtype, out viewname))
+            //    return Query(viewname, filter, start, count);
 
-            _log.Error("view not found", viewname);
-            return new Result(false, new Exception("view not found : " + viewname));
+            //if(_viewAQFNmapping.TryGetValue(objtype.AssemblyQualifiedName, out viewname))
+            //    return Query(viewname, filter, start, count);
+
+            _log.Error("view not found for : ", objtype.AssemblyQualifiedName);
+            return new Result<object>(false, new Exception("view not found : " + objtype.AssemblyQualifiedName));
         }
 
-        internal Result Query(string viewname, string filter, int start, int count)
+        internal Result<object> Query(string viewname, string filter, int start, int count)
         {
             ViewHandler view = null;
             // find view from name
@@ -123,10 +128,10 @@ namespace RaptorDB.Views
                 return view.Query(filter, start, count);
 
             _log.Error("view not found", viewname);
-            return new Result(false, new Exception("view not found : " + viewname));
+            return new Result<object>(false, new Exception("view not found : " + viewname));
         }
 
-        internal Result Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
+        internal Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
         {
             ViewHandler view = null;
             // find view from name
@@ -134,10 +139,10 @@ namespace RaptorDB.Views
                 return view.Query(filter, start, count);
 
             _log.Error("view not found", viewname);
-            return new Result(false, new Exception("view not found : " + viewname));
+            return new Result<object>(false, new Exception("view not found : " + viewname));
         }
 
-        internal Result Query(string viewname, int start, int count)
+        internal Result<object> Query(string viewname, int start, int count)
         {
             ViewHandler view = null;
             // find view from name
@@ -145,22 +150,28 @@ namespace RaptorDB.Views
                 return view.Query(start, count);
 
             _log.Error("view not found", viewname);
-            return new Result(false, new Exception("view not found : " + viewname));
+            return new Result<object>(false, new Exception("view not found : " + viewname));
         }
 
-        internal Result Query(Type view, int start, int count)
+        internal Result<object> Query(Type view, int start, int count)
         {
-            string viewname = null;
+            string viewname = GetViewName(view);
+
             // find view from name
-            if (_primaryView.TryGetValue(view, out viewname))
+            if (viewname != "") //_primaryView.TryGetValue(objtype, out viewname))
                 return Query(viewname, start, count);
 
-            // search for viewtype here
-            if (_otherViewTypes.TryGetValue(view, out viewname))
-                return Query(viewname, start, count);
+            //string viewname = null;
+            //// find view from name
+            //if (_primaryView.TryGetValue(view, out viewname))
+            //    return Query(viewname, start, count);
+
+            //// search for viewtype here
+            //if (_otherViewTypes.TryGetValue(view, out viewname))
+            //    return Query(viewname, start, count);
 
             _log.Error("view not found", viewname);
-            return new Result(false, new Exception("view not found : " + viewname));
+            return new Result<object>(false, new Exception("view not found : " + viewname));
         }
 
         internal void Insert<T>(string viewname, Guid docid, T data)
@@ -247,6 +258,12 @@ namespace RaptorDB.Views
                 _views.Add(view.Name.ToLower(), vh);
                 _otherViewTypes.Add(view.GetType(), view.Name.ToLower());
 
+                // add view schema mapping 
+                _otherViewTypes.Add(view.Schema, view.Name.ToLower());
+
+                _viewAQFNmapping.Add(view.GetType().AssemblyQualifiedName, view.Name.ToLower());
+                _viewAQFNmapping.Add(view.Schema.AssemblyQualifiedName, view.Name.ToLower());
+
                 if (view.isPrimaryList)
                 {
                     foreach (string tn in view.FireOnTypes)
@@ -297,6 +314,15 @@ namespace RaptorDB.Views
                 }
             }
         }
+        
+        // for when the type full name is not found in server mode
+        internal string GetViewName(string typefullname)
+        {
+            string viewname = "";
+            if (_viewAQFNmapping.TryGetValue(typefullname, out viewname))
+                return viewname;
+            return "";
+        }
 
         internal string GetViewName(Type type)
         {
@@ -307,6 +333,9 @@ namespace RaptorDB.Views
 
             // search for viewtype here
             if (_otherViewTypes.TryGetValue(type, out viewname))
+                return viewname;
+
+            if (_viewAQFNmapping.TryGetValue(type.AssemblyQualifiedName, out viewname))
                 return viewname;
 
             return "";
@@ -353,6 +382,45 @@ namespace RaptorDB.Views
         internal void StartTransaction()
         {
             _transactions.Add(Thread.CurrentThread.ManagedThreadId, false);
+        }
+
+        internal Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count)
+        {
+            string view = GetViewName(typeof(T));
+
+            ViewHandler vman = null;
+            // find view from name
+            if (_views.TryGetValue(view.ToLower(), out vman))
+            {
+                return vman.Query2<T>(filter, start, count);
+            }
+            return new Result<T>(false, new Exception("View not found"));
+        }
+
+        internal Result<T> Query<T>(string filter, int start, int count)
+        {
+            string view = GetViewName(typeof(T));
+
+            ViewHandler vman = null;
+            // find view from name
+            if (_views.TryGetValue(view.ToLower(), out vman))
+            {
+                return vman.Query2<T>(filter, start, count);
+            }
+            return new Result<T>(false, new Exception("View not found"));
+        }
+
+        internal int Count<T>(Expression<Predicate<T>> filter)
+        {
+            string view = GetViewName(typeof(T));
+
+            ViewHandler vman = null;
+            // find view from name
+            if (_views.TryGetValue(view.ToLower(), out vman))
+            {
+                return vman.Count<T>(filter);
+            }
+            return 0;
         }
     }
 }

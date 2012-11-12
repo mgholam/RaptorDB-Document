@@ -22,7 +22,8 @@ namespace RaptorDB
         {
             _Path = IndexPath;
             _FileName = FileName;
-            if (_Path.EndsWith("\\") == false) _Path += "\\";
+            if (_Path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false) 
+                _Path += Path.DirectorySeparatorChar.ToString();
             Directory.CreateDirectory(IndexPath);
             //_log.Debug("\r\n\r\n");
             _log.Debug("Starting hOOt....");
@@ -173,7 +174,7 @@ namespace RaptorDB
                 {
                     WAHBitArray wildbits = null;
                     // do wildcard search
-                    Regex reg = new Regex(s.Replace("*", ".*").Replace("?", "."), RegexOptions.IgnoreCase);
+                    Regex reg = new Regex("^"+s.Replace("*", ".*").Replace("?", "."), RegexOptions.IgnoreCase);
                     foreach (var key in _index)
                     {
                         if (reg.IsMatch(key.Key))

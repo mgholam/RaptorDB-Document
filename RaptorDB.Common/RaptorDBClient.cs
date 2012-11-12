@@ -46,7 +46,7 @@ namespace RaptorDB
         /// <typeparam name="T"></typeparam>
         /// <param name="viewname"></param>
         /// <returns></returns>
-        public Result Query(string viewname)
+        public Result<object> Query(string viewname)
         {
             return Query(viewname, 0, 0);
         }
@@ -57,9 +57,9 @@ namespace RaptorDB
         /// <typeparam name="T"></typeparam>
         /// <param name="view"></param>
         /// <returns></returns>
-        public Result Query(Type view)
+        public Result<object> Query(Type type)
         {
-            return Query(view, 0, 0);
+            return Query(type, 0, 0);
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace RaptorDB
         /// <param name="viewname"></param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result Query(string viewname, string filter)
+        public Result<object> Query(string viewname, string filter)
         {
             return Query(viewname, filter, 0, 0);
         }
@@ -81,7 +81,7 @@ namespace RaptorDB
         /// <param name="viewname">view name</param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result Query<T>(string viewname, Expression<Predicate<T>> filter)
+        public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter)
         {
             return Query(viewname, filter, 0, 0);
         }
@@ -93,9 +93,9 @@ namespace RaptorDB
         /// <param name="view">base entity type, or typeof the view </param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result Query<T>(Type type, Expression<Predicate<T>> filter)
+        public Result<object> Query<T>(Type view, Expression<Predicate<T>> filter)
         {
-            return Query(type, filter, 0, 0);
+            return Query<T>(view, filter, 0, 0);
         }
 
         /// <summary>
@@ -105,9 +105,9 @@ namespace RaptorDB
         /// <param name="view">base entity type, or typeof the view </param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result Query(Type type, string filter)
+        public Result<object> Query(Type view, string filter)
         {
-            return Query(type, filter, 0, 0);
+            return Query(view, filter, 0, 0);
         }
 
         /// <summary>
@@ -212,13 +212,13 @@ namespace RaptorDB
             return (object[])ret.Data;
         }
 
-        public Result FullTextSearch(string filter)
+        public Result<object> FullTextSearch(string filter)
         {
             Packet p = CreatePacket();
             p.Command = "fulltext";
             p.Data = new object[] { filter };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return (Result<object>)ret.Data;
         }
 
         //public List<string> GetViews()
@@ -247,7 +247,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query(string viewname, int start, int count)
+        public Result<object> Query(string viewname, int start, int count)
         {
             Packet p = CreatePacket();
             p.Command = "querystr";
@@ -256,7 +256,7 @@ namespace RaptorDB
             p.Start = start;
             p.Count = count;
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return (Result<object>)ret.Data;
         }
 
         /// <summary>
@@ -266,7 +266,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query(Type view, int start, int count)
+        public Result<object> Query(Type view, int start, int count)
         {
             Packet p = CreatePacket();
             p.Command = "querytype";
@@ -274,7 +274,7 @@ namespace RaptorDB
             p.Count = count;
             p.Data = new object[] { view.AssemblyQualifiedName, "" };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return (Result<object>)ret.Data;
         }
 
         /// <summary>
@@ -285,7 +285,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query(string viewname, string filter, int start, int count)
+        public Result<object> Query(string viewname, string filter, int start, int count)
         {
             Packet p = CreatePacket();
             p.Command = "querystr";
@@ -294,7 +294,7 @@ namespace RaptorDB
             p.Start = start;
             p.Count = count;
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return (Result<object>)ret.Data;
         }
 
         /// <summary>
@@ -306,7 +306,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
+        public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
         {
             LINQString ls = new LINQString();
             ls.Visit(filter);
@@ -317,7 +317,7 @@ namespace RaptorDB
             p.Count = count;
             p.Data = ls.sb.ToString();
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return (Result<object>)ret.Data;
         }
 
         /// <summary>
@@ -329,7 +329,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query<T>(Type type, Expression<Predicate<T>> filter, int start, int count)
+        public Result<object> Query<T>(Type type, Expression<Predicate<T>> filter, int start, int count)
         {
             LINQString ls = new LINQString();
             ls.Visit(filter);
@@ -339,7 +339,7 @@ namespace RaptorDB
             p.Count = count;
             p.Data = new object[] { type.AssemblyQualifiedName, ls.sb.ToString() };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return (Result<object>)ret.Data;
         }
 
 
@@ -351,7 +351,7 @@ namespace RaptorDB
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result Query(Type type, string filter, int start, int count)
+        public Result<object> Query(Type type, string filter, int start, int count)
         {
             Packet p = CreatePacket();
             p.Command = "querytype";
@@ -359,7 +359,7 @@ namespace RaptorDB
             p.Count = count;
             p.Data = new object[] { type.AssemblyQualifiedName, filter };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result)ret.Data;
+            return (Result<object>)ret.Data;
         }
 
         /// <summary>
@@ -445,6 +445,66 @@ namespace RaptorDB
             Packet p = CreatePacket();
             p.Command = "countstr";
             p.Viewname = viewname;
+            p.Data = ls.sb.ToString();
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (int)ret.Data;
+        }
+
+        public Result<T> Query<T>(Expression<Predicate<T>> filter)
+        {
+            return Query<T>(filter, 0, 0);           
+        }
+
+        public Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+            Packet p = CreatePacket();
+            p.Command = "querytype";
+            p.Start = start;
+            p.Count = count;
+            p.Data = new object[] { typeof(T).AssemblyQualifiedName, ls.sb.ToString() };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            Result<object> res = (Result<object>)ret.Data;
+            return GenericResult<T>(res);
+        }
+
+        private static Result<T> GenericResult<T>(Result<object> res)
+        {
+            // FIX : dirty hack here to cleanup
+            Result<T> result = new Result<T>();
+            result.Count = res.Count;
+            result.EX = res.EX;
+            result.OK = res.OK;
+            result.TotalCount = res.TotalCount;
+            result.Rows = res.Rows.Cast<T>().ToList<T>();
+            return result;
+        }
+
+        public Result<T> Query<T>(string filter)
+        {
+            return Query<T>(filter, 0, 0);
+        }
+
+        public Result<T> Query<T>(string filter, int start, int count)
+        {
+            Packet p = CreatePacket();
+            p.Command = "querytype";
+            p.Start = start;
+            p.Count = count;
+            p.Data = new object[] { typeof(T).AssemblyQualifiedName, filter };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            Result<object> res = (Result<object>)ret.Data;
+            return GenericResult<T>(res);
+        }
+
+        public int Count<T>(Expression<Predicate<T>> filter)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+            Packet p = CreatePacket();
+            p.Command = "gcount";
+            p.Viewname = typeof(T).AssemblyQualifiedName;
             p.Data = ls.sb.ToString();
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (int)ret.Data;

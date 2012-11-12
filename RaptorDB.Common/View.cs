@@ -94,7 +94,7 @@ namespace RaptorDB
         [XmlIgnore]
         public MapFunctionDelgate<T> Mapper { get; set; }
 
-        public Result Verify()
+        public Result<object> Verify()
         {
             if (Name == null || Name == "") 
                 throw new Exception("Name must be given");
@@ -109,7 +109,7 @@ namespace RaptorDB
             if (TransactionMode == true && isPrimaryList == false)
                 throw new Exception("Transaction mode can only be enabled on Primary Views");
             // FEATURE : add more verifications
-            return new Result(true);
+            return new Result<object>(true);
         }
     }
 }

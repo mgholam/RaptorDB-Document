@@ -12,13 +12,15 @@ namespace RaptorDB
         {
             _FileName = Path.GetFileNameWithoutExtension(filename);
             _Path = path;
-            if (_Path.EndsWith("\\") == false) _Path += "\\";
+            if (_Path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false) 
+                _Path += Path.DirectorySeparatorChar.ToString();
 
             _recordFileRead = new FileStream(_Path + _FileName + _recExt, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-            _recordFileWrite = new FileStream(_Path + _FileName + _recExt, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-            _bitmapFileWrite = new FileStream(_Path + _FileName + _bmpExt, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+            _recordFileWriteOrg = new FileStream(_Path + _FileName + _recExt, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+            _bitmapFileWriteOrg = new FileStream(_Path + _FileName + _bmpExt, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
             _bitmapFileRead = new FileStream(_Path + _FileName + _bmpExt, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-
+            _bitmapFileWrite = new BufferedStream(_bitmapFileWriteOrg);
+            _recordFileWrite = new BufferedStream(_recordFileWriteOrg);
             _bitmapFileWrite.Seek(0L, SeekOrigin.End);
             _lastBitmapOffset = _bitmapFileWrite.Length;
             _lastRecordNumber = (int)(_recordFileRead.Length / 8);
@@ -28,10 +30,12 @@ namespace RaptorDB
         private string _bmpExt = ".mgbmp";
         private string _FileName = "";
         private string _Path = "";
-        private FileStream _bitmapFileWrite;
+        private FileStream _bitmapFileWriteOrg;
+        private BufferedStream _bitmapFileWrite;
         private FileStream _bitmapFileRead;
         private FileStream _recordFileRead;
-        private FileStream _recordFileWrite;
+        private FileStream _recordFileWriteOrg;
+        private BufferedStream _recordFileWrite;
         private long _lastBitmapOffset = 0;
         private int _lastRecordNumber = 0;
         private SafeDictionary<int, WAHBitArray> _cache = new SafeDictionary<int, WAHBitArray>();
@@ -231,9 +235,10 @@ namespace RaptorDB
         //-----------------------------------------------------------------
         private long SaveBitmapToFile(WAHBitArray bmp)
         {
+            //return 0; 
             long off = _lastBitmapOffset;
-
-            uint[] bits = bmp.GetCompressed();
+            WAHBitArray.TYPE t;
+            uint[] bits = bmp.GetCompressed(out t);
 
             byte[] b = new byte[bits.Length * 4 + 8];
             // write header data
@@ -261,7 +266,7 @@ namespace RaptorDB
                 return bc;
 
             List<uint> ar = new List<uint>();
-            WAHBitArray.TYPE type = WAHBitArray.TYPE.Compressed_WAH;
+            WAHBitArray.TYPE type = WAHBitArray.TYPE.WAH;
             FileStream bmp = _bitmapFileRead;
             {
                 bmp.Seek(offset, SeekOrigin.Begin);
@@ -271,7 +276,7 @@ namespace RaptorDB
                 bmp.Read(b, 0, 8);
                 if (b[0] == (byte)'B' && b[1] == (byte)'M' && b[7] == 0)
                 {
-                    type = (b[6] == 0 ? WAHBitArray.TYPE.Indexes : WAHBitArray.TYPE.Compressed_WAH);
+                    type = (b[6] == 0 ? WAHBitArray.TYPE.Indexes : WAHBitArray.TYPE.WAH);
                     int c = Helper.ToInt32(b, 2);
                     byte[] buf = new byte[c * 4];
                     bmp.Read(buf, 0, c * 4);

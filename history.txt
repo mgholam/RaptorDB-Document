@@ -111,3 +111,25 @@ v1.8.3
 - added Count() on views
 - added support for paging of results
 - the mapper can now see changes it has made in it's own thread in transaction mode while quering
+
+v1.9.0
+------
+- speed increase writing bitmap indexes to disk
+- bug fix hoot search with wildcards
+- bug fix datetime indexing with UTC time (all times are localtime)
+- upgrade to fastJSON v2.0.9
+- upgrade to fastBinaryJSON v1.3.5
+- changed CodeDOM to Reflection.Emit for MonoDroid compatibility
+- more optimized bitmap storage format (save offsets if smaller than WAH)
+- fixed path seperator character for monodroid and windows compatibility
+- new generic Query with typed results (thanks to seer_tenedos2)
+- changed to Result<T>
+- changed to Path.DirectorySeparatorChar 
+- WAH bitcount speed increase
+- bitmap index uses buffered stream 
+- bitmap index can write index pointers also
+- added between query (work in progress)
+- using Reflection.Emit instead of CodeDOM for Monodroid compatibility
+
+
+

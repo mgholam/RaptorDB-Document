@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using RaptorDB.Common;
+using System.IO;
 
 namespace RaptorDB
 {
@@ -80,7 +81,7 @@ namespace RaptorDB
         public MGIndex(string path, string filename, byte keysize, ushort maxcount, bool allowdups)
         {
             _AllowDuplicates = allowdups;
-            _index = new IndexFile<T>(path + "\\" + filename, keysize, maxcount);
+            _index = new IndexFile<T>(path + Path.DirectorySeparatorChar + filename, keysize, maxcount);
 
             // load page list
             _index.GetPageList(_pageListDiskPages, _pageList, out _LastIndexedRecordNumber);
@@ -100,20 +101,37 @@ namespace RaptorDB
             return _LastIndexedRecordNumber;
         }
 
-        //public WAHBitArray Query(T from, T to)
-        //{
-        //    // FEATURE : add code here
-        //    return new WAHBitArray();
-        //}
+        public WAHBitArray Query(T from, T to)
+        {           
+            // FIX : add BETWEEN code here
+            T temp = default(T);
+            if (from.CompareTo(to) > 0) // check values order
+            {
+                temp = from;
+                from = to;
+                to = temp;
+            }
+            // find first page and do > than
+            bool found = false;
+            int startpos = FindPageOrLowerPosition(from, ref found);
 
+
+            // find last page and do < than
+            int endpos = FindPageOrLowerPosition(to, ref found);
+
+
+            // do all pages in between
+
+            return new WAHBitArray();
+        }
 
         public WAHBitArray Query(RDBExpression exp, T from)
         {
-            T key = (T)from;
+            T key = from;
             if (exp == RDBExpression.Equal || exp == RDBExpression.NotEqual)
                 return doEqualOp(exp, key);
 
-            // FEATURE : optimize complement search if page count less for the complement pages
+            // FIX : optimize complement search if page count less for the complement pages
 
             if (exp == RDBExpression.Less || exp == RDBExpression.LessEqual)
                 return doLessOp(exp, key);
@@ -274,10 +292,6 @@ namespace RaptorDB
             {
                 T k = keys[i];
                 int bn = page.tree[k].DuplicateBitmapNumber;
-                if (bn == -1)
-                {
-                    // FEATURE :
-                }
 
                 if (k.CompareTo(key) > 0)
                     result = result.Or(_index.GetDuplicateBitmap(bn));
@@ -309,10 +323,7 @@ namespace RaptorDB
                 if (k.CompareTo(key) > 0)
                     break;
                 int bn = page.tree[k].DuplicateBitmapNumber;
-                if (bn == -1)
-                {
-                    // FEATURE :
-                }
+
                 if (k.CompareTo(key) < 0)
                     result = result.Or(_index.GetDuplicateBitmap(bn));
 
@@ -330,10 +341,7 @@ namespace RaptorDB
             if (page.tree.TryGetValue(key, out k))
             {
                 int bn = k.DuplicateBitmapNumber;
-                if (bn == -1)
-                {
-                    // FEATURE :
-                }
+
                 if (exp == RDBExpression.Equal)
                     return _index.GetDuplicateBitmap(bn);
                 else
@@ -350,10 +358,7 @@ namespace RaptorDB
             foreach (var k in keys)
             {
                 int bn = page.tree[k].DuplicateBitmapNumber;
-                if (bn == -1)
-                {
-                    // FEATURE :
-                }
+
                 res = res.Or(_index.GetDuplicateBitmap(bn));
             }
         }

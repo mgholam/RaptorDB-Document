@@ -57,13 +57,13 @@ namespace datagridbinding
 
         private void sumQueryToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //int c = rap.Count("SalesItemRows", "product = \"prod 1\"");
+            int c = rap.Count("SalesItemRows", "product = \"prod 1\"");
 
             DateTime dt = FastDateTime.Now;
-            var q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
-
-            List<SalesItemRowsView.RowSchema> list = q.Rows.Cast<SalesItemRowsView.RowSchema>().ToList();
-            var res = from item in list
+            var q = //rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
+                rap.Query<SalesItemRowsView.RowSchema>(x => x.Product == "prod 1" || x.Product == "prod 3");
+            //List<SalesItemRowsView.RowSchema> list = q.Rows.Cast<SalesItemRowsView.RowSchema>().ToList();
+            var res = from item in q.Rows//list
                       group item by item.Product into grouped
                       select new
                       {
@@ -141,16 +141,29 @@ namespace datagridbinding
         {
             string prod1 = "prod 1";
             objclass c = new objclass() { val = "prod 3" };
-            DateTime dt = FastDateTime.Now;
-            //var q = rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == prod1 || l.Product == prod3));
+            decimal i = 20;
 
+            //var q = rap.Count(typeof(SalesItemRowsView), 
+            //    (LineItem l) => (l.Product == prod1 || l.Product == prod3) && l.Price.Between(10,i)
+            //    );
+            
+            DateTime dt = FastDateTime.Now;
+           
             var qq = rap.ServerSide(Views.ServerSide.Sum_Products_based_on_filter,
                 //"product = \"prod 1\""
-                (LineItem l) => (l.Product == c.val || l.Product == prod3 )
+                (LineItem l) => (l.Product == c.val || l.Product == prod3 ) 
                 ).ToList();
             dataGridView1.DataSource = qq;
             toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;
             toolStripStatusLabel1.Text = "Count = " + qq.Count.ToString("#,0");
+        }
+
+        private void testToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            int c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial < 100);
+            var q = rap.Query<SalesInvoiceView.RowSchema>(x => x.Serial < 100, 0, 10);
+            q= rap.Query<SalesInvoiceView.RowSchema>("serial <100");
+            string s = q.Rows[0].CustomerName;
         }
     }
 }

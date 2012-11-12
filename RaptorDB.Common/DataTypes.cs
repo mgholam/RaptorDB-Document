@@ -11,7 +11,7 @@ namespace RaptorDB
     ///    OK : T = Query with data,  F = EX has the exception
     ///    Rows : query rows
     /// </summary>
-    public class Result
+    public class Result<T>
     {
         public Result()
         {
@@ -39,7 +39,7 @@ namespace RaptorDB
         /// Rows returned
         /// </summary>
         public int Count { get; set; }
-        public List<object> Rows { get; set; }
+        public List<T> Rows { get; set; }
 
 
         // FEATURE : data pending in results
