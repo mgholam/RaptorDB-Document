@@ -180,7 +180,7 @@ namespace RaptorDB.Views
             Dictionary<Guid, List<object[]>> rows = new Dictionary<Guid, List<object[]>>();
             if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
             {
-                // FIX : exists -> merge data
+                // FIX : exists -> merge data??
             }
             else
             {
@@ -517,6 +517,7 @@ namespace RaptorDB.Views
         }
 
         MethodInfo view = null;
+        // FIX : check deleted and rebuild works 
         private void RebuildFromScratch(KeyStoreGuid docs)
         {
             view = this.GetType().GetMethod("Insert", BindingFlags.Instance | BindingFlags.NonPublic);

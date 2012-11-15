@@ -229,7 +229,10 @@ namespace RaptorDB
         // BITMAP FILE FORMAT
         //    0  'B','M'
         //    2  uint count = 4 bytes
-        //    6  Bitmap type    0 = int record list      1 = uint bitmap
+        //    6  Bitmap type :
+        //                0 = int record list   
+        //                1 = uint bitmap
+        //                2 = rec# indexes
         //    7  '0'
         //    8  uint data
         //-----------------------------------------------------------------
@@ -245,8 +248,8 @@ namespace RaptorDB
             b[0] = ((byte)'B');
             b[1] = ((byte)'M');
             Buffer.BlockCopy(Helper.GetBytes(bits.Length, false), 0, b, 2, 4);
-            // TODO : put index pointer list back??
-            b[6] = (byte)(1);// (byte)(bmp.UsingIndexes == true ? 0 : 1);
+            
+            b[6] = (byte)t;// (byte)(bmp.UsingIndexes == true ? 0 : 1);
             b[7] = (byte)(0);
 
             for (int i = 0; i < bits.Length; i++)
@@ -276,7 +279,7 @@ namespace RaptorDB
                 bmp.Read(b, 0, 8);
                 if (b[0] == (byte)'B' && b[1] == (byte)'M' && b[7] == 0)
                 {
-                    type = (b[6] == 0 ? WAHBitArray.TYPE.Indexes : WAHBitArray.TYPE.WAH);
+                    type = (WAHBitArray.TYPE)Enum.ToObject(typeof(WAHBitArray.TYPE), b[6]);// (b[6] == 0 ? WAHBitArray.TYPE.Indexes : WAHBitArray.TYPE.WAH);
                     int c = Helper.ToInt32(b, 2);
                     byte[] buf = new byte[c * 4];
                     bmp.Read(buf, 0, c * 4);

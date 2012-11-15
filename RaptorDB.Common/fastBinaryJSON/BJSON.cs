@@ -81,6 +81,8 @@ namespace fastBinaryJSON
         /// </summary>
         public bool EnableAnonymousTypes = false;
 
+        public bool UseUTCtimes = false;
+
         public void FixValues()
         {
             if (UseExtensions == false) // disable conflicting params
@@ -136,7 +138,7 @@ namespace fastBinaryJSON
             _params.FixValues();
             _globalTypes = _params.UsingGlobalTypes;
             Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
-            return new BJsonParser(json).Decode();
+            return new BJsonParser(json, _params.UseUTCtimes).Decode();
         }
 
         public T ToObject<T>(byte[] json)
@@ -162,7 +164,7 @@ namespace fastBinaryJSON
 
             Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
             
-            var o = new BJsonParser(json).Decode();
+            var o = new BJsonParser(json, _params.UseUTCtimes).Decode();
             if (o is IDictionary)
             {
                 if (type != null && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>)) // deserialize a dictionary
@@ -189,7 +191,7 @@ namespace fastBinaryJSON
             _params = Parameters;
             _params.FixValues();
             Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
-            Dictionary<string, object> ht = new BJsonParser(json).Decode() as Dictionary<string, object>;
+            Dictionary<string, object> ht = new BJsonParser(json,_params.UseUTCtimes).Decode() as Dictionary<string, object>;
             if (ht == null) return null;
             return ParseDictionary(ht, null, input.GetType(), input);
         }

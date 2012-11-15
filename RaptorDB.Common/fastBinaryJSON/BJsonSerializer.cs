@@ -32,7 +32,7 @@ namespace fastBinaryJSON
         {
             WriteValue(obj);
             // add $types
-            if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count>0)
+            if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count > 0)
             {
                 byte[] after = _output.ToArray();
                 _output = _before;
@@ -268,7 +268,8 @@ namespace fastBinaryJSON
         private void WriteDateTime(DateTime dateTime)
         {
             DateTime dt = dateTime;
-            dt = dateTime.ToUniversalTime();
+            if (_params.UseUTCtimes)
+                dt = dateTime.ToUniversalTime();
 
             _output.WriteByte(TOKENS.DATETIME);
             byte[] b = Helper.GetBytes(dt.Ticks, false);
@@ -431,17 +432,19 @@ namespace fastBinaryJSON
             List<Getters> g = Reflection.Instance.GetGetters(t);
             int c = g.Count;
             int i = c;
+            if (_params.UseExtensions)
+                i++;
             foreach (var p in g)
             {
                 i--;
-                if (append && i>0)
+                if (append && i > 0)
                     WriteComma();
                 var o = p.Getter(obj);
                 if ((o == null || o is DBNull) && _params.SerializeNulls == false)
                     append = false;
                 else
                 {
-                    if (i == 0 && c>1) // last non null
+                    if (i == 0 && c > 1) // last non null
                         WriteComma();
                     WritePair(p.Name, o);
                     append = true;

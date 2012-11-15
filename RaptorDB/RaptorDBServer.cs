@@ -107,7 +107,7 @@ namespace RaptorDB
                         param = (object[])p.Data;
                         Type t = Type.GetType((string)param[0]);
                         string viewname = _raptor.GetViewName(t);
-                        if (viewname == "") viewname = _raptor.GetView((string)param[0]);
+                       // if (viewname == "") viewname = _raptor.GetView((string)param[0]);
                         ret.OK = true;
                         ret.Data = _raptor.Query(viewname, (string)param[1], p.Start, p.Count);
                         break;
@@ -155,7 +155,7 @@ namespace RaptorDB
                         param = (object[])p.Data;
                         Type tt = Type.GetType((string)param[0]);
                         string viewname2 = _raptor.GetViewName(tt);
-                        if (viewname2 == "") viewname2 = _raptor.GetView((string)param[0]);
+                        //if (viewname2 == "") viewname2 = _raptor.GetView((string)param[0]);
                         ret.OK = true;
                         ret.Data = _raptor.Count(viewname2, (string)param[1]);
                         break;
@@ -168,7 +168,7 @@ namespace RaptorDB
                         //param = (object[])p.Data;
                         Type ttt = Type.GetType(p.Viewname);
                         string viewname3 = _raptor.GetViewName(ttt);
-                        if (viewname3 == "") viewname3 = _raptor.GetView(p.Viewname);
+                        //if (viewname3 == "") viewname3 = _raptor.GetView(p.Viewname);
                         ret.OK = true;
                         ret.Data = _raptor.Count(viewname3, (string)p.Data);
                         break;

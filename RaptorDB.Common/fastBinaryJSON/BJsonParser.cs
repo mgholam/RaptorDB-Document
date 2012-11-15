@@ -11,10 +11,12 @@ namespace fastBinaryJSON
     {
         readonly byte[] json;
         int index;
+        bool _useUTC = true;
 
-        internal BJsonParser(byte[] json)
+        internal BJsonParser(byte[] json, bool useUTC)
         {
             this.json = json;
+            _useUTC = useUTC;
         }
 
         public object Decode()
@@ -256,7 +258,9 @@ namespace fastBinaryJSON
             long l = Helper.ToInt64(json, index);
             index += 8;
 
-            DateTime dt = new DateTime(l).ToLocalTime(); // to local time
+            DateTime dt = new DateTime(l);
+            if (_useUTC)
+                dt = dt.ToLocalTime(); // to local time
 
             return dt;
         }

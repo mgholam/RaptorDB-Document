@@ -48,10 +48,10 @@ namespace RaptorDB
             return _viewManager.GetViewName(type);
         }
 
-        internal string GetView(string typefullname)
-        {
-            return _viewManager.GetViewName(typefullname);
-        }
+        //internal string GetView(string typefullname)
+        //{
+        //    return _viewManager.GetViewName(typefullname);
+        //}
 
         /// <summary>
         /// Save files to RaptorDB

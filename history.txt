@@ -127,9 +127,7 @@ v1.9.0
 - changed to Path.DirectorySeparatorChar 
 - WAH bitcount speed increase
 - bitmap index uses buffered stream 
-- bitmap index can write index pointers also
 - added between query (work in progress)
-- using Reflection.Emit instead of CodeDOM for Monodroid compatibility
 
 
 

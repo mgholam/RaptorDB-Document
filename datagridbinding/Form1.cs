@@ -149,9 +149,10 @@ namespace datagridbinding
             
             DateTime dt = FastDateTime.Now;
            
-            var qq = rap.ServerSide(Views.ServerSide.Sum_Products_based_on_filter,
+            var qq = rap.ServerSide<LineItem>(Views.ServerSide.Sum_Products_based_on_filter,
                 //"product = \"prod 1\""
-                (LineItem l) => (l.Product == c.val || l.Product == prod3 ) 
+                //(LineItem l) => (l.Product == c.val || l.Product == prod3 ) 
+                x=> x.Product == c.val || x.Product == prod3
                 ).ToList();
             dataGridView1.DataSource = qq;
             toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;

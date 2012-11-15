@@ -32,7 +32,7 @@ namespace RaptorDB.Views
         private SafeDictionary<Type, List<string>> _otherViews = new SafeDictionary<Type, List<string>>();
         private TaskQueue _que = new TaskQueue();
         private SafeDictionary<int, bool> _transactions = new SafeDictionary<int, bool>();
-        private SafeDictionary<string, string> _viewAQFNmapping = new SafeDictionary<string, string>();
+        //private SafeDictionary<string, string> _viewAQFNmapping = new SafeDictionary<string, string>();
 
         internal int Count<T>(Type objtype, Expression<Predicate<T>> filter)
         {
@@ -261,8 +261,8 @@ namespace RaptorDB.Views
                 // add view schema mapping 
                 _otherViewTypes.Add(view.Schema, view.Name.ToLower());
 
-                _viewAQFNmapping.Add(view.GetType().AssemblyQualifiedName, view.Name.ToLower());
-                _viewAQFNmapping.Add(view.Schema.AssemblyQualifiedName, view.Name.ToLower());
+                //_viewAQFNmapping.Add(view.GetType().AssemblyQualifiedName, view.Name.ToLower());
+                //_viewAQFNmapping.Add(view.Schema.AssemblyQualifiedName, view.Name.ToLower());
 
                 if (view.isPrimaryList)
                 {
@@ -315,14 +315,14 @@ namespace RaptorDB.Views
             }
         }
         
-        // for when the type full name is not found in server mode
-        internal string GetViewName(string typefullname)
-        {
-            string viewname = "";
-            if (_viewAQFNmapping.TryGetValue(typefullname, out viewname))
-                return viewname;
-            return "";
-        }
+        //// for when the type full name is not found in server mode
+        //internal string GetViewName(string typefullname)
+        //{
+        //    string viewname = "";
+        //    //if (_viewAQFNmapping.TryGetValue(typefullname, out viewname))
+        //    //    return viewname;
+        //    return "";
+        //}
 
         internal string GetViewName(Type type)
         {
@@ -335,8 +335,8 @@ namespace RaptorDB.Views
             if (_otherViewTypes.TryGetValue(type, out viewname))
                 return viewname;
 
-            if (_viewAQFNmapping.TryGetValue(type.AssemblyQualifiedName, out viewname))
-                return viewname;
+            //if (_viewAQFNmapping.TryGetValue(type.AssemblyQualifiedName, out viewname))
+            //    return viewname;
 
             return "";
         }
