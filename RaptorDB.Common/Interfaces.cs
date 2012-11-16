@@ -85,7 +85,7 @@ namespace RaptorDB
         /// <param name="Filter"></param>
         /// <returns></returns>
         Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter); //Query other views
-        
+
         /// <summary>
         /// Query a View Type with a LINQ filter with paging
         /// </summary>
@@ -152,14 +152,14 @@ namespace RaptorDB
         /// <param name="guid"></param>
         /// <returns></returns>
         object Fetch(Guid guid);
-        
+
         /// <summary>
         /// Emit values, the ordering must match the view schema
         /// </summary>
         /// <param name="docid"></param>
         /// <param name="data"></param>
         void Emit(Guid docid, params object[] data);
-        
+
         /// <summary>
         /// Emits the object matching the view schema, you must make sure the object property names match the row schema
         /// </summary>
@@ -172,5 +172,13 @@ namespace RaptorDB
         /// Roll back the transaction if the primary view is in transaction mode
         /// </summary>
         void RollBack();
+
+        // new query model
+        Result<T> Query<T>(Expression<Predicate<T>> Filter);
+        Result<T> Query<T>(Expression<Predicate<T>> Filter, int start, int count);
+        Result<T> Query<T>(string Filter);
+        Result<T> Query<T>(string Filter, int start, int count);
+        int Count<T>(Expression<Predicate<T>> Filter);
+        //int Count<T>(string Filter);
     }
 }

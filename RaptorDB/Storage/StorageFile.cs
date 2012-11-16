@@ -232,23 +232,24 @@ namespace RaptorDB
             {
                 isdeleted = false;
                 key = null;
+                byte[] data = null;
+                isdeleted = true;
                 if (isDeleted(hdr) == false)
+                    isdeleted = false;
+                int kl = hdr[(int)HDR_POS.KeyLen];
+                if (kl > 0)
                 {
-                    // skip key bytes
-                    _dataread.Seek(hdr[(int)HDR_POS.KeyLen], System.IO.SeekOrigin.Current);
-                    int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
-                    byte[] data = new byte[dl];
+                    key = new byte[kl];
+                    _dataread.Read(key, 0, key.Length);
+                }
+                int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
+                if (dl > 0)
+                {
+                    data = new byte[dl];
                     // read data block
                     _dataread.Read(data, 0, dl);
-                    return data;
                 }
-                else
-                {
-                    isdeleted = true;
-                    key = new byte[hdr[(int)HDR_POS.KeyLen]];
-                    _dataread.Read(key, 0, key.Length);
-                    return null;
-                }
+                return data;
             }
             else
                 throw new Exception("data header error at offset : " + offset + " data file size = " + _dataread.Length);

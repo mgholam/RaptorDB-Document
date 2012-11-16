@@ -22,6 +22,9 @@ namespace testing
         static RaptorDBServer server;
         public static void Main(string[] args)
         {
+            Program3.Main3(args);
+            return;
+
             //program2.Main2(args);
             //return;
 

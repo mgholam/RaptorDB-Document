@@ -136,5 +136,35 @@ namespace RaptorDB.Views
         {
             return _viewmanager.Count(type, Filter);
         }
+
+        public Result<T> Query<T>(Expression<Predicate<T>> Filter)
+        {
+            return _viewmanager.Query<T>(Filter,0,0);
+        }
+
+        public Result<T> Query<T>(Expression<Predicate<T>> Filter, int start, int count)
+        {
+            return _viewmanager.Query<T>(Filter, start, count);
+        }
+
+        public Result<T> Query<T>(string Filter)
+        {
+            return _viewmanager.Query<T>(Filter, 0, 0);
+        }
+
+        public Result<T> Query<T>(string Filter, int start, int count)
+        {
+            return _viewmanager.Query<T>(Filter, start, count);
+        }
+
+        public int Count<T>(Expression<Predicate<T>> Filter)
+        {
+            return _viewmanager.Count<T>(Filter);
+        }
+
+        //public int Count<T>(string Filter)
+        //{
+        //    return _viewmanager.Count<T>(Filter);
+        //}
     }
 }

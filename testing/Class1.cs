@@ -19,6 +19,161 @@ using System.Threading.Tasks;
 
 namespace testing
 {
+    class Program3
+    {
+        static int waitTime = 5;
+        static string dataPath = "_data";
+        static RaptorDB.RaptorDB DB = null;
+        static Sample[] SampleArray = 
+		{
+			new Sample
+			{
+				ID = Guid.NewGuid(),
+				Name = "Object 1",
+				OtherValue = "other value for object 1"
+			},
+			new Sample
+			{
+				ID = Guid.NewGuid(),
+				Name = "Object 2",
+				OtherValue = "other value for object 2"
+			}
+		};
+
+        public static void Main3(string[] args)
+        {
+            //start with a clean slate
+            if (Directory.Exists(dataPath))
+            {
+                Console.WriteLine("Delete database directory if it already exists");
+                Directory.Delete(dataPath, true);
+            }
+            DBInit();
+
+            //Write initial data and verify
+            WriteSampleData();
+            Wait();
+            ReadAllObjects();
+
+            //Delete 1 object and verify
+            if (DB.Delete(SampleArray[0].ID))
+                Console.WriteLine("Deleted {0}", SampleArray[0].Name);
+            else
+            {
+                Console.WriteLine("Unable to delete object");
+                return;
+            }
+            Wait();
+            ReadAllObjects();
+
+            //Remove view folder and demonstrate the bug
+            RemoveViewFolder();
+            Wait();
+            ReadAllObjects();
+
+            Console.Write("Press any key to continue . . . ");
+            Console.ReadKey(true);
+        }
+
+        static void DBInit()
+        {
+            Console.WriteLine("Initialise database");
+            DB = RaptorDB.RaptorDB.Open(dataPath);
+            DB.RegisterView(new SampleView());
+        }
+
+        static void WriteSampleData()
+        {
+            foreach (Sample obj in SampleArray)
+            {
+                Console.WriteLine("{0} : {1} : {2}", obj.ID.ToString(), obj.Name, obj.OtherValue);
+                DB.Save(obj.ID, obj);
+            }
+        }
+
+        static void ReadAllObjects()
+        {
+            Console.WriteLine("Read back all data from DB");
+
+            var list = DB.Query("SampleView");
+            foreach (SampleView.RowSchema row in list.Rows)
+            {
+                Console.WriteLine("ViewRow {0}: {1}", row.docid.ToString(), row.Name);
+                Sample obj = (Sample)DB.Fetch(row.docid);
+                if (obj != null)
+                    Console.WriteLine("Object  {0} : {1} : {2}", obj.ID.ToString(), obj.Name, obj.OtherValue);
+                else
+                    Console.WriteLine("Can't retrieve original Object");
+
+                Console.WriteLine("");
+            }
+        }
+
+        static void Wait()
+        {
+            Console.Write("\nWait a few seconds to make sure records are written");
+            for (int i = 0; i < waitTime; i++)
+            {
+                Console.Write(".");
+                System.Threading.Thread.Sleep(1000);
+            }
+            Console.WriteLine("\n");
+        }
+
+        static void RemoveViewFolder()
+        {
+            Console.WriteLine("Close connection to DB");
+            DB.Shutdown();
+            DB = null;
+
+            Console.WriteLine("Remove 'Views' folder from DB folder to force the views to be re-populated");
+            Directory.Delete(dataPath + @"\Views", true);
+
+            Console.WriteLine("Re-connect to database");
+            //Re-initialise DB
+            DBInit();
+        }
+    }
+
+    public class Sample
+    {
+        public Guid ID;
+        public string Name;
+        public string OtherValue;
+
+        public Sample()
+        {
+        }
+    }
+
+    public class SampleView : View<Sample>
+    {
+        public class RowSchema : RDBSchema
+        {
+            public string Name;
+        }
+
+        public SampleView()
+        {
+            this.Name = "SampleView";
+            this.Description = "A primary view for sample objects";
+            this.isPrimaryList = true;
+            this.isActive = true;
+            this.BackgroundIndexing = false;
+
+            this.Schema = typeof(SampleView.RowSchema);
+
+            this.AddFireOnTypes(typeof(Sample));
+
+            this.Mapper = (api, docid, doc) =>
+            {
+                api.EmitObject(docid, doc);
+            };
+        }
+    }
+    
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /*
     public class program2
     {

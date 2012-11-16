@@ -29,6 +29,7 @@ namespace SampleViews
         public DateTime Date { get; set; }
         public int Serial { get; set; }
         public byte Status { get; set; }
+        public bool Approved { get; set; }
     }
     #endregion
 
@@ -44,6 +45,7 @@ namespace SampleViews
             public string Address;
             public int Serial;
             public byte Status;
+            public bool Approved;
         }
 
         public SalesInvoiceView()
@@ -53,6 +55,7 @@ namespace SampleViews
             this.isPrimaryList = true;
             this.isActive = true;
             this.BackgroundIndexing = true;
+            this.Version = 2;
             //// uncomment the following for transaction mode
             //this.TransactionMode = true;
 

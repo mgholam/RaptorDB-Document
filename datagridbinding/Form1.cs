@@ -107,7 +107,8 @@ namespace datagridbinding
                         Serial = i % 10000,
                         CustomerName = "me " + i % 10,
                         Status = (byte)(i % 4),
-                        Address = "df asd sdf asdf asdf"
+                        Address = "df asd sdf asdf asdf",
+                        Approved = i%100==0?true:false
                     };
                     inv.Items = new List<LineItem>();
                     for (int k = 0; k < 5; k++)

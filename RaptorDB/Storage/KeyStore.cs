@@ -238,7 +238,10 @@ namespace RaptorDB
         {
             byte[] bkey = key.ToByteArray();
             int hc = (int)Helper.MurMur.Hash(bkey);
-            return _db.Delete(hc);
+            MemoryStream ms = new MemoryStream();
+            ms.Write(Helper.GetBytes(bkey.Length, false), 0, 4);
+            ms.Write(bkey, 0, bkey.Length);
+            return _db.Delete(hc, ms.ToArray());
         }
 
         internal byte[] Get(int recnumber, out Guid docid, out bool isdeleted)
@@ -388,9 +391,9 @@ namespace RaptorDB
             }
         }
 
-        public bool Delete(T id)
+        public bool Delete(T id, byte[] data)
         {
-            _archive.WriteData(id, null, true);
+            _archive.WriteData(id, data, true);
             return _index.RemoveKey(id);
         }
 
