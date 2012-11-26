@@ -51,7 +51,6 @@ namespace RaptorDB.Views
         private BoolIndex _deletedRows;
         private string _docid = "docid";
         private List<string> _colnames = new List<string>();
-        //private IRowFiller _rowfiller;
         private RowFill _rowfiller;
         private ViewRowDefinition _schema;
         private SafeDictionary<int, Dictionary<Guid, List<object[]>>> _transactions = new SafeDictionary<int, Dictionary<Guid, List<object[]>>>();
@@ -208,7 +207,8 @@ namespace RaptorDB.Views
             }
             QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
             qv.Visit(le.Body);
-            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+            var delbits = _deletedRows.GetBits();
+            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
 
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
@@ -226,11 +226,12 @@ namespace RaptorDB.Views
 
             QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
             qv.Visit(filter);
-            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+            var delbits = _deletedRows.GetBits();
+            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
             List<T> trows = null;
             if (_viewmanager.inTransaction())
             {
-                // FIX : query from transaction own data
+                // query from transaction own data
                 Dictionary<Guid, List<object[]>> rows = null;
                 if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
                 {
@@ -321,29 +322,6 @@ namespace RaptorDB.Views
 
         private void CreateResultRowFiller()
         {
-            /*
-            // create a row filler class
-            string str = @"using System; public class rf : RaptorDB.IRowFiller { public object FillRow(object roww, object[] data) {
-        {0} row = ({0}) roww; {1} return row; } }";
-
-            string src = str.Replace("{0}", _view.Schema.FullName.Replace("+", ".")).Replace("{1}", GenerateRowString());
-            CSharpCodeProvider provider = new CSharpCodeProvider();
-            var param = new CompilerParameters();
-            param.GenerateInMemory = true;
-            // FEATURE : load all required assemblies based on the view schema if required
-            param.ReferencedAssemblies.Add(this.GetType().Assembly.Location);
-            param.ReferencedAssemblies.Add(typeof(RDBSchema).Assembly.Location);
-            param.ReferencedAssemblies.Add(_view.GetType().Assembly.Location);
-            param.ReferencedAssemblies.Add(_view.Schema.Assembly.Location);
-            param.ReferencedAssemblies.Add(typeof(ICustomTypeDescriptor).Assembly.Location);
-            CompilerResults results = provider.CompileAssemblyFromSource(param, src);
-
-            if (results.Errors.Count > 0)
-                throw new FormatException(results.Errors[0].ErrorText);
-
-            _rowfiller = ((IRowFiller)results.CompiledAssembly.CreateInstance("rf")).FillRow;
-            */
-            
             _rowfiller = (RowFill)CreateRowFillerDelegate(_view.Schema);
             // init the row create 
             _createrow = null;
@@ -395,27 +373,6 @@ namespace RaptorDB.Views
             return (RowFill)dynMethod.CreateDelegate(typeof(RowFill));
         }
 
-        //private string GenerateRowString()
-        //{
-        //    StringBuilder sb = new StringBuilder();
-        //    int i = 0;
-        //    sb.AppendLine("row.docid = (Guid)data[0];");
-        //    foreach (var c in _schema.Columns)
-        //    {
-        //        if (c.Key == "docid")
-        //            continue;
-        //        i++;
-        //        sb.Append("row.");
-        //        sb.Append(c.Key);
-        //        sb.Append(" = (");
-        //        sb.Append(c.Value.Name.Replace("FullTextString", "String"));
-        //        sb.Append(")data[");
-        //        sb.Append(i.ToString());
-        //        sb.AppendLine("];");
-        //    }
-        //    return sb.ToString();
-        //}
-
         private Result<object> ReturnRows<T>(WAHBitArray ba, List<T> trows, int start, int count)
         {
             DateTime dt = FastDateTime.Now;
@@ -431,7 +388,8 @@ namespace RaptorDB.Views
                     continue;
                 }
                 byte[] b = _viewData.ReadData(i);
-                if (b == null) continue;
+                if (b == null)
+                   continue;
                 object o = FastCreateObject(_view.Schema);
                 object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
                 rows.Add((T)_rowfiller(o, data));
@@ -468,7 +426,8 @@ namespace RaptorDB.Views
                     continue;
                 }
                 byte[] b = _viewData.ReadData(i);
-                if (b == null) continue;
+                if (b == null) 
+                    continue;
                 object o = FastCreateObject(_view.Schema);
                 object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
                 rows.Add((T)_rowfiller(o, data));
@@ -517,7 +476,6 @@ namespace RaptorDB.Views
         }
 
         MethodInfo view = null;
-        // FIX : check deleted and rebuild works 
         private void RebuildFromScratch(KeyStoreGuid docs)
         {
             view = this.GetType().GetMethod("Insert", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -568,12 +526,11 @@ namespace RaptorDB.Views
             // load indexes
             foreach (var c in viewRowDefinition.Columns)
             {
-                if (c.Key == "docid")
-                    continue;
-                _indexes.Add(_schema.Columns[i].Key,
-                          CreateIndex(
-                            _schema.Columns[i].Key,
-                            _schema.Columns[i].Value));
+                if (c.Key != "docid")
+                    _indexes.Add(_schema.Columns[i].Key,
+                              CreateIndex(
+                                _schema.Columns[i].Key,
+                                _schema.Columns[i].Value));
                 i++;
             }
         }
@@ -589,6 +546,8 @@ namespace RaptorDB.Views
                 Type t = p.PropertyType;
                 if (p.GetCustomAttributes(typeof(FullTextAttribute), true).Length > 0)
                     t = typeof(FullTextString);
+                if (_view.FullTextColumns.Contains(p.Name) || _view.FullTextColumns.Contains(p.Name.ToLower()))
+                    t = typeof(FullTextString);
                 _schema.Add(p.Name, t);
             }
 
@@ -596,6 +555,8 @@ namespace RaptorDB.Views
             {
                 Type t = f.FieldType;
                 if (f.GetCustomAttributes(typeof(FullTextAttribute), true).Length > 0)
+                    t = typeof(FullTextString);
+                if (_view.FullTextColumns.Contains(f.Name) || _view.FullTextColumns.Contains(f.Name.ToLower()))
                     t = typeof(FullTextString);
                 _schema.Add(f.Name, t);
             }
@@ -665,6 +626,8 @@ namespace RaptorDB.Views
 
         private IIndex CreateIndex(string name, Type type)
         {
+            // FIX : add fulltext collection checking also
+
             if (type == typeof(FullTextString))
                 return new FullTextIndex(_Path, name);
 
@@ -689,7 +652,7 @@ namespace RaptorDB.Views
 
         private WAHBitArray QueryColumnExpression(string colname, RDBExpression exp, object from)
         {
-            return _indexes[colname].Query(exp, from);
+            return _indexes[colname].Query(exp, from, _viewData.Count());
         }
         #endregion
 
@@ -705,7 +668,8 @@ namespace RaptorDB.Views
 
                 QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
                 qv.Visit(filter);
-                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+                var delbits = _deletedRows.GetBits();
+                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
 
                 totcount = (int)ba.CountOnes();
             }
@@ -733,7 +697,8 @@ namespace RaptorDB.Views
                 }
                 QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
                 qv.Visit(le.Body);
-                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+                var delbits = _deletedRows.GetBits();
+                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
 
                 totcount = (int)ba.CountOnes();
             }
@@ -744,16 +709,8 @@ namespace RaptorDB.Views
 
         private int internalCount()
         {
-            //int totcount = 0;
             int c = _viewData.Count();
             int cc = (int)_deletedRows.GetBits().CountOnes();
-            //WAHBitArray del = _deletedRows.GetBits();
-            //for (int i = 0; i < c; i++)
-            //{
-            //    if (del.Get(i) == true)
-            //        continue;
-            //    totcount++;
-            //}
             return c - cc;
         }
 
@@ -766,11 +723,12 @@ namespace RaptorDB.Views
 
             QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
             qv.Visit(filter);
-            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+            var delbits = _deletedRows.GetBits();
+            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
             List<T> trows = null;
             if (_viewmanager.inTransaction())
             {
-                // FIX : query from transaction own data
+                // query from transaction own data
                 Dictionary<Guid, List<object[]>> rows = null;
                 if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
                 {
@@ -790,7 +748,7 @@ namespace RaptorDB.Views
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return ReturnRows2<T>(ba, trows, start, count);            
+            return ReturnRows2<T>(ba, trows, start, count);
         }
 
         internal Result<T> Query2<T>(string filter, int start, int count)
@@ -809,7 +767,8 @@ namespace RaptorDB.Views
             }
             QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
             qv.Visit(le.Body);
-            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(_deletedRows.GetBits());
+            var delbits = _deletedRows.GetBits();
+            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
 
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;

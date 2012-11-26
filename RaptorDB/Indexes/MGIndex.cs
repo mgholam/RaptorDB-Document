@@ -77,12 +77,13 @@ namespace RaptorDB
         private IndexFile<T> _index;
         private bool _AllowDuplicates = true;
         private int _LastIndexedRecordNumber = 0;
+        private int _maxPageItems = 0;
 
         public MGIndex(string path, string filename, byte keysize, ushort maxcount, bool allowdups)
         {
             _AllowDuplicates = allowdups;
             _index = new IndexFile<T>(path + Path.DirectorySeparatorChar + filename, keysize, maxcount);
-
+            _maxPageItems = maxcount;
             // load page list
             _index.GetPageList(_pageListDiskPages, _pageList, out _LastIndexedRecordNumber);
             if (_pageList.Count == 0)
@@ -101,7 +102,7 @@ namespace RaptorDB
             return _LastIndexedRecordNumber;
         }
 
-        public WAHBitArray Query(T from, T to)
+        public WAHBitArray Query(T from, T to, int maxsize)
         {           
             // FIX : add BETWEEN code here
             T temp = default(T);
@@ -125,19 +126,32 @@ namespace RaptorDB
             return new WAHBitArray();
         }
 
-        public WAHBitArray Query(RDBExpression exp, T from)
+        public WAHBitArray Query(RDBExpression exp, T from, int maxsize)
         {
             T key = from;
             if (exp == RDBExpression.Equal || exp == RDBExpression.NotEqual)
-                return doEqualOp(exp, key);
+                return doEqualOp(exp, key, maxsize);
 
             // FIX : optimize complement search if page count less for the complement pages
+            //bool found = false;
+            //int last = _pageList.Count - 1;
+            //int pos = FindPageOrLowerPosition(key, ref found);
 
             if (exp == RDBExpression.Less || exp == RDBExpression.LessEqual)
-                return doLessOp(exp, key);
+            {
+                //long c = (pos+1) * _maxPageItems * 70 / 100; // 70% full pages
+                //long inv = maxsize - c;
+                //if (c < inv)
+                    return doLessOp(exp, key);
+                //else
+                //{
 
+                //}
+            }
             else if (exp == RDBExpression.Greater || exp == RDBExpression.GreaterEqual)
+            {
                 return doMoreOp(exp, key);
+            }
 
             return new WAHBitArray(); // blank results 
         }
@@ -333,7 +347,7 @@ namespace RaptorDB
             return result;
         }
 
-        private WAHBitArray doEqualOp(RDBExpression exp, T key)
+        private WAHBitArray doEqualOp(RDBExpression exp, T key, int maxsize)
         {
             PageInfo pi;
             Page<T> page = LoadPage(key, out pi);
@@ -345,7 +359,7 @@ namespace RaptorDB
                 if (exp == RDBExpression.Equal)
                     return _index.GetDuplicateBitmap(bn);
                 else
-                    return _index.GetDuplicateBitmap(bn).Not();
+                    return _index.GetDuplicateBitmap(bn).Not(maxsize); 
             }
             else
                 return new WAHBitArray();

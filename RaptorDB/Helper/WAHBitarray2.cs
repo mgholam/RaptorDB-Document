@@ -187,15 +187,24 @@ namespace RaptorDB
             }
         }
 
-        public WAHBitArray Not()
+        public WAHBitArray Not(int size)
         {
             lock (_lock)
             {
                 this.CheckBitArray();
 
                 uint[] left = this.GetBitArray();
+                int c = left.Length;
+                int ms = size >> 5;
+                if (ms > c)
+                {
+                    var a = new uint[ms];
+                    Array.Copy(left, 0, a, 0, c);
+                    left = a;
+                    c = ms;
+                }
 
-                for (int i = 0; i < left.Length; i++)
+                for (int i = 0; i < c; i++)
                     left[i] = ~left[i];
 
                 return new WAHBitArray(TYPE.Bitarray, left);

@@ -22,10 +22,10 @@ namespace testing
         static RaptorDBServer server;
         public static void Main(string[] args)
         {
-            Program3.Main3(args);
-            return;
+            //Program3.Main3(args); // delete test
+            //return;
 
-            //program2.Main2(args);
+            //program2.Main2(args); // multithread test
             //return;
 
 

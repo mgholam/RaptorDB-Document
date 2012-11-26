@@ -23,7 +23,7 @@ namespace RaptorDB
             base.Set((T)key, recnum);
         }
 
-        public WAHBitArray Query(RDBExpression ex, object from)
+        public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
         {
             T f = default(T);
             if (typeof(T).Equals(from.GetType()) == false)
@@ -31,7 +31,7 @@ namespace RaptorDB
             else
                 f = (T)from;
 
-            return base.Query(ex, f);
+            return base.Query(ex, f, maxsize);
         }
 
         void IIndex.FreeMemory()
@@ -45,7 +45,7 @@ namespace RaptorDB
             base.Shutdown();
         }
 
-        public WAHBitArray Query(object fromkey, object tokey)
+        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
         {
             T f = default(T);
             if (typeof(T).Equals(fromkey.GetType()) == false)
@@ -59,7 +59,7 @@ namespace RaptorDB
             else
                 t = (T)tokey;
 
-            return base.Query(f, t);
+            return base.Query(f, t, maxsize);
         }
     }
     #endregion
@@ -96,13 +96,13 @@ namespace RaptorDB
             _bits.Set(recnum, (bool)key);
         }
 
-        public WAHBitArray Query(RDBExpression ex, object from)
+        public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
         {
             bool b = (bool)from;
             if (b)
                 return _bits;
             else
-                return _bits.Not();
+                return _bits.Not(maxsize);
         }
 
         public void FreeMemory()
@@ -161,15 +161,20 @@ namespace RaptorDB
             _bits = new WAHBitArray(t, ints.ToArray());
         }
 
-        internal WAHBitArray Not()
+        //internal WAHBitArray Not()
+        //{
+        //    return _bits.Not();
+        //}
+
+
+        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
         {
-            return _bits.Not();
+            return Query(RDBExpression.Greater, fromkey, maxsize);
         }
 
-
-        public WAHBitArray Query(object fromkey, object tokey)
+        internal void FixSize(int size)
         {
-            return Query(RDBExpression.Greater, fromkey);
+            _bits.Length = size;
         }
     }
     #endregion
@@ -188,9 +193,9 @@ namespace RaptorDB
             base.Index(recnum, (string)key);
         }
 
-        public WAHBitArray Query(RDBExpression ex, object from)
+        public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
         {
-            return base.Query("" + from);
+            return base.Query("" + from, maxsize);
         }
 
         public void FreeMemory()
@@ -204,9 +209,9 @@ namespace RaptorDB
         }
 
 
-        public WAHBitArray Query(object fromkey, object tokey)
+        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
         {
-            return base.Query("" + fromkey);
+            return base.Query("" + fromkey, maxsize); 
         }
     }
     #endregion

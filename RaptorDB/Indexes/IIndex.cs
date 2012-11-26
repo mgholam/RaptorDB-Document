@@ -19,8 +19,8 @@ namespace RaptorDB
     internal interface IIndex
     {
         void Set(object key, int recnum);
-        WAHBitArray Query(object fromkey, object tokey);
-        WAHBitArray Query(RDBExpression ex, object from);
+        WAHBitArray Query(object fromkey, object tokey, int maxsize);
+        WAHBitArray Query(RDBExpression ex, object from , int maxsize);
         void FreeMemory();
         void Shutdown();
         void SaveIndex();

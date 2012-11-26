@@ -73,7 +73,7 @@ namespace RaptorDB
             isDirty = false;
         }
 
-        public WAHBitArray Op(WAHBitArray bits, OPERATION op)
+        public WAHBitArray Op(WAHBitArray bits, OPERATION op, int maxsize)
         {
             if (_bits == null)
             {
@@ -85,7 +85,7 @@ namespace RaptorDB
             else if (op == OPERATION.OR)
                 return _bits.Or(bits);
             else
-                return bits.And(_bits.Not());
+                return bits.And(_bits.Not(maxsize));
         }
 
         public WAHBitArray GetBitmap()

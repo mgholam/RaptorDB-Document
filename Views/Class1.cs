@@ -48,6 +48,20 @@ namespace SampleViews
             public bool Approved;
         }
 
+        // define your own row schema below (you must define a 'docid' property)
+
+        //public class RowSchema
+        //{
+        //    public string CustomerName { get; set; }
+        //    public DateTime Date { get; set; }
+        //    public string Address { get; set; }
+        //    public int Serial { get; set; }
+        //    public byte Status { get; set; }
+        //    public bool Approved { get; set; }
+
+        //    public Guid docid { get; set; }
+        //}
+
         public SalesInvoiceView()
         {
             this.Name = "SalesInvoice";
@@ -55,11 +69,12 @@ namespace SampleViews
             this.isPrimaryList = true;
             this.isActive = true;
             this.BackgroundIndexing = true;
-            this.Version = 2;
+            this.Version = 3;
             //// uncomment the following for transaction mode
             //this.TransactionMode = true;
 
             this.Schema = typeof(SalesInvoiceView.RowSchema);
+            this.FullTextColumns = new List<string> { "customername" };
 
             this.AddFireOnTypes(typeof(SalesInvoice));
 

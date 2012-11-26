@@ -395,7 +395,7 @@ namespace RaptorDB
         {
             // FIX: query full text here
             Result<object> r = new Result<object>(false);
-            var wbmp = _fulltextindex.Query(filter);
+            var wbmp = _fulltextindex.Query(filter, _objStore.RecordCount()); 
 
 
             return r;
@@ -547,27 +547,27 @@ namespace RaptorDB
             _log.Debug("RaptorDB data folder = " + _Path);
 
 
-            _objStore = new KeyStoreGuid(_Path + "Data"+_S+"data");
-            _fileStore = new KeyStoreGuid(_Path + "Data"+_S+"files");
+            _objStore = new KeyStoreGuid(_Path + "Data" + _S + "data");
+            _fileStore = new KeyStoreGuid(_Path + "Data" + _S + "files");
 
             _viewManager = new Views.ViewManager(_Path + "Views", _objStore);
 
             // load _LastFulltextIndexed 
-            if (File.Exists(_Path + "Data"+_S+"_fulltext.rec"))
+            if (File.Exists(_Path + "Data" + _S + "_fulltext.rec"))
             {
-                byte[] b = File.ReadAllBytes(_Path + "Data"+_S+"_fulltext.rec");
+                byte[] b = File.ReadAllBytes(_Path + "Data" + _S + "_fulltext.rec");
                 _LastFulltextIndexed = Helper.ToInt32(b, 0, false);
             }
             // load _LastRecordNumberProcessed 
-            if (File.Exists(_Path + "Data"+_S+"_lastrecord.rec"))
+            if (File.Exists(_Path + "Data" + _S + "_lastrecord.rec"))
             {
-                byte[] b = File.ReadAllBytes(_Path + "Data"+_S+"_lastrecord.rec");
+                byte[] b = File.ReadAllBytes(_Path + "Data" + _S + "_lastrecord.rec");
                 _LastRecordNumberProcessed = Helper.ToInt32(b, 0, false);
             }
             // load _LastBackupRecordNumber 
-            if (File.Exists(_Path + "Backup"+_S+"LastBackupRecord.rec"))
+            if (File.Exists(_Path + "Backup" + _S + "LastBackupRecord.rec"))
             {
-                byte[] b = File.ReadAllBytes(_Path + "Backup"+_S+"LastBackupRecord.rec");
+                byte[] b = File.ReadAllBytes(_Path + "Backup" + _S + "LastBackupRecord.rec");
                 _LastBackupRecordNumber = Helper.ToInt32(b, 0, false);
             }
             _CurrentRecordNumber = _objStore.RecordCount();
@@ -575,7 +575,7 @@ namespace RaptorDB
             otherviews = this.GetType().GetMethod("SaveInOtherViews", BindingFlags.Instance | BindingFlags.NonPublic);
             save = this.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
 
-            _fulltextindex = new FullTextIndex(_Path + "Data"+_S+"Fulltext", "fulltext");
+            _fulltextindex = new FullTextIndex(_Path + "Data" + _S + "Fulltext", "fulltext");
 
             // start backround save to views
             _saveTimer = new System.Timers.Timer(Global.BackgroundSaveViewTimer * 1000);

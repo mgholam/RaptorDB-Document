@@ -325,7 +325,7 @@ namespace fastJSON
             List<Getters> g = Reflection.Instance.GetGetters(t);
             int c = g.Count;
             int i = c;
-            if (_params.UseExtensions)
+            if (_params.UseExtensions) // count $type as a property
                 i++;
             foreach (var p in g)
             {

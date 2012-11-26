@@ -204,9 +204,9 @@ namespace fastBinaryJSON
 
         private void WriteChar(char p)
         {
-            // FIX : 
+            // FIX : char output 
             //_output.WriteByte(TOKENS.CHAR);
-            //_output.Write(Helper.GetBytes(
+            //_output.Write
             throw new Exception("char not implemented yet");
         }
 

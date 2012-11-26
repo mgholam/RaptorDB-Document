@@ -165,6 +165,13 @@ namespace fastBinaryJSON
             Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
             
             var o = new BJsonParser(json, _params.UseUTCtimes).Decode();
+#if !SILVERLIGHT
+            if (type != null && type == typeof(DataSet))
+                return CreateDataset(o as Dictionary<string, object>, null);
+
+            if (type != null && type == typeof(DataTable))
+                return CreateDataTable(o as Dictionary<string, object>, null);
+#endif
             if (o is IDictionary)
             {
                 if (type != null && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>)) // deserialize a dictionary

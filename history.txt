@@ -121,15 +121,16 @@ v1.9.0
 - upgrade to fastBinaryJSON v1.3.5
 - changed CodeDOM to Reflection.Emit for MonoDroid compatibility
 - more optimized bitmap storage format (save offsets if smaller than WAH)
-- fixed path seperator character for monodroid and windows compatibility
-- new generic Query with typed results (thanks to seer_tenedos2)
+- fixed path seperator character for monodroid and windows compatibility changed to Path.DirectorySeparatorChar 
+- new generic Query interface with typed results (thanks to seer_tenedos2)
 - changed to Result<T>
-- changed to Path.DirectorySeparatorChar 
 - WAH bitcount speed increase
-- bitmap index uses buffered stream 
+- bitmap index uses buffered stream for speed
 - added between query (work in progress)
 - bug fix storage file and deleted items
 - new query model for mapper api interface
-
+- you can now define your own schema for rows with caveats
+- bug fix NOT on bitmap indexes to resize to the total row count first
+- when defining your own schema you can define the fulltext columns in the view without attributes
 
 

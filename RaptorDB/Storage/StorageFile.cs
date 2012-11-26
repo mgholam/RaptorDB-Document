@@ -230,12 +230,12 @@ namespace RaptorDB
             // check header
             if (CheckHeader(hdr))
             {
-                isdeleted = false;
+                //isdeleted = false;
                 key = null;
                 byte[] data = null;
-                isdeleted = true;
-                if (isDeleted(hdr) == false)
-                    isdeleted = false;
+                isdeleted = isDeleted(hdr);
+                //if (isDeleted(hdr) == false)
+                //    isdeleted = false;
                 int kl = hdr[(int)HDR_POS.KeyLen];
                 if (kl > 0)
                 {

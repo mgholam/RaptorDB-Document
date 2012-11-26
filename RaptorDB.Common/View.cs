@@ -73,6 +73,12 @@ namespace RaptorDB
         {
             FireOnTypes.Add(type.AssemblyQualifiedName);
         }
+
+        /// <summary>
+        /// When defining you own schema and you don't want dependancies to RaptorDB to propogate through your code
+        /// define your full text column here
+        /// </summary>
+        public List<string> FullTextColumns;
     }
 
 
@@ -85,6 +91,7 @@ namespace RaptorDB
             FireOnTypes = new List<string>();
             DeleteBeforeInsert = true;
             BackgroundIndexing = true;
+            FullTextColumns = new List<string>();
             //AllowTransactions = false;
         }
 
@@ -100,8 +107,16 @@ namespace RaptorDB
                 throw new Exception("Name must be given");
             if (Schema == null) 
                 throw new Exception("Schema must be defined");
-            if (Schema.IsSubclassOf(typeof(RDBSchema)) == false) 
-                throw new Exception("The schema must be derived from RaptorDB.RDBSchema");
+            if (Schema.IsSubclassOf(typeof(RDBSchema)) == false)
+            {
+                var pi = Schema.GetProperty("docid");
+                if (pi == null || pi.PropertyType != typeof(Guid))
+                {
+                    var fi = Schema.GetField("docid");
+                    if( fi == null || fi.FieldType != typeof(Guid))
+                        throw new Exception("The schema must be derived from RaptorDB.RDBSchema or must contain a 'docid' Guid field or property");
+                }
+            }
             if (Mapper == null) 
                 throw new Exception("A map function must be defined");
             if (FireOnTypes.Count == 0) 

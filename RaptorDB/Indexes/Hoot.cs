@@ -80,16 +80,16 @@ namespace RaptorDB
             AddtoIndex(recordnumber, text);
         }
 
-        public WAHBitArray Query(string filter)
+        public WAHBitArray Query(string filter, int maxsize)
         {
-            return ExecutionPlan(filter);
+            return ExecutionPlan(filter, maxsize);
         }
 
-        public IEnumerable<int> FindRows(string filter)
-        {
-            // enumerate records
-            return Query(filter).GetBitIndexes();
-        }
+        //public IEnumerable<int> FindRows(string filter)
+        //{
+        //    // enumerate records
+        //    return Query(filter, 0).GetBitIndexes(); // FIXX : should not be 0 ??
+        //}
 
         //public void OptimizeIndex()
         //{
@@ -136,7 +136,7 @@ namespace RaptorDB
 
         #region [  P R I V A T E   M E T H O D S  ]
 
-        private WAHBitArray ExecutionPlan(string filter)
+        private WAHBitArray ExecutionPlan(string filter, int maxsize)
         {
             _log.Debug("query : " + filter);
             DateTime dt = FastDateTime.Now;
@@ -183,7 +183,7 @@ namespace RaptorDB
                             if (c.isLoaded == false)
                                 LoadCache(c);
 
-                            wildbits = DoBitOperation(wildbits, c, Cache.OPERATION.OR);
+                            wildbits = DoBitOperation(wildbits, c, Cache.OPERATION.OR, maxsize);
                         }
                     }
                     if (bits == null)
@@ -201,7 +201,7 @@ namespace RaptorDB
                     // bits logic
                     if (c.isLoaded == false)
                         LoadCache(c);
-                    bits = DoBitOperation(bits, c, op);
+                    bits = DoBitOperation(bits, c, op, maxsize);
                 }
             }
             if (bits == null)
@@ -220,10 +220,10 @@ namespace RaptorDB
             return ret;
         }
 
-        private static WAHBitArray DoBitOperation(WAHBitArray bits, Cache c, Cache.OPERATION op)
+        private static WAHBitArray DoBitOperation(WAHBitArray bits, Cache c, Cache.OPERATION op, int maxsize)
         {
             if (bits != null)
-                bits = c.Op(bits, op);
+                bits = c.Op(bits, op, maxsize);
             else
                 bits = c.GetBitmap();
             return bits;

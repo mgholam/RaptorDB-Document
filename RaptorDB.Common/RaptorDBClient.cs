@@ -471,7 +471,7 @@ namespace RaptorDB
 
         private static Result<T> GenericResult<T>(Result<object> res)
         {
-            // FIX : dirty hack here to cleanup
+            // dirty hack here to cleanup
             Result<T> result = new Result<T>();
             result.Count = res.Count;
             result.EX = res.EX;
