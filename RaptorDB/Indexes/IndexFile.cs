@@ -35,7 +35,6 @@ namespace RaptorDB
         ILog log = LogManager.GetLogger(typeof(IndexFile<T>));
         private BitmapIndex _bitmap;
         IGetBytes<T> _T = null;
-        private bool _inMemory = false;
         private object _fileLock = new object();
 
         public IndexFile(string filename, byte maxKeySize, ushort pageNodeCount)
@@ -93,22 +92,6 @@ namespace RaptorDB
         {
             return _bitmap.GetBitmap(recno);
         }
-
-        //private int NodeHeaderCount(int nextpage, ref long c)
-        //{
-        //    SeekPage(nextpage);
-        //    byte[] b = new byte[_BlockHeader.Length];
-        //    _file.Read(b, 0, _BlockHeader.Length);
-
-        //    if (b[0] == _BlockHeader[0] && b[1] == _BlockHeader[1] && b[2] == _BlockHeader[2] && b[3] == _BlockHeader[3])
-        //    {
-        //        short count = Helper.ToInt16(b, 5);
-        //        int rightpage = Helper.ToInt32(b, 11);
-        //        c += count;
-        //        return rightpage;
-        //    }
-        //    return 0;
-        //}
 
         private byte[] CreateBlockHeader(byte type, ushort itemcount, int rightpagenumber)
         {
@@ -195,8 +178,6 @@ namespace RaptorDB
 
         public void Shutdown()
         {
-            if (_inMemory == true)
-                return;
             log.Debug("Shutdown IndexFile");
             if (_file != null)
             {
@@ -406,7 +387,6 @@ namespace RaptorDB
         internal void BitmapFlush()
         {
             _bitmap.Commit(Global.FreeBitmapMemoryOnSave);
-            _bitmap.Flush();
         }
     }
 }

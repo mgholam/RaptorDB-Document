@@ -102,6 +102,7 @@ namespace RaptorDB
                         m.Invoke(_raptor, new object[] { p.Docid, p.Data });
                         break;
                     case "savebytes":
+                        ret.OK = _raptor.SaveBytes(p.Docid, (byte[])p.Data);
                         break;
                     case "querytype":
                         param = (object[])p.Data;

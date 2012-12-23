@@ -332,36 +332,39 @@ namespace RaptorDB
 
         internal IEnumerable<StorageData> Enumerate()
         {
-            long offset = 6;
-            long size = _dataread.Length;
-            while (offset < size)
+            lock (_lock)
             {
-                // skip header
-                _dataread.Seek(offset, SeekOrigin.Begin);
-                byte[] hdr = new byte[_rowheader.Length];
-                // read header
-                _dataread.Read(hdr, 0, _rowheader.Length);
-                offset += hdr.Length;
-                if (CheckHeader(hdr))
+                long offset = 6;
+                long size = _dataread.Length;
+                while (offset < size)
                 {
-                    StorageData sd = new StorageData();
-                    sd.isDeleted = isDeleted(hdr);
-                    byte kl = hdr[3];
-                    byte[] kbyte = new byte[kl];
-                    offset += kl;
-                    _dataread.Read(kbyte, 0, kl);
-                    sd.Key = kbyte;
-                    int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
-                    byte[] data = new byte[dl];
-                    // read data block
-                    _dataread.Read(data, 0, dl);
-                    sd.Data = data;
-                    offset += dl;
-                    yield return sd;
-                }
-                else
-                {
-                    throw new Exception("Data read failed");
+                    // skip header
+                    _dataread.Seek(offset, SeekOrigin.Begin);
+                    byte[] hdr = new byte[_rowheader.Length];
+                    // read header
+                    _dataread.Read(hdr, 0, _rowheader.Length);
+                    offset += hdr.Length;
+                    if (CheckHeader(hdr))
+                    {
+                        StorageData sd = new StorageData();
+                        sd.isDeleted = isDeleted(hdr);
+                        byte kl = hdr[3];
+                        byte[] kbyte = new byte[kl];
+                        offset += kl;
+                        _dataread.Read(kbyte, 0, kl);
+                        sd.Key = kbyte;
+                        int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
+                        byte[] data = new byte[dl];
+                        // read data block
+                        _dataread.Read(data, 0, dl);
+                        sd.Data = data;
+                        offset += dl;
+                        yield return sd;
+                    }
+                    else
+                    {
+                        throw new Exception("Data read failed");
+                    }
                 }
             }
         }

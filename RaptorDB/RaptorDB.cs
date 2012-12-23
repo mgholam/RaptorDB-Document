@@ -67,14 +67,14 @@ namespace RaptorDB
 
         public bool Delete(Guid docid)
         {
-            bool b = _objStore.Delete(docid);
+            bool b = _objStore.RemoveKey(docid);
             _viewManager.Delete(docid);
             return b;
         }
 
         public bool DeleteBytes(Guid bytesid)
         {
-            return _fileStore.Delete(bytesid);
+            return _fileStore.RemoveKey(bytesid);
         }
 
         /// <summary>

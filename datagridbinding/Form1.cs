@@ -164,9 +164,11 @@ namespace datagridbinding
         {
             //int c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial < 100);
             var q = rap.Query<SalesInvoiceView.RowSchema>(x => x.Serial < 100, 0, 10);
+            Guid g = new Guid("760e2d1e-dc85-4257-9287-3ef17bef1c4c");
+            var qq = rap.Query<SalesItemRowsView.RowSchema>(x => x.docid == g);
             dataGridView1.DataSource = q.Rows;
             //q= rap.Query<SalesInvoiceView.RowSchema>("serial <100");
-            string s = q.Rows[0].CustomerName;
+            //string s = q.Rows[0].CustomerName;
         }
     }
 }

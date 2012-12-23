@@ -27,11 +27,22 @@ namespace RaptorDB
         {
             T f = default(T);
             if (typeof(T).Equals(from.GetType()) == false)
-                f = (T)Convert.ChangeType(from, typeof(T));
+                f = Converter(from);
             else
                 f = (T)from;
 
             return base.Query(ex, f, maxsize);
+        }
+
+        private T Converter(object from)
+        {
+            if (typeof(T) == typeof(Guid))
+            {
+                object o = new Guid(from.ToString());
+                return (T)o;
+            }
+            else
+                return (T)Convert.ChangeType(from, typeof(T));
         }
 
         void IIndex.FreeMemory()
@@ -183,7 +194,7 @@ namespace RaptorDB
     internal class FullTextIndex : Hoot, IIndex
     {
         public FullTextIndex(string IndexPath, string FileName)
-            : base(IndexPath, FileName)
+            : base(IndexPath, FileName, false)
         {
 
         }
@@ -200,7 +211,7 @@ namespace RaptorDB
 
         public void FreeMemory()
         {
-            base.FreeMemory(true);
+            //base.FreeMemory(true);
         }
 
         public void SaveIndex()

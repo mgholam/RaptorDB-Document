@@ -11,68 +11,52 @@ namespace RaptorDB
 {
     internal class Hoot
     {
-        private string _bmpext = ".mgbmp";
-
-        /// <summary>
-        /// File based constructor
-        /// </summary>
-        /// <param name="IndexPath"></param>
-        /// <param name="FileName"></param>
-        public Hoot(string IndexPath, string FileName)
+        public Hoot(string IndexPath, string FileName, bool DocMode)
         {
             _Path = IndexPath;
             _FileName = FileName;
-            if (_Path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false) 
-                _Path += Path.DirectorySeparatorChar.ToString();
+            _docMode = DocMode;
+            if (_Path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false) _Path += Path.DirectorySeparatorChar;
             Directory.CreateDirectory(IndexPath);
-            //_log.Debug("\r\n\r\n");
+            //LogManager.Configure(_Path + "log.txt", 200, false);
+            _log.Debug("\r\n\r\n");
             _log.Debug("Starting hOOt....");
             _log.Debug("Storage Folder = " + _Path);
 
+            if (DocMode)
+                _docs = new KeyStoreString(_Path + "files.docs", false);
+            _bitmaps = new BitmapIndex(_Path, _FileName + ".mgbmp");
+            if (DocMode)
+                _lastDocNum = (int)_docs.Count();
             // read words
             LoadWords();
-            // open bitmap index
-            _bitmapFile = new FileStream(_Path + _FileName + _bmpext, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-            _lastBitmapOffset = _bitmapFile.Seek(0L, SeekOrigin.End);
+            // read deleted
+            _deleted = new BoolIndex(_Path, "_deleted.idx");
         }
 
+        private SafeDictionary<string, int> _words = new SafeDictionary<string, int>();
+        private BitmapIndex _bitmaps;
+        private BoolIndex _deleted;
         private ILog _log = LogManager.GetLogger(typeof(Hoot));
+        private int _lastDocNum = 0;
         private string _FileName = "words";
         private string _Path = "";
-        private SafeDictionary<string, Cache> _index = new SafeDictionary<string, Cache>();
-        private object _lock = new object();
-        private FileStream _bitmapFile;
-        private long _lastBitmapOffset = 0;
-        private bool _inMemory = false;
+        private KeyStoreString _docs;
+        private bool _docMode = false;
 
-        public void FreeMemory(bool freecache)
+        public int WordCount
         {
-            lock (_lock)
-            {
-                _log.Debug("freeing memory");
+            get { return _words.Count; }
+        }
 
-                // free bitmap memory
-                foreach (var v in _index)
-                {
-                    if (freecache)
-                    {
-                        long off = SaveBitmap(v.Value.GetCompressedBits());
-                        v.Value.isDirty = false;
-                        v.Value.FileOffset = off;
-                        v.Value.FreeMemory(true);
-                    }
-                    else
-                        v.Value.FreeMemory(false);
-                }
-            }
+        public int DocumentCount
+        {
+            get { return _lastDocNum - (int)_deleted.GetBits().CountOnes(); }
         }
 
         public void Save()
         {
-            lock (_lock)
-            {
-                InternalSave();
-            }
+            InternalSave();
         }
 
         public void Index(int recordnumber, string text)
@@ -85,54 +69,98 @@ namespace RaptorDB
             return ExecutionPlan(filter, maxsize);
         }
 
-        //public IEnumerable<int> FindRows(string filter)
-        //{
-        //    // enumerate records
-        //    return Query(filter, 0).GetBitIndexes(); // FIXX : should not be 0 ??
-        //}
+        public int Index(Document doc, bool deleteold)
+        {
+            _log.Debug("indexing doc : " + doc.FileName);
+            DateTime dt = FastDateTime.Now;
 
-        //public void OptimizeIndex()
-        //{
-        //    lock (_lock)
-        //    {
-        //        InternalSave();
-        //        _log.Debug("optimizing index..");
-        //        DateTime dt = FastDateTime.Now;
-        //        _lastBitmapOffset = 0;
-        //        _bitmapFile.Flush();
-        //        _bitmapFile.Close();
-        //        // compact bitmap index file to new file
-        //        _bitmapFile = new FileStream(_Path + _FileName + _bmpext + "$", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-        //        MemoryStream ms = new MemoryStream();
-        //        BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
-        //        // save words and bitmaps
-        //        using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Create))
-        //        {
-        //            foreach (KeyValuePair<string, Cache> kv in _index)
-        //            {
-        //                bw.Write(kv.Key);
-        //                uint[] ar = LoadBitmap(kv.Value.FileOffset);
-        //                long offset = SaveBitmap(ar);
-        //                kv.Value.FileOffset = offset;
-        //                bw.Write(kv.Value.FileOffset);
-        //            }
-        //            // save words
-        //            byte[] b = ms.ToArray();
-        //            words.Write(b, 0, b.Length);
-        //            words.Flush();
-        //            words.Close();
-        //        }
-        //        // rename files
-        //        _bitmapFile.Flush();
-        //        _bitmapFile.Close();
-        //        File.Delete(_Path + _FileName + _bmpext);
-        //        File.Move(_Path + _FileName + _bmpext + "$", _Path + _FileName + _bmpext);
-        //        // reload everything
-        //        _bitmapFile = new FileStream(_Path + _FileName + _bmpext, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-        //        _lastBitmapOffset = _bitmapFile.Seek(0L, SeekOrigin.End);
-        //        _log.Debug("optimizing index done = " + DateTime.Now.Subtract(dt).TotalSeconds + " sec");
-        //    }
-        //}
+            if (deleteold && doc.DocNumber > -1)
+                _deleted.Set(true, doc.DocNumber);
+
+            if (deleteold == true || doc.DocNumber == -1)
+                doc.DocNumber = _lastDocNum++;
+
+            // save doc to disk
+            string dstr = fastJSON.JSON.Instance.ToJSON(doc, new fastJSON.JSONParameters { UseExtensions = false });
+            _docs.Set(doc.FileName.ToLower(), Encoding.Unicode.GetBytes(dstr));
+
+            _log.Debug("writing doc to disk (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+
+            dt = FastDateTime.Now;
+            // index doc
+            AddtoIndex(doc.DocNumber, doc.Text);
+            _log.Debug("indexing time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+
+            return _lastDocNum;
+        }
+
+        public IEnumerable<int> FindRows(string filter)
+        {
+            WAHBitArray bits = ExecutionPlan(filter, _docs.RecordCount());
+            // enumerate records
+            return bits.GetBitIndexes();
+        }
+
+        public IEnumerable<Document> FindDocuments(string filter)
+        {
+            WAHBitArray bits = ExecutionPlan(filter, _docs.RecordCount());
+            // enumerate documents
+            foreach (int i in bits.GetBitIndexes())
+            {
+                if (i > _lastDocNum - 1)
+                    break;
+                string b = _docs.ReadData(i);
+                Document d = fastJSON.JSON.Instance.ToObject<Document>(b);
+
+                yield return d;
+            }
+        }
+
+        public IEnumerable<string> FindDocumentFileNames(string filter)
+        {
+            WAHBitArray bits = ExecutionPlan(filter, _docs.RecordCount());
+            // enumerate documents
+            foreach (int i in bits.GetBitIndexes())
+            {
+                if (i > _lastDocNum - 1)
+                    break;
+                string b = _docs.ReadData(i);
+                var d = (Dictionary<string, object>)fastJSON.JSON.Instance.Parse(b);
+
+                yield return d["FileName"].ToString();
+            }
+        }
+
+        public void RemoveDocument(int number)
+        {
+            // add number to deleted bitmap
+            _deleted.Set(true, number);
+        }
+
+        public bool RemoveDocument(string filename)
+        {
+            // remove doc based on filename
+            byte[] b;
+            if (_docs.Get(filename.ToLower(), out b))
+            {
+                Document d = fastJSON.JSON.Instance.ToObject<Document>(Encoding.Unicode.GetString(b));
+                RemoveDocument(d.DocNumber);
+                return true;
+            }
+            return false;
+        }
+
+        public bool IsIndexed(string filename)
+        {
+            byte[] b;
+            return _docs.Get(filename.ToLower(), out b);
+        }
+
+        public void OptimizeIndex()
+        {
+            _bitmaps.Commit(false);
+            _bitmaps.Optimize();
+        }
 
         #region [  P R I V A T E   M E T H O D S  ]
 
@@ -150,23 +178,23 @@ namespace RaptorDB
 
             foreach (string s in words)
             {
-                Cache c;
+                int c;
                 string word = s;
                 if (s == "") continue;
 
-                Cache.OPERATION op = Cache.OPERATION.OR;
+                OPERATION op = OPERATION.OR;
                 if (defaulttoand)
-                    op = Cache.OPERATION.AND; 
+                    op = OPERATION.AND;
 
                 if (s.StartsWith("+"))
                 {
-                    op = Cache.OPERATION.AND;
+                    op = OPERATION.AND;
                     word = s.Replace("+", "");
                 }
 
                 if (s.StartsWith("-"))
                 {
-                    op = Cache.OPERATION.ANDNOT;
+                    op = OPERATION.ANDNOT;
                     word = s.Replace("-", "");
                 }
 
@@ -174,119 +202,102 @@ namespace RaptorDB
                 {
                     WAHBitArray wildbits = null;
                     // do wildcard search
-                    Regex reg = new Regex("^"+s.Replace("*", ".*").Replace("?", "."), RegexOptions.IgnoreCase);
-                    foreach (var key in _index)
+                    Regex reg = new Regex("^" + s.Replace("*", ".*").Replace("?", "."), RegexOptions.IgnoreCase);
+                    foreach (string key in _words.Keys())
                     {
-                        if (reg.IsMatch(key.Key))
+                        if (reg.IsMatch(key))
                         {
-                            c = _index[key.Key];
-                            if (c.isLoaded == false)
-                                LoadCache(c);
+                            _words.TryGetValue(key, out c);
+                            WAHBitArray ba = _bitmaps.GetBitmap(c);
 
-                            wildbits = DoBitOperation(wildbits, c, Cache.OPERATION.OR, maxsize);
+                            wildbits = DoBitOperation(wildbits, ba, OPERATION.OR, maxsize);
                         }
                     }
                     if (bits == null)
                         bits = wildbits;
                     else
                     {
-                        if (op == Cache.OPERATION.AND)
+                        if (op == OPERATION.AND)
                             bits = bits.And(wildbits);
                         else
                             bits = bits.Or(wildbits);
                     }
                 }
-                else if (_index.TryGetValue(word.ToLowerInvariant(), out c))
+                else if (_words.TryGetValue(word.ToLowerInvariant(), out c))
                 {
                     // bits logic
-                    if (c.isLoaded == false)
-                        LoadCache(c);
-                    bits = DoBitOperation(bits, c, op, maxsize);
+                    WAHBitArray ba = _bitmaps.GetBitmap(c);
+                    bits = DoBitOperation(bits, ba, op, maxsize);
                 }
             }
             if (bits == null)
                 return new WAHBitArray();
 
-            //// remove deleted docs
-            //if (bits.Length > _deleted.Length)
-            //    _deleted.Length = bits.Length;
-            //else if (bits.Length < _deleted.Length)
-            //    bits.Length = _deleted.Length;
-
-            //WAHBitArray nd = _deleted.Not();
-
-            WAHBitArray ret = bits;//.And(nd);
+            // remove deleted docs
+            WAHBitArray ret ;
+            if (_docMode)
+                ret = bits.AndNot(_deleted.GetBits());
+            else
+                ret = bits;
             _log.Debug("query time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             return ret;
         }
 
-        private static WAHBitArray DoBitOperation(WAHBitArray bits, Cache c, Cache.OPERATION op, int maxsize)
+        private static WAHBitArray DoBitOperation(WAHBitArray bits, WAHBitArray c, OPERATION op, int maxsize)
         {
             if (bits != null)
-                bits = c.Op(bits, op, maxsize);
+            {
+                switch (op)
+                {
+                    case OPERATION.AND:
+                        bits = c.And(bits);
+                        break;
+                    case OPERATION.OR:
+                        bits = c.Or(bits);
+                        break;
+                    case OPERATION.ANDNOT:
+                        bits = c.And(bits.Not(maxsize));
+                        break;
+                }
+            }
             else
-                bits = c.GetBitmap();
+                bits = c;
             return bits;
         }
 
-        private void LoadCache(Cache c)
-        {
-            if (c.FileOffset != -1)
-            {
-                uint[] bits = LoadBitmap(c.FileOffset);
-                c.SetCompressedBits(bits);
-            }
-            else
-            {
-                c.SetCompressedBits(new uint[] { 0 });
-            }
-        }
-
+        private object _lock = new object();
         private void InternalSave()
         {
-            if (_inMemory == true)
-                return;
-
-            _log.Debug("saving index...");
-            DateTime dt = FastDateTime.Now;
-
-            MemoryStream ms = new MemoryStream();
-            BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
-
-            // save words and bitmaps
-            using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Create))
+            lock (_lock)
             {
-                foreach (KeyValuePair<string, Cache> kv in _index)
-                {
-                    bw.Write(kv.Key);
-                    if (kv.Value.isDirty)
-                    {
-                        // write bit index
-                        uint[] ar = kv.Value.GetCompressedBits();
-                        if (ar != null)
-                        {
-                            // save bitmap data to disk
-                            long off = SaveBitmap(ar);
-                            // set the saved info in cache
-                            kv.Value.FileOffset = off;
-                            kv.Value.LastBitSaveLength = ar.Length;
-                            // set the word bitmap offset
-                            bw.Write(kv.Value.FileOffset);
-                        }
-                        else
-                            bw.Write(kv.Value.FileOffset);
-                    }
-                    else
-                        bw.Write(kv.Value.FileOffset);
+                _log.Debug("saving index...");
+                DateTime dt = FastDateTime.Now;
+                // save deleted
+                _deleted.SaveIndex();
 
-                    kv.Value.isDirty = false;
+                // save docs 
+                if (_docMode)
+                    _docs.SaveIndex();
+                _bitmaps.Commit(false);
+
+                MemoryStream ms = new MemoryStream();
+                BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
+
+                // save words and bitmaps
+                using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Create))
+                {
+                    foreach (string key in _words.Keys())
+                    {
+                        bw.Write(key);
+                        bw.Write(_words[key]);
+                    }
+                    byte[] b = ms.ToArray();
+                    words.Write(b, 0, b.Length);
+                    words.Flush();
+                    words.Close();
                 }
-                byte[] b = ms.ToArray();
-                words.Write(b, 0, b.Length);
-                words.Flush();
-                words.Close();
+                _log.Debug("save time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             }
-            _log.Debug("save time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
         }
 
         private void LoadWords()
@@ -295,124 +306,159 @@ namespace RaptorDB
                 return;
             // load words
             byte[] b = File.ReadAllBytes(_Path + _FileName + ".words");
-            if (b.Length > 0)
+            MemoryStream ms = new MemoryStream(b);
+            BinaryReader br = new BinaryReader(ms, Encoding.UTF8);
+            string s = br.ReadString();
+            while (s != "")
             {
-                MemoryStream ms = new MemoryStream(b);
-                BinaryReader br = new BinaryReader(ms, Encoding.UTF8);
-                string s = br.ReadString();
-                while (s != "")
+                int off = br.ReadInt32();
+                _words.Add(s, off);
+                try
                 {
-                    long off = br.ReadInt64();
-                    Cache c = new Cache();
-                    c.isLoaded = false;
-                    c.isDirty = false;
-                    c.FileOffset = off;
-                    _index.Add(s, c);
-                    try
-                    {
-                        s = br.ReadString();
-                    }
-                    catch { s = ""; }
+                    s = br.ReadString();
                 }
-                _log.Debug("Word Count = " + _index.Count);
+                catch { s = ""; }
             }
-        }
-
-        //-----------------------------------------------------------------
-        // BITMAP FILE FORMAT
-        //    0  'B','M'
-        //    2  uint count = 4 bytes
-        //    6  '0'
-        //    7  uint data
-        //-----------------------------------------------------------------
-        private long SaveBitmap(uint[] bits)
-        {
-            long off = _lastBitmapOffset;
-
-            byte[] b = new byte[bits.Length * 4 + 7];
-            // write header data
-            b[0] = ((byte)'B');
-            b[1] = ((byte)'M');
-            Buffer.BlockCopy(Helper.GetBytes(bits.Length, false), 0, b, 2, 4);
-            b[6] = (0);
-
-            for (int i = 0; i < bits.Length; i++)
-            {
-                byte[] u = Helper.GetBytes((int)bits[i], false);
-                Buffer.BlockCopy(u, 0, b, i * 4 + 7, 4);
-            }
-            _bitmapFile.Write(b, 0, b.Length);
-            _lastBitmapOffset += b.Length;
-            _bitmapFile.Flush();
-            return off;
-        }
-
-        private uint[] LoadBitmap(long offset)
-        {
-            if (_inMemory == true)
-                return null;
-
-            if (offset == -1)
-                return null;
-
-            List<uint> ar = new List<uint>();
-
-            using (FileStream bmp = new FileStream(_Path + _FileName + _bmpext, FileMode.Open,
-                                                   FileAccess.ReadWrite, FileShare.ReadWrite))
-            {
-                bmp.Seek(offset, SeekOrigin.Begin);
-
-                byte[] b = new byte[7];
-                bmp.Read(b, 0, 7);
-                if (b[0] == (byte)'B' && b[1] == (byte)'M' && b[6] == 0)
-                {
-                    int c = Helper.ToInt32(b, 2);
-                    for (int i = 0; i < c; i++)
-                    {
-                        bmp.Read(b, 0, 4);
-                        ar.Add((uint)Helper.ToInt32(b, 0));
-                    }
-                }
-
-                bmp.Flush();
-                bmp.Close();
-            }
-            return ar.ToArray();
+            _log.Debug("Word Count = " + _words.Count);
         }
 
         private void AddtoIndex(int recnum, string text)
         {
-            if (text == null)
+            if (text == "" || text == null)
                 return;
+            string[] keys;
+            if (_docMode)
+            {
+                _log.Debug("text size = " + text.Length);
+                Dictionary<string, int> wordfreq = GenerateWordFreq(text);
+                _log.Debug("word count = " + wordfreq.Count);
+                var kk = wordfreq.Keys;
+                keys = new string[kk.Count];
+                kk.CopyTo(keys, 0);
+            }
+            else
+            {
+                keys = text.Split(' ');
+            }
 
-            foreach (string key in text.Split(' '))
+            foreach (string key in keys)
             {
                 if (key == "")
                     continue;
-                Cache cache;
-                if (_index.TryGetValue(key.ToLower(), out cache))
+
+                int bmp;
+                if (_words.TryGetValue(key, out bmp))
                 {
-                    cache.SetBit(recnum, true);
+                    _bitmaps.GetBitmap(bmp).Set(recnum, true);
                 }
                 else
                 {
-                    cache = new Cache();
-                    cache.isLoaded = true;
-                    cache.SetBit(recnum, true);
-                    _index.Add(key.ToLower(), cache);
+                    bmp = _bitmaps.GetFreeRecordNumber();
+                    _bitmaps.SetDuplicate(bmp, recnum);
+                    _words.Add(key, bmp);
                 }
             }
         }
 
+        private Dictionary<string, int> GenerateWordFreq(string text)
+        {
+            Dictionary<string, int> dic = new Dictionary<string, int>(50000);
+
+            char[] chars = text.ToCharArray();
+            int index = 0;
+            int run = -1;
+            int count = chars.Length;
+            while (index < count)
+            {
+                char c = chars[index++];
+                if (!char.IsLetter(c))
+                {
+                    if (run != -1)
+                    {
+                        ParseString(dic, chars, index, run);
+                        run = -1;
+                    }
+                }
+                else
+                    if (run == -1)
+                        run = index - 1;
+            }
+
+            if (run != -1)
+            {
+                ParseString(dic, chars, index, run);
+                run = -1;
+            }
+
+            return dic;
+        }
+
+        private void ParseString(Dictionary<string, int> dic, char[] chars, int end, int start)
+        {
+            // check if upper lower case mix -> extract words
+            int uppers = 0;
+            bool found = false;
+            for (int i = start; i < end; i++)
+            {
+                if (char.IsUpper(chars[i]))
+                    uppers++;
+            }
+            // not all uppercase
+            if (uppers != end - start - 1)
+            {
+                int lastUpper = start;
+
+                string word = "";
+                for (int i = start + 1; i < end; i++)
+                {
+                    char c = chars[i];
+                    if (char.IsUpper(c))
+                    {
+                        found = true;
+                        word = new string(chars, lastUpper, i - lastUpper).ToLowerInvariant().Trim();
+                        AddDictionary(dic, word);
+                        lastUpper = i;
+                    }
+                }
+                if (lastUpper > start)
+                {
+                    string last = new string(chars, lastUpper, end - lastUpper).ToLowerInvariant().Trim();
+                    if (word != last)
+                        AddDictionary(dic, last);
+                }
+            }
+            if (found == false)
+            {
+                string s = new string(chars, start, end - start - 1).ToLowerInvariant().Trim();
+                AddDictionary(dic, s);
+            }
+        }
+
+        private void AddDictionary(Dictionary<string, int> dic, string word)
+        {
+            int l = word.Length;
+            if (l > Global.DefaultStringKeySize)
+                return;
+            if (l < 2)
+                return;
+            if (char.IsLetter(word[l - 1]) == false)
+                word = new string(word.ToCharArray(), 0, l - 2);
+            if (word.Length < 2)
+                return;
+            int cc = 0;
+            if (dic.TryGetValue(word, out cc))
+                dic[word] = ++cc;
+            else
+                dic.Add(word, 1);
+        }
         #endregion
 
         public void Shutdown()
         {
-            if (_inMemory == true)
-                return;
             Save();
-            _bitmapFile.Flush();
-            _bitmapFile.Close();
+			_deleted.Shutdown();
+            if (_docMode)
+                _docs.Shutdown();
         }
     }
 }

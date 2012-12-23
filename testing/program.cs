@@ -31,6 +31,7 @@ namespace testing
 
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
             server = new RaptorDBServer(90, @"..\..\..\RaptorDBdata");
+            
             Console.WriteLine("Server started on port 90");
             Console.WriteLine("Press Enter to exit...");
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);

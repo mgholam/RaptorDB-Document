@@ -211,8 +211,8 @@ namespace RaptorDB
         {
             _log.Debug("Total split time (s) = " + _totalsplits);
             _log.Debug("Total pages = " + _pageList.Count);
-            List<int> keys = new List<int>(_cache.Keys());
-            keys.Sort();
+            int[] keys = _cache.Keys();
+            Array.Sort(keys);
             // save index to disk
             foreach (var i in keys)
             {
@@ -236,8 +236,9 @@ namespace RaptorDB
 
         public void FreeMemory()
         {
-            _index.BitmapFlush();
+            // TODO : implement when needed
         }
+
 
         public IEnumerable<int> GetDuplicates(T key)
         {

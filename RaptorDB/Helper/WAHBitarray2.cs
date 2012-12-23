@@ -57,20 +57,23 @@ namespace RaptorDB
 
         public bool Get(int index)
         {
-            if (_usingOffsets)
+            lock (_lock)
             {
-                bool b = false;
-                var f = _offsets.TryGetValue((uint)index, out b);
-                if (f)
-                    return b;
-                else
-                    return false;
+                if (_usingOffsets)
+                {
+                    bool b = false;
+                    var f = _offsets.TryGetValue((uint)index, out b);
+                    if (f)
+                        return b;
+                    else
+                        return false;
+                }
+                CheckBitArray();
+
+                Resize(index);
+
+                return internalGet(index);
             }
-            CheckBitArray();
-
-            Resize(index);
-
-            return internalGet(index);
         }
 
         private object _lock = new object();
@@ -270,28 +273,18 @@ namespace RaptorDB
 
         public void FreeMemory()
         {
-            if (_uncompressed != null)
-                Compress(_uncompressed);
-            _uncompressed = null;
-        }
-
-        public uint[] GetCompressed()
-        {
-            uint[] data = _uncompressed;
-            if (_usingOffsets)
+            if (_uncompressed != null && _usingOffsets == false)
             {
-                data = UnpackOffsets();
+                Compress(_uncompressed);
+                _uncompressed = null;
             }
-            else if (_uncompressed == null)
-                return new uint[] { 0 };
-            Compress(data);
-            return _compressed;
         }
 
         public uint[] GetCompressed(out TYPE type)
         {
             type = TYPE.WAH;
             uint[] data = _uncompressed;
+            ChangeTypeIfNeeded();
             if (_usingOffsets)
             {
                 //data = UnpackOffsets();
@@ -474,10 +467,10 @@ namespace RaptorDB
                 _uncompressed = new uint[0];
                 return;
             }
+            if (_uncompressed == null && _compressed !=null)
+                Uncompress();  
             if (_compressed == null)
                 return;
-            if (_uncompressed == null)
-                Uncompress();
         }
 
         #region compress / uncompress
@@ -585,7 +578,7 @@ namespace RaptorDB
             if (cc > x) //current pointer
             {
                 list[pointer] |= (uint)((0xffffffff >> off));
-                cc -= (32 - off);
+                cc -= x;
             }
             else
             {
@@ -593,8 +586,15 @@ namespace RaptorDB
                 cc = 0;
             }
 
+            bool checklast = true;
             while (cc >= 32)//full ints
             {
+                if (checklast && list[list.Count - 1] == 0)
+                {
+                    list.RemoveAt(list.Count - 1);
+                    checklast = false;
+                }
+
                 list.Add(0xffffffff);
                 cc -= 32;
             }
