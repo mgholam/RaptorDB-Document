@@ -13,7 +13,7 @@ namespace RaptorDB
         {
             _FileName = Path.GetFileNameWithoutExtension(filename);
             _Path = path;
-            if (_Path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false) 
+            if (_Path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false)
                 _Path += Path.DirectorySeparatorChar.ToString();
 
             Initialize();
