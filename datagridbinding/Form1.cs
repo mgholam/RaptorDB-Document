@@ -162,10 +162,16 @@ namespace datagridbinding
 
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //int c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial < 100);
+            int c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial < 100);
             var q = rap.Query<SalesInvoiceView.RowSchema>(x => x.Serial < 100, 0, 10);
-            Guid g = new Guid("760e2d1e-dc85-4257-9287-3ef17bef1c4c");
-            var qq = rap.Query<SalesItemRowsView.RowSchema>(x => x.docid == g);
+            //var p = rap.Query("SalesInvoice");
+            //var pp = rap.Query(typeof(SalesInvoiceView));
+            //var ppp = rap.Query(typeof(SalesItemRowsView.RowSchema));
+            //var pppp = rap.Query(typeof(SalesInvoiceView), (SalesInvoiceView.RowSchema r) => r.Serial < 10);
+            //var ppppp = rap.Query(typeof(SalesInvoiceView.RowSchema), (SalesInvoiceView.RowSchema r) => r.Serial < 10);
+            //var pppppp = rap.Query<SalesInvoiceView.RowSchema>("serial <10");
+            //Guid g = new Guid("82997e60-f8f4-4b37-ae35-02d033512673");
+            var qq = rap.Query<SalesInvoiceView.RowSchema>(x => x.docid == new Guid("82997e60-f8f4-4b37-ae35-02d033512673"));
             dataGridView1.DataSource = q.Rows;
             //q= rap.Query<SalesInvoiceView.RowSchema>("serial <100");
             //string s = q.Rows[0].CustomerName;

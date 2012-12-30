@@ -193,6 +193,9 @@ namespace RaptorDB.Views
         SafeDictionary<string, LambdaExpression> _lambdacache = new SafeDictionary<string, LambdaExpression>();
         internal Result<object> Query(string filter, int start, int count)
         {
+            if (filter == "")
+                return Query(start, count);
+
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
             _log.Debug("query : " + filter);
@@ -219,6 +222,9 @@ namespace RaptorDB.Views
         // FEATURE : add query caching here
         internal Result<object> Query<T>(Expression<Predicate<T>> filter, int start, int count)
         {
+            if (filter == null)
+                return Query(start, count);
+
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
 

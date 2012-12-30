@@ -306,6 +306,8 @@ namespace RaptorDB
                 return;
             // load words
             byte[] b = File.ReadAllBytes(_Path + _FileName + ".words");
+            if (b.Length == 0)
+                return;
             MemoryStream ms = new MemoryStream(b);
             BinaryReader br = new BinaryReader(ms, Encoding.UTF8);
             string s = br.ReadString();

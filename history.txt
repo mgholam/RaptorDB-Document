@@ -139,5 +139,7 @@ v1.9.1
 - bug fix edge case WAHBitarray
 - sync code with changes in hOOt
 - bug fix missing server mode SaveBytes()
--
+- bug fix server side queries in server mode
+- bug fix embedded guid in query : v => v.docid == new Guid("...")
+
 

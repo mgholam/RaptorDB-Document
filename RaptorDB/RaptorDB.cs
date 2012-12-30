@@ -684,6 +684,7 @@ namespace RaptorDB
                     {
                         if (b != null)
                         {
+                            
                             // FIX : add full text code here
                             // parse b -> bjson, json depending on type
                             // foreach d in dictionary -> 
