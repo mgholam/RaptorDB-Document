@@ -61,6 +61,8 @@ namespace RaptorDB.Common
             {
                 if (_Dictionary.ContainsKey(key) == false)
                     _Dictionary.Add(key, value);
+                else
+                    _Dictionary[key] = value;
             }
         }
 

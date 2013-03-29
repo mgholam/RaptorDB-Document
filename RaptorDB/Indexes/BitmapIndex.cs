@@ -31,18 +31,18 @@ namespace RaptorDB
         private BufferedStream _recordFileWrite;
         private long _lastBitmapOffset = 0;
         private int _lastRecordNumber = 0;
-        private object _lock = new object();
+        //private object _lock = new object();
         private SafeDictionary<int, WAHBitArray> _cache = new SafeDictionary<int, WAHBitArray>();
         private SafeDictionary<int, long> _offsetCache = new SafeDictionary<int, long>();
         private ILog log = LogManager.GetLogger(typeof(BitmapIndex));
         private bool _optimizing = false;
-        private int _threadSleepTime = 10;
+        //private int _threadSleepTime = 10;
         private bool _shutdownDone = false;
 
         #region [  P U B L I C  ]
         public void Shutdown()
         {
-            while (_optimizing) Thread.Sleep(_threadSleepTime);
+            CheckInternalOP();// while (_optimizing) Thread.Sleep(_threadSleepTime);
 
             log.Debug("Shutdown BitmapIndex");
 
@@ -51,7 +51,7 @@ namespace RaptorDB
 
         public int GetFreeRecordNumber()
         {
-            while (_optimizing) Thread.Sleep(_threadSleepTime);
+            CheckInternalOP();//while (_optimizing) Thread.Sleep(_threadSleepTime);
 
             int i = _lastRecordNumber++;
 
@@ -61,7 +61,7 @@ namespace RaptorDB
 
         public void Commit(bool freeMemory)
         {
-            while (_optimizing) Thread.Sleep(_threadSleepTime);
+            CheckInternalOP();//while (_optimizing) Thread.Sleep(_threadSleepTime);
 
             int[] keys = _cache.Keys();
             Array.Sort(keys);
@@ -85,7 +85,7 @@ namespace RaptorDB
 
         public void SetDuplicate(int bitmaprecno, int record)
         {
-            while (_optimizing) Thread.Sleep(_threadSleepTime);
+            CheckInternalOP();//while (_optimizing) Thread.Sleep(_threadSleepTime);
 
             WAHBitArray ba = null;
 
@@ -96,7 +96,7 @@ namespace RaptorDB
 
         public WAHBitArray GetBitmap(int recno)
         {
-            while (_optimizing) Thread.Sleep(_threadSleepTime);
+            CheckInternalOP();//while (_optimizing) Thread.Sleep(_threadSleepTime);
 
             return internalGetBitmap(recno);
         }
@@ -356,6 +356,12 @@ namespace RaptorDB
             bc = new WAHBitArray(type, ar.ToArray());
 
             return bc;
+        }
+
+        private void CheckInternalOP()
+        {
+            if (_optimizing)
+                lock (_oplock) ;
         }
         #endregion
     }
