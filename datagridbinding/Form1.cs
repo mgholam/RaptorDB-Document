@@ -164,6 +164,7 @@ namespace datagridbinding
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
             int c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial < 100);
+            c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial != 100);
             var q = rap.Query<SalesInvoiceView.RowSchema>(x => x.Serial < 100, 0, 10);
             //var p = rap.Query("SalesInvoice");
             //var pp = rap.Query(typeof(SalesInvoiceView));

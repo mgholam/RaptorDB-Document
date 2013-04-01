@@ -656,8 +656,6 @@ namespace RaptorDB.Views
 
         private IIndex CreateIndex(string name, Type type)
         {
-            // FIX : add fulltext collection checking also
-
             if (type == typeof(FullTextString))
                 return new FullTextIndex(_Path, name);
 

@@ -40,7 +40,7 @@ namespace SampleViews
     {
         public class RowSchema : RDBSchema
         {
-            [FullText]
+            //[FullText]
             public string CustomerName;
             [CaseInsensitive]
             public string NoCase;
@@ -78,9 +78,9 @@ namespace SampleViews
 
             this.Schema = typeof(SalesInvoiceView.RowSchema);
 
-            this.FullTextColumns.Add("customername");
+            this.FullTextColumns.Add("customername"); // this or the attribute
 
-            this.CaseInsensitiveColumns.Add("nocase");
+            this.CaseInsensitiveColumns.Add("nocase"); // this or the attribute
 
             this.AddFireOnTypes(typeof(SalesInvoice));
 

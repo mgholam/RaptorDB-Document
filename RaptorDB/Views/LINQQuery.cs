@@ -28,8 +28,9 @@ namespace RaptorDB.Views
             this.Visit(b.Left);
             ExpressionType t = b.NodeType;
 
-            if (t == ExpressionType.Equal || t == ExpressionType.LessThan || t == ExpressionType.LessThanOrEqual ||
-               t == ExpressionType.GreaterThan || t == ExpressionType.GreaterThanOrEqual)
+            if (t == ExpressionType.Equal || t== ExpressionType.NotEqual || 
+                t == ExpressionType.LessThan || t == ExpressionType.LessThanOrEqual ||
+                t == ExpressionType.GreaterThan || t == ExpressionType.GreaterThanOrEqual)
                 _stack.Push(b.NodeType);
 
 
@@ -50,6 +51,7 @@ namespace RaptorDB.Views
                 else if (lo == ExpressionType.LessThanOrEqual) exp = RDBExpression.LessEqual;
                 else if (lo == ExpressionType.GreaterThan) exp = RDBExpression.Greater;
                 else if (lo == ExpressionType.GreaterThanOrEqual) exp = RDBExpression.GreaterEqual;
+                else if (lo == ExpressionType.NotEqual) exp = RDBExpression.NotEqual;
 
                 _bitmap.Push(qexpression("" + ln, exp, lv));
             }
