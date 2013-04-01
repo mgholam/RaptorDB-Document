@@ -328,6 +328,7 @@ namespace RaptorDB
         {
             if (text == "" || text == null)
                 return;
+            text = text.ToLowerInvariant(); // lowercase index 
             string[] keys;
             if (_docMode)
             {

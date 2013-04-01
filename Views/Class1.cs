@@ -24,6 +24,7 @@ namespace SampleViews
         }
         public Guid ID { get; set; }
         public string CustomerName { get; set; }
+        public string NoCase {get; set ;}
         public string Address { get; set; }
         public List<LineItem> Items { get; set; }
         public DateTime Date { get; set; }
@@ -41,6 +42,8 @@ namespace SampleViews
         {
             [FullText]
             public string CustomerName;
+            [CaseInsensitive]
+            public string NoCase;
             public DateTime Date;
             public string Address;
             public int Serial;
@@ -74,7 +77,10 @@ namespace SampleViews
             //this.TransactionMode = true;
 
             this.Schema = typeof(SalesInvoiceView.RowSchema);
-            this.FullTextColumns = new List<string> { "customername" };
+
+            this.FullTextColumns.Add("customername");
+
+            this.CaseInsensitiveColumns.Add("nocase");
 
             this.AddFireOnTypes(typeof(SalesInvoice));
 
@@ -106,7 +112,7 @@ namespace SampleViews
             this.isPrimaryList = false;
             this.isActive = true;
             this.BackgroundIndexing = true;
-            
+
             this.Schema = typeof(SalesItemRowsView.RowSchema);
 
             this.AddFireOnTypes(typeof(SalesInvoice));

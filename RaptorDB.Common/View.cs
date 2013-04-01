@@ -75,10 +75,16 @@ namespace RaptorDB
         }
 
         /// <summary>
-        /// When defining you own schema and you don't want dependancies to RaptorDB to propogate through your code
-        /// define your full text column here
+        /// When defining your own schema and you don't want dependancies to RaptorDB to propogate through your code
+        /// define your full text columns here
         /// </summary>
         public List<string> FullTextColumns;
+        
+        /// <summary>
+        /// When defining your own schems and you don't want dependancies to RaptorDB to propogate through your code 
+        /// define your case insensitive columns here
+        /// </summary>
+        public List<string> CaseInsensitiveColumns;
     }
 
 
@@ -92,6 +98,7 @@ namespace RaptorDB
             DeleteBeforeInsert = true;
             BackgroundIndexing = true;
             FullTextColumns = new List<string>();
+            CaseInsensitiveColumns = new List<string>();
             //AllowTransactions = false;
         }
 

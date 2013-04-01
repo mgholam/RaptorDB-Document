@@ -54,6 +54,7 @@ namespace RaptorDB.Views
         private RowFill _rowfiller;
         private ViewRowDefinition _schema;
         private SafeDictionary<int, Dictionary<Guid, List<object[]>>> _transactions = new SafeDictionary<int, Dictionary<Guid, List<object[]>>>();
+        private SafeDictionary<string, int> _nocase = new SafeDictionary<string, int>();
 
         internal void SetView<T>(View<T> view, KeyStoreGuid docs)
         {
@@ -395,7 +396,7 @@ namespace RaptorDB.Views
                 }
                 byte[] b = _viewData.ReadData(i);
                 if (b == null)
-                   continue;
+                    continue;
                 object o = FastCreateObject(_view.Schema);
                 object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
                 rows.Add((T)_rowfiller(o, data));
@@ -432,7 +433,7 @@ namespace RaptorDB.Views
                     continue;
                 }
                 byte[] b = _viewData.ReadData(i);
-                if (b == null) 
+                if (b == null)
                     continue;
                 object o = FastCreateObject(_view.Schema);
                 object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
@@ -555,6 +556,11 @@ namespace RaptorDB.Views
                 if (_view.FullTextColumns.Contains(p.Name) || _view.FullTextColumns.Contains(p.Name.ToLower()))
                     t = typeof(FullTextString);
                 _schema.Add(p.Name, t);
+
+                if (p.GetCustomAttributes(typeof(CaseInsensitiveAttribute), true).Length > 0)
+                    _nocase.Add(p.Name, 0);
+                if (_view.CaseInsensitiveColumns.Contains(p.Name) || _view.CaseInsensitiveColumns.Contains(p.Name.ToLower()))
+                    _nocase.Add(p.Name, 0);
             }
 
             foreach (var f in _view.Schema.GetFields())
@@ -565,10 +571,23 @@ namespace RaptorDB.Views
                 if (_view.FullTextColumns.Contains(f.Name) || _view.FullTextColumns.Contains(f.Name.ToLower()))
                     t = typeof(FullTextString);
                 _schema.Add(f.Name, t);
+
+                if (f.GetCustomAttributes(typeof(CaseInsensitiveAttribute), true).Length > 0)
+                    _nocase.Add(f.Name, 0);
+                if (_view.CaseInsensitiveColumns.Contains(f.Name) || _view.CaseInsensitiveColumns.Contains(f.Name.ToLower()))
+                    _nocase.Add(f.Name, 0);
             }
 
             foreach (var s in _schema.Columns)
                 _colnames.Add(s.Key);
+
+            // set column index for nocase
+            for (int i = 0; i < _colnames.Count; i++)
+            {
+                int j = 0;
+                if (_nocase.TryGetValue(_colnames[i], out j))
+                    _nocase[_colnames[i]] = i;
+            }
         }
 
         private void LoadDeletedRowsBitmap()
@@ -586,6 +605,10 @@ namespace RaptorDB.Views
                 byte[] b = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
 
                 int rownum = _viewData.WriteData(guid, b, false);
+
+                // case insensitve columns here
+                foreach (var kv in _nocase)
+                    row[kv.Value] = ("" + row[kv.Value]).ToLowerInvariant();
 
                 IndexRow(guid, row, rownum);
             }
@@ -620,6 +643,7 @@ namespace RaptorDB.Views
 
             return output;
         }
+
 
         private void IndexRow(Guid docid, object[] row, int rownum)
         {
@@ -658,7 +682,11 @@ namespace RaptorDB.Views
 
         private WAHBitArray QueryColumnExpression(string colname, RDBExpression exp, object from)
         {
-            return _indexes[colname].Query(exp, from, _viewData.Count());
+            int i = 0;
+            if (_nocase.TryGetValue(colname, out i)) // no case query
+                return _indexes[colname].Query(exp, ("" + from).ToLowerInvariant(), _viewData.Count());
+            else
+                return _indexes[colname].Query(exp, from, _viewData.Count());
         }
         #endregion
 

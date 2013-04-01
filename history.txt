@@ -143,3 +143,12 @@ v1.9.1
 - bug fix embedded guid in query : v => v.docid == new Guid("...")
 
 
+v1.9.2
+------
+- SafeDictionary.Add() will update if item exists
+- BitmapIndex using new lock mechanism
+- CaseInsensitive attribute
+- bug fix lowercase hoot indexing
+- case insensitive string indexing and searching
+- nocase samples
+-

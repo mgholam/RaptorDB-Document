@@ -34,6 +34,14 @@ namespace RaptorDB
     }
 
     /// <summary>
+    /// Used for normal string columns 
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public class CaseInsensitiveAttribute : Attribute
+    {
+    }
+
+    /// <summary>
     /// Used for the indexer -> hOOt full text indexing
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]

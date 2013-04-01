@@ -105,7 +105,8 @@ namespace datagridbinding
                     {
                         Date = FastDateTime.Now.AddMinutes(r.Next(60)),
                         Serial = i % 10000,
-                        CustomerName = "me " + i % 10,
+                        CustomerName = "Me " + i % 10,
+                        NoCase = "Me " + i % 10,
                         Status = (byte)(i % 4),
                         Address = "df asd sdf asdf asdf",
                         Approved = i%100==0?true:false
