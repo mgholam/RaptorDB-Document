@@ -393,7 +393,7 @@ namespace RaptorDB
 
         public Result<object> FullTextSearch(string filter)
         {
-            // FIX: query full text here
+            // FIX : query full text here
             Result<object> r = new Result<object>(false);
             var wbmp = _fulltextindex.Query(filter, _objStore.RecordCount()); 
 

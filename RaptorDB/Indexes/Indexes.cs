@@ -226,4 +226,72 @@ namespace RaptorDB
         }
     }
     #endregion
+
+    #region [  EnumIndex  ]
+    internal class EnumIndex<T> : MGIndex<string>, IIndex //where T : IComparable<T>
+    {
+        public EnumIndex(string path, string filename)
+            : base(path, filename + ".mgidx", 30, Global.PageItemCount, true)
+        {
+
+        }
+
+        public void Set(object key, int recnum)
+        {
+            if (key == null) return; // FEATURE : index null values ??
+
+            base.Set(key.ToString(), recnum);
+        }
+
+        public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
+        {
+            T f = default(T);
+            if (typeof(T).Equals(from.GetType()) == false)
+                f = Converter(from);
+            else
+                f = (T)from;
+
+            return base.Query(ex, f.ToString(), maxsize);
+        }
+
+        private T Converter(object from)
+        {
+            if (typeof(T) == typeof(Guid))
+            {
+                object o = new Guid(from.ToString());
+                return (T)o;
+            }
+            else
+                return (T)Convert.ChangeType(from, typeof(T));
+        }
+
+        void IIndex.FreeMemory()
+        {
+            base.FreeMemory();
+        }
+
+        void IIndex.Shutdown()
+        {
+            base.SaveIndex();
+            base.Shutdown();
+        }
+
+        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
+        {
+            T f = default(T);
+            if (typeof(T).Equals(fromkey.GetType()) == false)
+                f = (T)Convert.ChangeType(fromkey, typeof(T));
+            else
+                f = (T)fromkey;
+
+            T t = default(T);
+            if (typeof(T).Equals(tokey.GetType()) == false)
+                t = (T)Convert.ChangeType(tokey, typeof(T));
+            else
+                t = (T)tokey;
+
+            return base.Query(f.ToString(), t.ToString(), maxsize);
+        }
+    #endregion
+    }
 }

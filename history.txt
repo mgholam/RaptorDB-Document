@@ -151,4 +151,5 @@ v1.9.2
 - bug fix lowercase hoot indexing
 - case insensitive string indexing and searching
 - nocase samples
+- fixed handling != in linq query
 -

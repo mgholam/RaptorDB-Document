@@ -8,6 +8,13 @@ using RaptorDB;
 namespace SampleViews
 {
     #region [  class definitions  ]
+    //public enum State
+    //{
+    //    Open,
+    //    Closed,
+    //    Approved
+    //}
+
     public class LineItem
     {
         public decimal QTY { get; set; }
@@ -31,6 +38,7 @@ namespace SampleViews
         public int Serial { get; set; }
         public byte Status { get; set; }
         public bool Approved { get; set; }
+        //public State InvoiceState { get; set; }
     }
     #endregion
 
@@ -49,6 +57,7 @@ namespace SampleViews
             public int Serial;
             public byte Status;
             public bool Approved;
+            //public State InvoiceState;
         }
 
         // define your own row schema below (you must define a 'docid' property)

@@ -283,7 +283,7 @@ namespace RaptorDB
         public uint[] GetCompressed(out TYPE type)
         {
             type = TYPE.WAH;
-            uint[] data = _uncompressed;
+
             ChangeTypeIfNeeded();
             if (_usingOffsets)
             {
@@ -293,6 +293,7 @@ namespace RaptorDB
             }
             else if (_uncompressed == null)
                 return new uint[] { 0 };
+            uint[] data = _uncompressed;
             Compress(data);
             return _compressed;
         }

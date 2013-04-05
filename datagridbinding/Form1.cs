@@ -51,8 +51,15 @@ namespace datagridbinding
                 toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;
                 dataGridView1.DataSource = q.Rows;
                 toolStripStatusLabel1.Text = "Count = " + q.Count.ToString("#,0");
+                stsError.Text = "";
             }
-            catch { }
+            catch (Exception ex) 
+            { 
+                stsError.Text = ex.Message; 
+                dataGridView1.DataSource = null; 
+                toolStripStatusLabel1.Text = "Count = 0";
+                toolStripStatusLabel2.Text = "Query time (sec) = 0";
+            }
         }
 
         private void sumQueryToolStripMenuItem_Click(object sender, EventArgs e)
@@ -109,7 +116,7 @@ namespace datagridbinding
                         NoCase = "Me " + i % 10,
                         Status = (byte)(i % 4),
                         Address = "df asd sdf asdf asdf",
-                        Approved = i%100==0?true:false
+                        Approved = i % 100 == 0 ? true : false
                     };
                     inv.Items = new List<LineItem>();
                     for (int k = 0; k < 5; k++)
@@ -148,13 +155,13 @@ namespace datagridbinding
             //var q = rap.Count(typeof(SalesItemRowsView), 
             //    (LineItem l) => (l.Product == prod1 || l.Product == prod3) && l.Price.Between(10,i)
             //    );
-            
+
             DateTime dt = FastDateTime.Now;
-           
+
             var qq = rap.ServerSide<LineItem>(Views.ServerSide.Sum_Products_based_on_filter,
                 //"product = \"prod 1\""
                 //(LineItem l) => (l.Product == c.val || l.Product == prod3 ) 
-                x=> x.Product == c.val || x.Product == prod3
+                x => x.Product == c.val || x.Product == prod3
                 ).ToList();
             dataGridView1.DataSource = qq;
             toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;
@@ -165,6 +172,7 @@ namespace datagridbinding
         {
             int c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial < 100);
             c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial != 100);
+            c = rap.Count("SalesInvoice", "serial != 100");
             var q = rap.Query<SalesInvoiceView.RowSchema>(x => x.Serial < 100, 0, 10);
             //var p = rap.Query("SalesInvoice");
             //var pp = rap.Query(typeof(SalesInvoiceView));

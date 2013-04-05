@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using RaptorDB.Common;
 using System.Threading;
+using System.Collections;
 
 namespace RaptorDB
 {
@@ -19,6 +20,19 @@ namespace RaptorDB
             Initialize();
         }
 
+        class L : IDisposable
+        {
+            BitmapIndex _sc;
+            public L(BitmapIndex sc)
+            {
+                _sc = sc;
+                _sc.CheckInternalOP();
+            }
+            void IDisposable.Dispose()
+            {
+                _sc.Done();
+            }
+        }
         private string _recExt = ".mgbmr";
         private string _bmpExt = ".mgbmp";
         private string _FileName = "";
@@ -31,74 +45,78 @@ namespace RaptorDB
         private BufferedStream _recordFileWrite;
         private long _lastBitmapOffset = 0;
         private int _lastRecordNumber = 0;
-        //private object _lock = new object();
         private SafeDictionary<int, WAHBitArray> _cache = new SafeDictionary<int, WAHBitArray>();
         private SafeDictionary<int, long> _offsetCache = new SafeDictionary<int, long>();
         private ILog log = LogManager.GetLogger(typeof(BitmapIndex));
         private bool _optimizing = false;
-        //private int _threadSleepTime = 10;
         private bool _shutdownDone = false;
+        private Queue _que = new Queue();
 
         #region [  P U B L I C  ]
         public void Shutdown()
         {
-            CheckInternalOP();// while (_optimizing) Thread.Sleep(_threadSleepTime);
+            using (new L(this))
+            {
+                log.Debug("Shutdown BitmapIndex");
 
-            log.Debug("Shutdown BitmapIndex");
-
-            InternalShutdown();
+                InternalShutdown();
+            }
         }
 
         public int GetFreeRecordNumber()
         {
-            CheckInternalOP();//while (_optimizing) Thread.Sleep(_threadSleepTime);
+            using (new L(this))
+            {
+                int i = _lastRecordNumber++;
 
-            int i = _lastRecordNumber++;
-
-            _cache.Add(i, new WAHBitArray());
-            return i;
+                _cache.Add(i, new WAHBitArray());
+                return i;
+            }
         }
 
         public void Commit(bool freeMemory)
         {
-            CheckInternalOP();//while (_optimizing) Thread.Sleep(_threadSleepTime);
-
-            int[] keys = _cache.Keys();
-            Array.Sort(keys);
-
-            foreach (int k in keys)
+            using (new L(this))
             {
-                var bmp = _cache[k];
-                if (bmp.isDirty)
+                int[] keys = _cache.Keys();
+                Array.Sort(keys);
+
+                foreach (int k in keys)
                 {
-                    SaveBitmap(k, bmp);
-                    bmp.FreeMemory();
-                    bmp.isDirty = false;
+                    var bmp = _cache[k];
+                    if (bmp.isDirty)
+                    {
+                        SaveBitmap(k, bmp);
+                        bmp.FreeMemory();
+                        bmp.isDirty = false;
+                    }
                 }
-            }
-            Flush();
-            if (freeMemory)
-            {
-                _cache = new SafeDictionary<int, WAHBitArray>();
+                Flush();
+                if (freeMemory)
+                {
+                    _cache = new SafeDictionary<int, WAHBitArray>();
+                }
             }
         }
 
         public void SetDuplicate(int bitmaprecno, int record)
         {
-            CheckInternalOP();//while (_optimizing) Thread.Sleep(_threadSleepTime);
+            using (new L(this))
+            {
+                WAHBitArray ba = null;
 
-            WAHBitArray ba = null;
+                ba = GetBitmap(bitmaprecno);
 
-            ba = GetBitmap(bitmaprecno);
-
-            ba.Set(record, true);
+                ba.Set(record, true);
+            }
         }
 
         public WAHBitArray GetBitmap(int recno)
         {
-            CheckInternalOP();//while (_optimizing) Thread.Sleep(_threadSleepTime);
-
-            return internalGetBitmap(recno);
+            using (new L(this))
+            {
+                return internalGetBitmap(recno);
+            }
         }
 
         private object _oplock = new object();
@@ -109,6 +127,7 @@ namespace RaptorDB
                     lock (_writelock)
                     {
                         _optimizing = true;
+                        while (_que.Count > 0) Thread.SpinWait(1);
                         Flush();
 
                         if (File.Exists(_Path + _FileName + "$" + _bmpExt))
@@ -362,7 +381,16 @@ namespace RaptorDB
         {
             if (_optimizing)
                 lock (_oplock) ;
+            _que.Enqueue(1);
+        }
+
+        private void Done()
+        {
+            if (_que.Count > 0)
+                _que.Dequeue();
         }
         #endregion
+
+
     }
 }
