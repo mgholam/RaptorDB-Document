@@ -19,7 +19,7 @@ namespace RaptorDB
             if (_Path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false) _Path += Path.DirectorySeparatorChar;
             Directory.CreateDirectory(IndexPath);
             //LogManager.Configure(_Path + "log.txt", 200, false);
-            _log.Debug("\r\n\r\n");
+            //_log.Debug("\r\n");
             _log.Debug("Starting hOOt....");
             _log.Debug("Storage Folder = " + _Path);
 
@@ -332,9 +332,9 @@ namespace RaptorDB
             string[] keys;
             if (_docMode)
             {
-                _log.Debug("text size = " + text.Length);
+                //_log.Debug("text size = " + text.Length);
                 Dictionary<string, int> wordfreq = GenerateWordFreq(text);
-                _log.Debug("word count = " + wordfreq.Count);
+                //_log.Debug("word count = " + wordfreq.Count);
                 var kk = wordfreq.Keys;
                 keys = new string[kk.Count];
                 kk.CopyTo(keys, 0);
@@ -374,7 +374,7 @@ namespace RaptorDB
             while (index < count)
             {
                 char c = chars[index++];
-                if (!char.IsLetter(c))
+                if (!(char.IsLetterOrDigit(c) || c == '.' || c=='-' || c == '$' || c == '#')) // rdb specific
                 {
                     if (run != -1)
                     {
@@ -444,7 +444,7 @@ namespace RaptorDB
                 return;
             if (l < 2)
                 return;
-            if (char.IsLetter(word[l - 1]) == false)
+            if (char.IsLetterOrDigit(word[l - 1]) == false) // rdb specific
                 word = new string(word.ToCharArray(), 0, l - 2);
             if (word.Length < 2)
                 return;

@@ -9,6 +9,22 @@ using RaptorDB.Common;
 namespace RaptorDB
 {
     #region [ internal classes ]
+    internal struct CacheTimeOut : IComparable<CacheTimeOut>
+    {
+        public CacheTimeOut(int pagenum, long ticks)
+        {
+            PageNumber = pagenum;
+            Ticks = ticks;
+        }
+        public int PageNumber;
+        public long Ticks;
+
+        public int CompareTo(CacheTimeOut other)
+        {
+            return this.Ticks.CompareTo(other.Ticks);
+        }
+    }
+
     internal struct PageInfo  // FEATURE : change back to class for count access for query caching
     {
         public PageInfo(int pagenum, int uniquecount, int duplicatecount)
@@ -53,19 +69,18 @@ namespace RaptorDB
         public SafeDictionary<T, KeyInfo> tree;
     }
 
+    //internal class Statistics
+    //{
+    //    public int PageCount = 0;
+    //    public double TotalSplitTime = 0;
+    //    public double FillFactor = 0;
 
-    internal class Statistics
-    {
-        public int PageCount = 0;
-        public double TotalSplitTime = 0;
-        public double FillFactor = 0;
-
-        public override string ToString()
-        {
-            string s = "Page Count = " + PageCount + ", Total Split Time = " + TotalSplitTime;// +", Fill Factor = " + FillFactor;
-            return s;
-        }
-    }
+    //    public override string ToString()
+    //    {
+    //        string s = "Page Count = " + PageCount + ", Total Split Time = " + TotalSplitTime;// +", Fill Factor = " + FillFactor;
+    //        return s;
+    //    }
+    //}
     #endregion
 
     internal class MGIndex<T> where T : IComparable<T>
@@ -73,6 +88,7 @@ namespace RaptorDB
         ILog _log = LogManager.GetLogger(typeof(MGIndex<T>));
         private SafeSortedList<T, PageInfo> _pageList = new SafeSortedList<T, PageInfo>();
         private SafeDictionary<int, Page<T>> _cache = new SafeDictionary<int, Page<T>>();
+        private SafeDictionary<int, CacheTimeOut> _usage = new SafeDictionary<int, CacheTimeOut>();
         private List<int> _pageListDiskPages = new List<int>();
         private IndexFile<T> _index;
         private bool _AllowDuplicates = true;
@@ -116,10 +132,8 @@ namespace RaptorDB
             bool found = false;
             int startpos = FindPageOrLowerPosition(from, ref found);
 
-
             // find last page and do < than
             int endpos = FindPageOrLowerPosition(to, ref found);
-
 
             // do all pages in between
 
@@ -237,6 +251,13 @@ namespace RaptorDB
         public void FreeMemory()
         {
             // TODO : implement when needed
+
+            //List<CacheTimeOut> a = new List<CacheTimeOut>();
+            //foreach (var i in _usage.Keys())
+            //{
+            //    a.Add(_usage[i]);
+            //}
+            //a.Sort();
         }
 
 
@@ -433,6 +454,8 @@ namespace RaptorDB
                 page = _index.LoadPageFromPageNumber(pagenum);
                 _cache.Add(pagenum, page);
             }
+            // page usage data 
+            _usage.Add(pagenum, new CacheTimeOut(pagenum, FastDateTime.Now.Ticks));
             return page;
         }
 
@@ -445,6 +468,8 @@ namespace RaptorDB
                 page = _index.LoadPageFromPageNumber(pagenum);
                 _cache.Add(pagenum, page);
             }
+            // page usage data 
+            _usage.Add(pagenum, new CacheTimeOut(pagenum, FastDateTime.Now.Ticks));
             return page;
         }
 

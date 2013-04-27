@@ -20,6 +20,13 @@ namespace RaptorDB
         private string _username;
         private string _password;
 
+        /// <summary>
+        /// Save a document to RaptorDB
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="docID"></param>
+        /// <param name="document"></param>
+        /// <returns></returns>
         public bool Save<T>(Guid docID, T document)
         {
             Packet p = CreatePacket();
@@ -30,11 +37,17 @@ namespace RaptorDB
             return ret.OK;
         }
 
-        public bool SaveBytes(Guid docID, byte[] bytes)
+        /// <summary>
+        /// Save a file to RaptorDB
+        /// </summary>
+        /// <param name="fileID"></param>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public bool SaveBytes(Guid fileID, byte[] bytes)
         {
             Packet p = CreatePacket();
             p.Command = "savebytes";
-            p.Docid = docID;
+            p.Docid = fileID;
             p.Data = bytes;
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return ret.OK;
@@ -144,11 +157,18 @@ namespace RaptorDB
                 return null;
         }
 
+        /// <summary>
+        /// Shutdown and cleanup 
+        /// </summary>
         public void Shutdown()
         {
             _client.Close();
         }
 
+        /// <summary>
+        /// Backup the data file in incremental mode to the RaptorDB folder
+        /// </summary>
+        /// <returns></returns>
         public bool Backup()
         {
             Packet p = CreatePacket();
@@ -157,6 +177,9 @@ namespace RaptorDB
             return ret.OK;
         }
 
+        /// <summary>
+        /// Restore backup files stored in RaptorDB folder
+        /// </summary>
         public void Restore()
         {
             Packet p = CreatePacket();
@@ -164,6 +187,11 @@ namespace RaptorDB
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
         }
 
+        /// <summary>
+        /// Delete a document (the actual data is not deleted just marked so) 
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
         public bool Delete(Guid docid)
         {
             Packet p = CreatePacket();
@@ -173,6 +201,11 @@ namespace RaptorDB
             return ret.OK;
         }
 
+        /// <summary>
+        /// Delete a file (the actual data is not deleted just marked so) 
+        /// </summary>
+        /// <param name="fileid"></param>
+        /// <returns></returns>
         public bool DeleteBytes(Guid fileid)
         {
             Packet p = CreatePacket();
@@ -182,6 +215,13 @@ namespace RaptorDB
             return ret.OK;
         }
 
+        /// <summary>
+        /// Add a user for server mode login
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="oldpassword"></param>
+        /// <param name="newpassword"></param>
+        /// <returns></returns>
         public bool AddUser(string username, string oldpassword, string newpassword)
         {
             Packet p = CreatePacket();
@@ -191,6 +231,12 @@ namespace RaptorDB
             return ret.OK;
         }
 
+        /// <summary>
+        /// Execute server side queries
+        /// </summary>
+        /// <param name="func"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public object[] ServerSide(ServerSideFunc func, string filter)
         {
             Packet p = CreatePacket();
@@ -200,6 +246,13 @@ namespace RaptorDB
             return (object[])ret.Data;
         }
 
+        /// <summary>
+        /// Execute server side queries
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="func"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter)
         {
             LINQString ls = new LINQString();
@@ -212,24 +265,19 @@ namespace RaptorDB
             return (object[])ret.Data;
         }
 
-        public Result<object> FullTextSearch(string filter)
+        /// <summary>
+        /// Full text search the complete original document 
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public int[] FullTextSearch(string filter)
         {
             Packet p = CreatePacket();
             p.Command = "fulltext";
             p.Data = new object[] { filter };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result<object>)ret.Data;
+            return (int[])ret.Data;
         }
-
-        //public List<string> GetViews()
-        //{
-        //    return null;
-        //}
-
-        //public List<string> GetViewSchema(string viewname)
-        //{
-        //    return null;
-        //}
 
         private Packet CreatePacket()
         {
@@ -342,7 +390,6 @@ namespace RaptorDB
             return (Result<object>)ret.Data;
         }
 
-
         /// <summary>
         /// Query a View Type with a string filter with paging
         /// </summary>
@@ -363,7 +410,7 @@ namespace RaptorDB
         }
 
         /// <summary>
-        /// 
+        /// Count rows
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
@@ -373,7 +420,7 @@ namespace RaptorDB
         }
 
         /// <summary>
-        /// 
+        /// Count rows with a string filter
         /// </summary>
         /// <param name="type"></param>
         /// <param name="filter"></param>
@@ -388,7 +435,7 @@ namespace RaptorDB
         }
 
         /// <summary>
-        /// 
+        /// Count rows with a LINQ query
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="type"></param>
@@ -406,7 +453,7 @@ namespace RaptorDB
         }
 
         /// <summary>
-        /// 
+        /// Count rows
         /// </summary>
         /// <param name="viewname"></param>
         /// <returns></returns>
@@ -416,7 +463,7 @@ namespace RaptorDB
         }
 
         /// <summary>
-        /// 
+        /// Count rows with a string filter
         /// </summary>
         /// <param name="viewname"></param>
         /// <param name="filter"></param>
@@ -432,7 +479,7 @@ namespace RaptorDB
         }
 
         /// <summary>
-        /// 
+        /// Count rows with a LINQ query
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="viewname"></param>
@@ -450,11 +497,25 @@ namespace RaptorDB
             return (int)ret.Data;
         }
 
+        /// <summary>
+        /// Query with LINQ filter
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public Result<T> Query<T>(Expression<Predicate<T>> filter)
         {
             return Query<T>(filter, 0, 0);           
         }
 
+        /// <summary>
+        /// Query with LINQ filter and paging
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count)
         {
             LINQString ls = new LINQString();
@@ -481,11 +542,25 @@ namespace RaptorDB
             return result;
         }
 
+        /// <summary>
+        /// Query with string filter
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public Result<T> Query<T>(string filter)
         {
             return Query<T>(filter, 0, 0);
         }
 
+        /// <summary>
+        /// Query with string filter and paging
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public Result<T> Query<T>(string filter, int start, int count)
         {
             Packet p = CreatePacket();
@@ -498,6 +573,12 @@ namespace RaptorDB
             return GenericResult<T>(res);
         }
 
+        /// <summary>
+        /// Count with LINQ filter
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public int Count<T>(Expression<Predicate<T>> filter)
         {
             LINQString ls = new LINQString();
@@ -508,6 +589,62 @@ namespace RaptorDB
             p.Data = ls.sb.ToString();
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (int)ret.Data;
+        }
+
+        /// <summary>
+        /// Fetch the document change history
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
+        public int[] FetchHistory(Guid docid)
+        {
+            Packet p = CreatePacket();
+            p.Command = "dochistory";
+            p.Docid = docid;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (int[])ret.Data;
+        }
+
+        /// <summary>
+        /// Fetch the file change history
+        /// </summary>
+        /// <param name="fileid"></param>
+        /// <returns></returns>
+        public int[] FetchBytesHistory(Guid fileid)
+        {
+            Packet p = CreatePacket();
+            p.Command = "filehistory";
+            p.Docid = fileid;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (int[])ret.Data;
+        }
+
+        /// <summary>
+        /// Fetch a specific document version
+        /// </summary>
+        /// <param name="versionNumber"></param>
+        /// <returns></returns>
+        public object FetchVersion(int versionNumber)
+        {
+            Packet p = CreatePacket();
+            p.Command = "fetchversion";
+            p.Data = versionNumber;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return ret.Data;
+        }
+
+        /// <summary>
+        /// Fetch a specific file version
+        /// </summary>
+        /// <param name="versionNumber"></param>
+        /// <returns></returns>
+        public byte[] FetchBytesVersion(int versionNumber)
+        {
+            Packet p = CreatePacket();
+            p.Command = "fetchfileversion";
+            p.Data = versionNumber;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (byte[])ret.Data;
         }
     }
 }

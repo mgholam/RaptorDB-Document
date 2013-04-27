@@ -154,4 +154,12 @@ v1.9.2
 - fixed handling != (not equal) in linq query
 
 
-
+v2.0.0
+------
+- added more method documentations
+- * breaking change in doc storage file from hashed guid to guid keys *
+- added FetchHistory() and FetchVersion() for docs and files to get revisions  
+- upgrade to fastJSON v2.0.14
+- upgrade to fastBinaryJSON v1.3.7
+- full text indexing and search for the entire original document
+- bug fix linq query with boolean parameter

@@ -145,7 +145,7 @@ namespace RaptorDB
     #endregion
 
     #region [   KeyStoreGuid   ]
-    internal class KeyStoreGuid : IDisposable
+    internal class KeyStoreGuid : IDisposable //, IDocStorage
     {
         public KeyStoreGuid(string filename)
         {
@@ -274,7 +274,7 @@ namespace RaptorDB
             return _db.Delete(hc, ms.ToArray());
         }
 
-        internal byte[] Get(int recnumber, out Guid docid, out bool isdeleted)
+        public byte[] Get(int recnumber, out Guid docid, out bool isdeleted)
         {
             docid = Guid.Empty;
             byte[] buffer = _db.FetchRecordBytes(recnumber, out isdeleted);
@@ -295,7 +295,7 @@ namespace RaptorDB
     }
     #endregion
 
-    internal class KeyStore<T> : IDisposable where T : IComparable<T>
+    internal class KeyStore<T> : IDisposable , IDocStorage<T> where T : IComparable<T>
     {
         public KeyStore(string Filename, byte MaxKeySize, bool AllowDuplicateKeys)
         {
@@ -520,9 +520,19 @@ namespace RaptorDB
 
         #endregion
 
-        internal int RecordCount()
+        public int RecordCount()
         {
             return _archive.Count();
+        }
+
+        public int[] GetHistory(T key)
+        {
+            List<int> a = new List<int>();
+            foreach (int i in GetDuplicates(key))
+            {
+                a.Add(i);
+            }
+            return a.ToArray();
         }
 
         internal byte[] FetchRecordBytes(int record, out bool isdeleted)
@@ -540,7 +550,19 @@ namespace RaptorDB
 
         internal int CopyTo(StorageFile<int> storagefile, int start)
         {
-            return _archive.CopyTo(storagefile, start);            
+            return _archive.CopyTo(storagefile, start);
+        }
+
+        public byte[] Get(int rowid, out Guid docid, out bool isdeleted)
+        {
+            return _archive.ReadData(rowid, out docid, out isdeleted);
+        }
+
+        public bool Get(int rowid, out byte[] b)
+        {
+            bool isdel = false;
+            b = _archive.ReadData(rowid, out isdel);
+            return !isdel;
         }
     }
 }

@@ -189,4 +189,15 @@ namespace RaptorDB
         int Count<T>(Expression<Predicate<T>> Filter);
         //int Count<T>(string Filter);
     }
+
+    public interface IDocStorage<T>
+    {
+        int RecordCount();
+
+        byte[] Get(int rowid, out Guid docid, out bool isdeleted);
+
+        bool Get(int rowid, out byte[] doc);
+
+        bool Get(T key, out byte[] doc);
+    }
 }

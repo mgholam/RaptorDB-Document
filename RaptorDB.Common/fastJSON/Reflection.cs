@@ -26,7 +26,7 @@ namespace fastJSON
         public delegate object GenericSetter(object target, object value);
         public delegate object GenericGetter(object obj);
         private delegate object CreateObject();
-        
+
         private SafeDictionary<Type, string> _tyname = new SafeDictionary<Type, string>();
         private SafeDictionary<string, Type> _typecache = new SafeDictionary<string, Type>();
         private SafeDictionary<Type, CreateObject> _constrcache = new SafeDictionary<Type, CreateObject>();
@@ -70,7 +70,7 @@ namespace fastJSON
                 }
                 else
                 {
-                    if (objtype.IsClass) 
+                    if (objtype.IsClass)
                     {
                         DynamicMethod dynMethod = new DynamicMethod("_", objtype, null);
                         ILGenerator ilGen = dynMethod.GetILGenerator();
@@ -80,13 +80,8 @@ namespace fastJSON
                         _constrcache.Add(objtype, c);
                     }
                     else // structs
-                    {     
-                        DynamicMethod dynMethod = new DynamicMethod("_",
-                            MethodAttributes.Public | MethodAttributes.Static,
-                            CallingConventions.Standard,
-                            typeof(object),
-                            null,
-                            objtype, false);
+                    {
+                        DynamicMethod dynMethod = new DynamicMethod("_", typeof(object), null);
                         ILGenerator ilGen = dynMethod.GetILGenerator();
                         var lv = ilGen.DeclareLocal(objtype);
                         ilGen.Emit(OpCodes.Ldloca_S, lv);
@@ -112,12 +107,13 @@ namespace fastJSON
             Type[] arguments = new Type[2];
             arguments[0] = arguments[1] = typeof(object);
 
-            DynamicMethod dynamicSet = new DynamicMethod("_", typeof(object), arguments, type, true);
+            DynamicMethod dynamicSet = new DynamicMethod("_", typeof(object), arguments, type);
+
             ILGenerator il = dynamicSet.GetILGenerator();
 
             if (!type.IsClass) // structs
             {
-                var lv = il.DeclareLocal(type); 
+                var lv = il.DeclareLocal(type);
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Unbox_Any, type);
                 il.Emit(OpCodes.Stloc_0);
@@ -159,7 +155,7 @@ namespace fastJSON
 
             if (!type.IsClass) // structs
             {
-                var lv = il.DeclareLocal(type); 
+                var lv = il.DeclareLocal(type);
                 il.Emit(OpCodes.Ldarg_0);
                 il.Emit(OpCodes.Unbox_Any, type);
                 il.Emit(OpCodes.Stloc_0);
@@ -193,7 +189,8 @@ namespace fastJSON
 
         internal static GenericGetter CreateGetField(Type type, FieldInfo fieldInfo)
         {
-            DynamicMethod dynamicGet = new DynamicMethod("_", typeof(object), new Type[] { typeof(object) }, type, true);
+            DynamicMethod dynamicGet = new DynamicMethod("_", typeof(object), new Type[] { typeof(object) }, type);
+
             ILGenerator il = dynamicGet.GetILGenerator();
 
             if (!type.IsClass) // structs
@@ -226,12 +223,10 @@ namespace fastJSON
             if (getMethod == null)
                 return null;
 
-            Type[] arguments = new Type[1];
-            arguments[0] = typeof(object);
+            DynamicMethod getter = new DynamicMethod("_", typeof(object), new Type[] { typeof(object) }, type);
 
-            DynamicMethod getter = new DynamicMethod("_", typeof(object), arguments, type);
             ILGenerator il = getter.GetILGenerator();
-            
+
             if (!type.IsClass) // structs
             {
                 var lv = il.DeclareLocal(type);
@@ -268,7 +263,7 @@ namespace fastJSON
             foreach (PropertyInfo p in props)
             {
                 if (!p.CanWrite && ShowReadOnlyProperties == false) continue;
-                
+
                 object[] att = p.GetCustomAttributes(typeof(System.Xml.Serialization.XmlIgnoreAttribute), false);
                 if (att != null && att.Length > 0)
                     continue;

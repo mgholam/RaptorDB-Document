@@ -170,6 +170,29 @@ namespace datagridbinding
 
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            var t = rap.FullTextSearch("bc73f619-6035-49a3-99c7-3be4ca4170cb");
+            object o = rap.FetchVersion(t[0]);
+            //Guid g = Guid.NewGuid();
+            //var inv = new SalesInvoice()
+            //{
+            //    ID = g,
+            //    Date = FastDateTime.Now,
+            //    Serial = 30000,
+            //    CustomerName = "revision test",
+            //    NoCase = "revision test",
+            //    Status = 0,
+            //    Address = "here there",
+            //    Approved = false
+            //};
+            //rap.Save(g, inv);
+            //inv.CustomerName += "1";
+            //rap.Save(g, inv);
+            //inv.CustomerName += "2";
+            //rap.Save(g, inv);
+
+            //int[] revs = rap.FetchHistory(g);
+            //object oo = rap.FetchVersion(revs[0]);
+
             int c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial < 100);
             c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial != 100);
             c = rap.Count("SalesInvoice", "serial != 100");

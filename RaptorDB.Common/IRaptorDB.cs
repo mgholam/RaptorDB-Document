@@ -222,7 +222,12 @@ namespace RaptorDB.Common
         /// <returns></returns>
         object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter);
 
-        Result<object> FullTextSearch(string filter);
+        /// <summary>
+        /// Full text search the entire original document
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        int[] FullTextSearch(string filter);
 
 
         // new query model
@@ -231,5 +236,30 @@ namespace RaptorDB.Common
         Result<T> Query<T>(string filter);
         Result<T> Query<T>(string filter, int start, int count);
         int Count<T>(Expression<Predicate<T>> filter);
+
+        /// <summary>
+        /// Fetch the change history for a document
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
+        int[] FetchHistory(Guid docid);
+        /// <summary>
+        /// Fetch a change history for a file
+        /// </summary>
+        /// <param name="fileid"></param>
+        /// <returns></returns>
+        int[] FetchBytesHistory(Guid fileid);
+        /// <summary>
+        /// Fetch the specific document version 
+        /// </summary>
+        /// <param name="versionNumber"></param>
+        /// <returns></returns>
+        object FetchVersion(int versionNumber);
+        /// <summary>
+        /// Fetch the specific file version
+        /// </summary>
+        /// <param name="versionNumber"></param>
+        /// <returns></returns>
+        byte[] FetchBytesVersion(int versionNumber);
     }
 }

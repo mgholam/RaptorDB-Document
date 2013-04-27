@@ -32,7 +32,7 @@ namespace fastBinaryJSON
         {
             WriteValue(obj);
             // add $types
-            if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count > 0)
+            if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count>0)
             {
                 byte[] after = _output.ToArray();
                 _output = _before;
@@ -136,10 +136,9 @@ namespace fastBinaryJSON
             else if (obj is Enum)
                 WriteEnum((Enum)obj);
 
-#if CUSTOMTYPE
-            else if (JSON.Instance.IsTypeRegistered(obj.GetType()))
+            else if (BJSON.Instance.IsTypeRegistered(obj.GetType()))
                 WriteCustom(obj);
-#endif
+
             else
                 WriteObject(obj);
         }
@@ -204,9 +203,9 @@ namespace fastBinaryJSON
 
         private void WriteChar(char p)
         {
-            // FEATURE : char output 
+            // FIX : 
             //_output.WriteByte(TOKENS.CHAR);
-            //_output.Write
+            //_output.Write(Helper.GetBytes(
             throw new Exception("char not implemented yet");
         }
 
@@ -230,14 +229,14 @@ namespace fastBinaryJSON
             _output.WriteByte(TOKENS.NULL);
         }
 
-#if CUSTOMTYPE
+
         private void WriteCustom(object obj)
         {
             Serialize s;
-            JSON.Instance._customSerializer.TryGetValue(obj.GetType(), out s);
-            WriteStringFast(s(obj));
+            BJSON.Instance._customSerializer.TryGetValue(obj.GetType(), out s);
+            WriteString(s(obj));
         }
-#endif
+
         private void WriteColon()
         {
             _output.WriteByte(TOKENS.COLON);
@@ -430,21 +429,17 @@ namespace fastBinaryJSON
             }
 
             List<Getters> g = Reflection.Instance.GetGetters(t);
-            int c = g.Count;
-            int i = c;
-            if (_params.UseExtensions)
-                i++;
+
             foreach (var p in g)
             {
-                i--;
-                if (append && i > 0)
-                    WriteComma();
                 var o = p.Getter(obj);
                 if ((o == null || o is DBNull) && _params.SerializeNulls == false)
-                    append = false;
+                {
+                    
+                }
                 else
                 {
-                    if (i == 0 && c > 1) // last non null
+                    if (append)
                         WriteComma();
                     WritePair(p.Name, o);
                     append = true;
@@ -453,7 +448,6 @@ namespace fastBinaryJSON
             _current_depth--;
             _output.WriteByte(TOKENS.DOC_END);
             _current_depth--;
-
         }
 
         private void WritePairFast(string name, string value)

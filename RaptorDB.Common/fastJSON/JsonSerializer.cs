@@ -18,10 +18,12 @@ namespace fastJSON
         int _current_depth = 0;
         private Dictionary<string, int> _globalTypes = new Dictionary<string, int>();
         private JSONParameters _params;
+        private bool _useEscapedUnicode = false;
 
         internal JSONSerializer(JSONParameters param)
         {
             _params = param;
+            _useEscapedUnicode = _params.UseEscapedUnicode;
         }
 
         internal string ConvertToJSON(object obj)
@@ -38,11 +40,11 @@ namespace fastJSON
                 {
                     if (pendingSeparator) sb.Append(',');
                     pendingSeparator = true;
-                    sb.Append("\"");
+                    sb.Append('\"');
                     sb.Append(kv.Key);
                     sb.Append("\":\"");
                     sb.Append(kv.Value);
-                    sb.Append("\"");
+                    sb.Append('\"');
                 }
                 sb.Append("},");
                 sb.Append(_output.ToString());
@@ -101,22 +103,19 @@ namespace fastJSON
             else if (obj is Enum)
                 WriteEnum((Enum)obj);
 
-#if CUSTOMTYPE
             else if (JSON.Instance.IsTypeRegistered(obj.GetType()))
                 WriteCustom(obj);
-#endif
+
             else
                 WriteObject(obj);
         }
 
-#if CUSTOMTYPE
         private void WriteCustom(object obj)
         {
             Serialize s;
             JSON.Instance._customSerializer.TryGetValue(obj.GetType(), out s);
             WriteStringFast(s(obj));
         }
-#endif
 
         private void WriteEnum(Enum e)
         {
@@ -148,23 +147,23 @@ namespace fastJSON
             if (_params.UseUTCDateTime)
                 dt = dateTime.ToUniversalTime();
 
-            _output.Append("\"");
+            _output.Append('\"');
             _output.Append(dt.Year.ToString("0000", NumberFormatInfo.InvariantInfo));
-            _output.Append("-");
+            _output.Append('-');
             _output.Append(dt.Month.ToString("00", NumberFormatInfo.InvariantInfo));
-            _output.Append("-");
+            _output.Append('-');
             _output.Append(dt.Day.ToString("00", NumberFormatInfo.InvariantInfo));
-            _output.Append(" ");
+            _output.Append(' ');
             _output.Append(dt.Hour.ToString("00", NumberFormatInfo.InvariantInfo));
-            _output.Append(":");
+            _output.Append(':');
             _output.Append(dt.Minute.ToString("00", NumberFormatInfo.InvariantInfo));
-            _output.Append(":");
+            _output.Append(':');
             _output.Append(dt.Second.ToString("00", NumberFormatInfo.InvariantInfo));
 
             if (_params.UseUTCDateTime)
-                _output.Append("Z");
+                _output.Append('Z');
 
-            _output.Append("\"");
+            _output.Append('\"');
         }
 
 #if !SILVERLIGHT
@@ -221,7 +220,7 @@ namespace fastJSON
         private void WriteDataset(DataSet ds)
         {
             _output.Append('{');
-            if ( _params.UseExtensions)
+            if (_params.UseExtensions)
             {
                 WritePair("$schema", _params.UseOptimizedDatasetSchema ? (object)GetSchema(ds) : ds.GetXmlSchema());
                 _output.Append(',');
@@ -229,7 +228,7 @@ namespace fastJSON
             bool tablesep = false;
             foreach (DataTable table in ds.Tables)
             {
-                if (tablesep) _output.Append(",");
+                if (tablesep) _output.Append(',');
                 tablesep = true;
                 WriteDataTableData(table);
             }
@@ -246,7 +245,7 @@ namespace fastJSON
             bool rowseparator = false;
             foreach (DataRow row in table.Rows)
             {
-                if (rowseparator) _output.Append(",");
+                if (rowseparator) _output.Append(',');
                 rowseparator = true;
                 _output.Append('[');
 
@@ -288,12 +287,12 @@ namespace fastJSON
             {
                 if (_TypesWritten == false)
                 {
-                    _output.Append("{");
+                    _output.Append('{');
                     _before = _output;
                     _output = new StringBuilder();
                 }
                 else
-                    _output.Append("{");
+                    _output.Append('{');
             }
             _TypesWritten = true;
             _current_depth++;
@@ -323,22 +322,19 @@ namespace fastJSON
             }
 
             List<Getters> g = Reflection.Instance.GetGetters(t);
-            int c = g.Count;
-            int i = c;
-            if (_params.UseExtensions) // count $type as a property
-                i++;
+
             foreach (var p in g)
             {
-                i--;
-                if (append && i>0) 
-                    _output.Append(',');
                 object o = p.Getter(obj);
                 if ((o == null || o is DBNull) && _params.SerializeNullValues == false)
-                    append = false;
+                {
+                    //append = false;
+                }
                 else
                 {
-                    if (i == 0 && c>1) // last non null
-                        _output.Append(",");
+                    if (append)
+                        _output.Append(',');
+
                     WritePair(p.Name, o);
                     if (o != null && _params.UseExtensions)
                     {
@@ -452,14 +448,25 @@ namespace fastJSON
             {
                 var c = s[index];
 
-                if (c >= ' ' && c < 128 && c != '\"' && c != '\\')
+                if (_useEscapedUnicode)
                 {
-                    if (runIndex == -1)
+                    if (c >= ' ' && c < 128 && c != '\"' && c != '\\')
                     {
-                        runIndex = index;
-                    }
+                        if (runIndex == -1)
+                            runIndex = index;
 
-                    continue;
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (c != '\t' && c != '\n' && c != '\r' && c != '\"' && c != '\\')// && c != ':' && c!=',')
+                    {
+                        if (runIndex == -1)
+                            runIndex = index;
+
+                        continue;
+                    }
                 }
 
                 if (runIndex != -1)
@@ -476,16 +483,21 @@ namespace fastJSON
                     case '"':
                     case '\\': _output.Append('\\'); _output.Append(c); break;
                     default:
-                        _output.Append("\\u");
-                        _output.Append(((int)c).ToString("X4", NumberFormatInfo.InvariantInfo));
+                        if (_useEscapedUnicode)
+                        {
+                            _output.Append("\\u");
+                            _output.Append(((int)c).ToString("X4", NumberFormatInfo.InvariantInfo));
+                        }
+                        else
+                            _output.Append(c);
+
                         break;
                 }
             }
 
             if (runIndex != -1)
-            {
                 _output.Append(s, runIndex, s.Length - runIndex);
-            }
+
 
             _output.Append('\"');
         }

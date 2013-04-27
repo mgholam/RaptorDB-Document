@@ -56,7 +56,7 @@ namespace RaptorDB.Views
         private SafeDictionary<int, Dictionary<Guid, List<object[]>>> _transactions = new SafeDictionary<int, Dictionary<Guid, List<object[]>>>();
         private SafeDictionary<string, int> _nocase = new SafeDictionary<string, int>();
 
-        internal void SetView<T>(View<T> view, KeyStoreGuid docs)
+        internal void SetView<T>(View<T> view, IDocStorage<Guid> docs)
         {
             bool rebuild = false;
             _view = view;
@@ -483,7 +483,7 @@ namespace RaptorDB.Views
         }
 
         MethodInfo view = null;
-        private void RebuildFromScratch(KeyStoreGuid docs)
+        private void RebuildFromScratch(IDocStorage<Guid> docs)
         {
             view = this.GetType().GetMethod("Insert", BindingFlags.Instance | BindingFlags.NonPublic);
             _log.Debug("Rebuilding view from scratch...");
@@ -657,13 +657,18 @@ namespace RaptorDB.Views
         private IIndex CreateIndex(string name, Type type)
         {
             if (type == typeof(FullTextString))
-                return new FullTextIndex(_Path, name);
+                return new FullTextIndex(_Path, name, false);
 
             else if (type == typeof(string))
                 return new TypeIndexes<string>(_Path, name, Global.DefaultStringKeySize);
 
             else if (type == typeof(bool))
                 return new BoolIndex(_Path, name);
+
+            else if(type.IsEnum)
+                return (IIndex)Activator.CreateInstance(
+                    typeof(EnumIndex<>).MakeGenericType(type),
+                    new object[] { _Path, name });
 
             else
                 return (IIndex)Activator.CreateInstance(

@@ -18,7 +18,7 @@ namespace fastJSON
     public sealed class JSONParameters
     {
         /// <summary>
-        /// Use the optimized fast Dataset Schema format (dfault = True)
+        /// Use the optimized fast Dataset Schema format (default = True)
         /// </summary>
         public bool UseOptimizedDatasetSchema = true;
         /// <summary>
@@ -53,12 +53,16 @@ namespace fastJSON
         /// Enable fastJSON extensions $types, $type, $map (default = True)
         /// </summary>
         public bool UseExtensions = true;
+        /// <summary>
+        /// Use escaped unicode i.e. \uXXXX format for non ASCII characters (default = True)
+        /// </summary>
+        public bool UseEscapedUnicode = true;
 
         public void FixValues()
         {
             if (UseExtensions == false) // disable conflicting params
             {
-                UsingGlobalTypes = false; 
+                UsingGlobalTypes = false;
             }
         }
     }
@@ -82,7 +86,7 @@ namespace fastJSON
         /// </summary>
         public JSONParameters Parameters = new JSONParameters();
         private JSONParameters _params;
-        
+
         public string ToJSON(object obj)
         {
             _params = Parameters;
@@ -142,6 +146,9 @@ namespace fastJSON
             _usingglobals = _params.UsingGlobalTypes;
 
             object o = new JsonParser(json, Parameters.IgnoreCaseOnDeserialize).Decode();
+            if (o == null)
+                return null;
+
 #if !SILVERLIGHT
             if (type != null && type == typeof(DataSet))
                 return CreateDataset(o as Dictionary<string, object>, null);
@@ -159,17 +166,18 @@ namespace fastJSON
 
             if (o is List<object>)
             {
-                if (type != null && type.GetGenericTypeDefinition() == typeof(Dictionary<,>)) // kv format
+                if (type != null && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>)) // kv format
                     return RootDictionary(o, type);
-                
-                if (type != null && type.GetGenericTypeDefinition() == typeof(List<>)) // deserialize to generic list
+
+                if (type != null && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>)) // deserialize to generic list
                     return RootList(o, type);
                 else
                     return (o as List<object>).ToArray();
             }
-            
-            if (type!=null && o.GetType() != type)
+
+            if (type != null && o.GetType() != type)
                 return ChangeType(o, type);
+
             return o;
         }
 
@@ -198,7 +206,6 @@ namespace fastJSON
             return ToObject<T>(ToJSON(obj));
         }
 
-#if CUSTOMTYPE
         internal SafeDictionary<Type, Serialize> _customSerializer = new SafeDictionary<Type, Serialize>();
         internal SafeDictionary<Type, Deserialize> _customDeserializer = new SafeDictionary<Type, Deserialize>();
 
@@ -215,46 +222,59 @@ namespace fastJSON
 
         internal bool IsTypeRegistered(Type t)
         {
+            if (_customSerializer.Count == 0)
+                return false;
             Serialize s;
             return _customSerializer.TryGetValue(t, out s);
         }
-#endif
 
         #region [   JSON specific reflection   ]
 
+        private enum myPropInfoType
+        {
+            Int,
+            Long,
+            String,
+            Bool,
+            DateTime,
+            Enum,
+            Guid,
+
+            Array,
+            ByteArray,
+            Dictionary,
+            StringDictionary,
+#if !SILVERLIGHT
+            Hashtable,
+            DataSet,
+            DataTable,
+#endif
+			Custom,
+            Unknown,
+        }
+
+        [Flags]
+        private enum myPropInfoFlags
+        {
+            Filled = 1 << 0,
+            CanWrite = 1 << 1
+        }
+
         private struct myPropInfo
         {
-            public bool filled;
             public Type pt;
             public Type bt;
             public Type changeType;
-            public bool isDictionary;
-            public bool isValueType;
-            public bool isGenericType;
-            public bool isArray;
-            public bool isByteArray;
-            public bool isGuid;
-#if !SILVERLIGHT
-            public bool isDataSet;
-            public bool isDataTable;
-            public bool isHashtable;
-#endif
             public Reflection.GenericSetter setter;
-            public bool isEnum;
-            public bool isDateTime;
-            public Type[] GenericTypes;
-            public bool isInt;
-            public bool isLong;
-            public bool isString;
-            public bool isBool;
-            public bool isClass;
             public Reflection.GenericGetter getter;
-            public bool isStringDictionary;
+            public Type[] GenericTypes;
             public string Name;
-#if CUSTOMTYPE
-            public bool isCustomType;
-#endif
-            public bool CanWrite;
+            public myPropInfoType Type;
+            public myPropInfoFlags Flags;
+
+            public bool IsClass;
+            public bool IsValueType;
+            public bool IsGenericType;
         }
 
         SafeDictionary<string, SafeDictionary<string, myPropInfo>> _propertycache = new SafeDictionary<string, SafeDictionary<string, myPropInfo>>();
@@ -272,7 +292,7 @@ namespace fastJSON
                 foreach (PropertyInfo p in pr)
                 {
                     myPropInfo d = CreateMyProp(p.PropertyType, p.Name);
-                    d.CanWrite = p.CanWrite;
+                    d.Flags |= myPropInfoFlags.CanWrite;
                     d.setter = Reflection.CreateSetMethod(type, p);
                     d.getter = Reflection.CreateGetMethod(type, p);
                     sd.Add(p.Name, d);
@@ -294,44 +314,55 @@ namespace fastJSON
         private myPropInfo CreateMyProp(Type t, string name)
         {
             myPropInfo d = new myPropInfo();
-            d.filled = true;
-            d.CanWrite = true;
+            myPropInfoType d_type = myPropInfoType.Unknown;
+            myPropInfoFlags d_flags = myPropInfoFlags.Filled | myPropInfoFlags.CanWrite;
+
+            if (t == typeof(int) || t == typeof(int?)) d_type = myPropInfoType.Int;
+            else if (t == typeof(long) || t == typeof(long?)) d_type = myPropInfoType.Long;
+            else if (t == typeof(string)) d_type = myPropInfoType.String;
+            else if (t == typeof(bool) || t == typeof(bool?)) d_type = myPropInfoType.Bool;
+            else if (t == typeof(DateTime) || t == typeof(DateTime?)) d_type = myPropInfoType.DateTime;
+            else if (t.IsEnum) d_type = myPropInfoType.Enum;
+            else if (t == typeof(Guid) || t == typeof(Guid?)) d_type = myPropInfoType.Guid;
+            else if (t.IsArray)
+            {
+                d.bt = t.GetElementType();
+                if (t == typeof(byte[]))
+                    d_type = myPropInfoType.ByteArray;
+                else
+                    d_type = myPropInfoType.Array;
+            }
+            else if (t.Name.Contains("Dictionary"))
+            {
+                d.GenericTypes = t.GetGenericArguments();
+                if (d.GenericTypes.Length > 0 && d.GenericTypes[0] == typeof(string))
+                    d_type = myPropInfoType.StringDictionary;
+                else
+                    d_type = myPropInfoType.Dictionary;
+            }
+#if !SILVERLIGHT
+            else if (t == typeof(Hashtable)) d_type = myPropInfoType.Hashtable;
+            else if (t == typeof(DataSet)) d_type = myPropInfoType.DataSet;
+            else if (t == typeof(DataTable)) d_type = myPropInfoType.DataTable;
+#endif
+
+            else if (IsTypeRegistered(t))								
+                d_type = myPropInfoType.Custom;
+
+            d.IsClass = t.IsClass;
+            d.IsValueType = t.IsValueType;
+            if (t.IsGenericType)
+            {
+                d.IsGenericType = true;
+                d.bt = t.GetGenericArguments()[0];
+            }
+
             d.pt = t;
             d.Name = name;
-            d.isDictionary = t.Name.Contains("Dictionary");
-            if (d.isDictionary)
-                d.GenericTypes = t.GetGenericArguments();
-            d.isValueType = t.IsValueType;
-            d.isGenericType = t.IsGenericType;
-            d.isArray = t.IsArray;
-            if (d.isArray)
-                d.bt = t.GetElementType();
-            if (d.isGenericType)
-                d.bt = t.GetGenericArguments()[0];
-            d.isByteArray = t == typeof(byte[]);
-            d.isGuid = (t == typeof(Guid) || t == typeof(Guid?));
-#if !SILVERLIGHT
-            d.isHashtable = t == typeof(Hashtable);
-            d.isDataSet = t == typeof(DataSet);
-            d.isDataTable = t == typeof(DataTable);
-#endif
-
             d.changeType = GetChangeType(t);
-            d.isEnum = t.IsEnum;
-            d.isDateTime = t == typeof(DateTime) || t == typeof(DateTime?);
-            d.isInt = t == typeof(int) || t == typeof(int?);
-            d.isLong = t == typeof(long) || t == typeof(long?);
-            d.isString = t == typeof(string);
-            d.isBool = t == typeof(bool) || t == typeof(bool?);
-            d.isClass = t.IsClass;
+            d.Type = d_type;
+            d.Flags = d_flags;
 
-            if (d.isDictionary && d.GenericTypes.Length > 0 && d.GenericTypes[0] == typeof(string))
-                d.isStringDictionary = true;
-
-#if CUSTOMTYPE
-            if (IsTypeRegistered(t))
-                d.isCustomType = true;
-#endif
             return d;
         }
 
@@ -351,6 +382,9 @@ namespace fastJSON
 
             else if (conversionType.IsEnum)
                 return CreateEnum(conversionType, (string)value);
+
+            else if (IsTypeRegistered(conversionType))
+                return CreateCustom((string)value, conversionType);
 
             return Convert.ChangeType(value, conversionType, CultureInfo.InvariantCulture);
         }
@@ -458,7 +492,7 @@ namespace fastJSON
                 myPropInfo pi;
                 if (props.TryGetValue(name, out pi) == false)
                     continue;
-                if (pi.filled && pi.CanWrite)
+                if ((pi.Flags & (myPropInfoFlags.Filled | myPropInfoFlags.CanWrite)) != 0)
                 {
                     object v = d[name];
 
@@ -466,66 +500,50 @@ namespace fastJSON
                     {
                         object oset = null;
 
-                        if (pi.isInt)
-                            oset = (int) ((long) v);
-#if CUSTOMTYPE
-                        else if (pi.isCustomType)
-                            oset = CreateCustom((string)v, pi.pt);
-#endif
-                        else if (pi.isLong)
-                            oset = (long) v;
+                        switch (pi.Type)
+                        {
+                            case myPropInfoType.Int: oset = (int)((long)v); break;
+                            case myPropInfoType.Long: oset = (long)v; break;
+                            case myPropInfoType.String: oset = (string)v; break;
+                            case myPropInfoType.Bool: oset = (bool)v; break;
+                            case myPropInfoType.DateTime: oset = CreateDateTime((string)v); break;
+                            case myPropInfoType.Enum: oset = CreateEnum(pi.pt, (string)v); break;
+                            case myPropInfoType.Guid: oset = CreateGuid((string)v); break;
 
-                        else if (pi.isString)
-                            oset = (string) v;
-
-                        else if (pi.isBool)
-                            oset = (bool) v;
-
-                        else if (pi.isGenericType && pi.isValueType == false && pi.isDictionary == false)
-                            oset = CreateGenericList((List<object>) v, pi.pt, pi.bt, globaltypes);
-
-                        else if (pi.isByteArray)
-                            oset = Convert.FromBase64String((string) v);
-
-                        else if (pi.isArray && pi.isValueType == false)
-                            oset = CreateArray((List<object>) v, pi.pt, pi.bt, globaltypes);
-
-                        else if (pi.isGuid)
-                            oset = CreateGuid((string) v);
+                            case myPropInfoType.Array:
+                                if (!pi.IsValueType)
+                                    oset = CreateArray((List<object>)v, pi.pt, pi.bt, globaltypes);
+                                // what about 'else'?
+                                break;
+                            case myPropInfoType.ByteArray: oset = Convert.FromBase64String((string)v); break;
 #if !SILVERLIGHT
-                        else if (pi.isDataSet)
-                            oset = CreateDataset((Dictionary<string, object>) v, globaltypes);
-
-                        else if (pi.isDataTable)
-                            oset = this.CreateDataTable((Dictionary<string, object>) v, globaltypes);
+                            case myPropInfoType.DataSet: oset = CreateDataset((Dictionary<string, object>)v, globaltypes); break;
+                            case myPropInfoType.DataTable: oset = this.CreateDataTable((Dictionary<string, object>)v, globaltypes); break;
+                            case myPropInfoType.Hashtable: // same case as Dictionary
 #endif
+                            case myPropInfoType.Dictionary: oset = CreateDictionary((List<object>)v, pi.pt, pi.GenericTypes, globaltypes); break;
+                            case myPropInfoType.StringDictionary: oset = CreateStringKeyDictionary((Dictionary<string, object>)v, pi.pt, pi.GenericTypes, globaltypes); break;
 
-                        else if (pi.isStringDictionary)
-                            oset = CreateStringKeyDictionary((Dictionary<string, object>) v, pi.pt, pi.GenericTypes, globaltypes);
-#if !SILVERLIGHT
-                        else if (pi.isDictionary || pi.isHashtable)
-#else
-                        else if (pi.isDictionary)
-#endif
-                            oset = CreateDictionary((List<object>) v, pi.pt, pi.GenericTypes, globaltypes);
+							case myPropInfoType.Custom: oset = CreateCustom((string)v, pi.pt); break;
+                            default:
+                                {
+                                    if (pi.IsGenericType && pi.IsValueType == false && v is List<object>)
+                                        oset = CreateGenericList((List<object>)v, pi.pt, pi.bt, globaltypes);
 
-                        else if (pi.isEnum)
-                            oset = CreateEnum(pi.pt, (string) v);
+                                    else if (pi.IsClass && v is Dictionary<string, object>)
+                                        oset = ParseDictionary((Dictionary<string, object>)v, globaltypes, pi.pt, pi.getter(o));
 
-                        else if (pi.isDateTime)
-                            oset = CreateDateTime((string) v);
+                                    else if (v is List<object>)
+                                        oset = CreateArray((List<object>)v, pi.pt, typeof(object), globaltypes);
 
-                        else if (pi.isClass && v is Dictionary<string, object>)
-                            oset = ParseDictionary((Dictionary<string, object>) v, globaltypes, pi.pt, pi.getter(o));
+                                    else if (pi.IsValueType)
+                                        oset = ChangeType(v, pi.changeType);
 
-                        else if (pi.isValueType)
-                            oset = ChangeType(v, pi.changeType);
-
-                        else if (v is List<object>)
-                            oset = CreateArray((List<object>) v, pi.pt, typeof (object), globaltypes);
-
-                        else
-                            oset = v;
+                                    else
+                                        oset = v;
+                                }
+                                break;
+                        }
 
                         o = pi.setter(o, oset);
                     }
@@ -534,14 +552,12 @@ namespace fastJSON
             return o;
         }
 
-#if CUSTOMTYPE
         private object CreateCustom(string v, Type type)
         {
             Deserialize d;
             _customDeserializer.TryGetValue(type, out d);
             return d(v);
         }
-#endif
 
         private void ProcessMap(object obj, SafeDictionary<string, JSON.myPropInfo> props, Dictionary<string, object> dic)
         {
@@ -555,12 +571,14 @@ namespace fastJSON
             }
         }
 
-        private long CreateLong(string s)
+        static int CreateInteger(out int num, string s, int index, int count)
         {
-            long num = 0;
+            num = 0;
             bool neg = false;
-            foreach (char cc in s)
+            for (int x = 0; x < count; x++, index++)
             {
+                char cc = s[index];
+
                 if (cc == '-')
                     neg = true;
                 else if (cc == '+')
@@ -571,8 +589,32 @@ namespace fastJSON
                     num += (int)(cc - '0');
                 }
             }
+            if (neg) num = -num;
 
-            return neg ? -num : num;
+            return num;
+        }
+
+        internal static long CreateLong(out long num, char[] s, int index, int count)
+        {
+            num = 0;
+            bool neg = false;
+            for (int x = 0; x < count; x++, index++)
+            {
+                char cc = s[index];
+
+                if (cc == '-')
+                    neg = true;
+                else if (cc == '+')
+                    neg = false;
+                else
+                {
+                    num *= 10;
+                    num += (int)(cc - '0');
+                }
+            }
+            if (neg) num = -num;
+
+            return num;
         }
 
         private object CreateEnum(Type pt, string v)
@@ -598,14 +640,21 @@ namespace fastJSON
             bool utc = false;
             //                   0123456789012345678
             // datetime format = yyyy-MM-dd HH:mm:ss
-            int year = (int)CreateLong(value.Substring(0, 4));
-            int month = (int)CreateLong(value.Substring(5, 2));
-            int day = (int)CreateLong(value.Substring(8, 2));
-            int hour = (int)CreateLong(value.Substring(11, 2));
-            int min = (int)CreateLong(value.Substring(14, 2));
-            int sec = (int)CreateLong(value.Substring(17, 2));
+            int year;// = (int)CreateLong(value.Substring(0, 4));
+            int month;// = (int)CreateLong(value.Substring(5, 2));
+            int day;// = (int)CreateLong(value.Substring(8, 2));
+            int hour;// = (int)CreateLong(value.Substring(11, 2));
+            int min;// = (int)CreateLong(value.Substring(14, 2));
+            int sec;// = (int)CreateLong(value.Substring(17, 2));
+            CreateInteger(out year, value, 0, 4);
+            CreateInteger(out month, value, 5, 2);
+            CreateInteger(out day, value, 8, 2);
+            CreateInteger(out hour, value, 11, 2);
+            CreateInteger(out min, value, 14, 2);
+            CreateInteger(out sec, value, 17, 2);
 
-            if (value.EndsWith("Z"))
+            //if (value.EndsWith("Z"))
+            if (value[value.Length - 1] == 'Z')
                 utc = true;
 
             if (_params.UseUTCDateTime == false && utc == false)
@@ -713,6 +762,7 @@ namespace fastJSON
 
             return conversionType;
         }
+
 #if !SILVERLIGHT
         private DataSet CreateDataset(Dictionary<string, object> reader, Dictionary<string, object> globalTypes)
         {

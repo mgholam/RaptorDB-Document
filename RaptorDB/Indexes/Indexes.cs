@@ -193,8 +193,8 @@ namespace RaptorDB
     #region [  FullTextIndex  ]
     internal class FullTextIndex : Hoot, IIndex
     {
-        public FullTextIndex(string IndexPath, string FileName)
-            : base(IndexPath, FileName, false)
+        public FullTextIndex(string IndexPath, string FileName, bool docmode)
+            : base(IndexPath, FileName, docmode)
         {
 
         }

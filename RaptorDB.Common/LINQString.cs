@@ -145,7 +145,8 @@ namespace RaptorDB
                 switch (Type.GetTypeCode(c.Value.GetType()))
                 {
                     case TypeCode.Boolean:
-                        sb.Append(((bool)c.Value) ? 1 : 0);
+                        //sb.Append(((bool)c.Value) ? 1 : 0);
+                        sb.Append(((bool)c.Value) ? "True" : "False");
                         break;
                     case TypeCode.String:
                         sb.Append("\"");

@@ -11,13 +11,13 @@ namespace RaptorDB.Views
 {
     internal class ViewManager
     {
-        public ViewManager(string viewfolder, KeyStoreGuid objstore)
+        public ViewManager(string viewfolder, IDocStorage<Guid> objstore)
         {
             _Path = viewfolder;
             _objectStore = objstore;
         }
 
-        private KeyStoreGuid _objectStore;
+        private IDocStorage<Guid> _objectStore;
         private ILog _log = LogManager.GetLogger(typeof(ViewManager));
         private string _Path = "";
         // list of views
@@ -32,7 +32,6 @@ namespace RaptorDB.Views
         private SafeDictionary<Type, List<string>> _otherViews = new SafeDictionary<Type, List<string>>();
         private TaskQueue _que = new TaskQueue();
         private SafeDictionary<int, bool> _transactions = new SafeDictionary<int, bool>();
-        //private SafeDictionary<string, string> _viewAQFNmapping = new SafeDictionary<string, string>();
 
         internal int Count<T>(Type objtype, Expression<Predicate<T>> filter)
         {
@@ -260,9 +259,6 @@ namespace RaptorDB.Views
 
                 // add view schema mapping 
                 _otherViewTypes.Add(view.Schema, view.Name.ToLower());
-
-                //_viewAQFNmapping.Add(view.GetType().AssemblyQualifiedName, view.Name.ToLower());
-                //_viewAQFNmapping.Add(view.Schema.AssemblyQualifiedName, view.Name.ToLower());
 
                 if (view.isPrimaryList)
                 {

@@ -49,8 +49,12 @@ namespace RaptorDB
         /// </summary>
         public static int RestoreTimerSeconds = 10;
         /// <summary>
-        /// Timer for full text indexing of original documents
+        /// Timer for full text indexing of original documents (default = 15 sec)
         /// </summary>
-        public static int FullTextTimerSeconds = 60;
+        public static int FullTextTimerSeconds = 15;
+        /// <summary>
+        /// How many documents to full text index in a batch
+        /// </summary>
+        public static int BackgroundFullIndexSize= 10000;
     }
 }

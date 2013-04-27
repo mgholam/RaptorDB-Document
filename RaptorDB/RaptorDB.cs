@@ -27,8 +27,8 @@ namespace RaptorDB
         private string _S = Path.DirectorySeparatorChar.ToString();
         private ILog _log = LogManager.GetLogger(typeof(RaptorDB));
         private Views.ViewManager _viewManager;
-        private KeyStoreGuid _objStore;
-        private KeyStoreGuid _fileStore;
+        private /*KeyStoreGuid*/ KeyStore<Guid> _objStore;
+        private /*KeyStoreGuid*/ KeyStore<Guid> _fileStore;
         private string _Path = "";
         private int _LastRecordNumberProcessed = -1; // used by background saver
         private int _LastFulltextIndexed = -1; // used by the fulltext indexer
@@ -64,7 +64,11 @@ namespace RaptorDB
             _fileStore.Set(docID, bytes);
             return true;
         }
-
+        /// <summary>
+        /// Delete a document (note data is not lost just flagged as deleted)
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
         public bool Delete(Guid docid)
         {
             bool b = _objStore.RemoveKey(docid);
@@ -72,6 +76,11 @@ namespace RaptorDB
             return b;
         }
 
+        /// <summary>
+        /// Delete a file (note data is not lost just flagged as deleted)
+        /// </summary>
+        /// <param name="bytesid"></param>
+        /// <returns></returns>
         public bool DeleteBytes(Guid bytesid)
         {
             return _fileStore.RemoveKey(bytesid);
@@ -250,6 +259,9 @@ namespace RaptorDB
             _viewManager.RegisterView(view);
         }
 
+        /// <summary>
+        /// Shutdown the database engine and flush memory to disk
+        /// </summary>
         public void Shutdown()
         {
             if (_shuttingdown == true)
@@ -259,7 +271,7 @@ namespace RaptorDB
             _fulltextindex.Shutdown();
             // save records 
             _log.Debug("last full text record = " + _LastFulltextIndexed);
-            File.WriteAllBytes(_Path + "Data" + _S + "_fulltext.rec", Helper.GetBytes(_LastFulltextIndexed, false));
+            File.WriteAllBytes(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec", Helper.GetBytes(_LastFulltextIndexed, false));
             _log.Debug("last record = " + _LastRecordNumberProcessed);
             File.WriteAllBytes(_Path + "Data" + _S + "_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
             _log.Debug("last backup record = " + _LastBackupRecordNumber);
@@ -367,6 +379,13 @@ namespace RaptorDB
             }
         }
 
+        /// <summary>
+        /// Add a user (only supported in server mode)
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="oldpassword"></param>
+        /// <param name="newpassword"></param>
+        /// <returns></returns>
         public bool AddUser(string username, string oldpassword, string newpassword)
         {
             return false;
@@ -379,11 +398,24 @@ namespace RaptorDB
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Execute a server side string filter query
+        /// </summary>
+        /// <param name="func"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public object[] ServerSide(ServerSideFunc func, string filter)
         {
             return func(this, filter).ToArray();
         }
 
+        /// <summary>
+        /// Execute a server side LINQ query
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="func"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter)
         {
             LINQString ls = new LINQString();
@@ -391,14 +423,18 @@ namespace RaptorDB
             return func(this, ls.sb.ToString()).ToArray();
         }
 
-        public Result<object> FullTextSearch(string filter)
+        /// <summary>
+        /// Full text search the entire original document
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public int[] FullTextSearch(string filter)
         {
-            // FIX : query full text here
-            Result<object> r = new Result<object>(false);
-            var wbmp = _fulltextindex.Query(filter, _objStore.RecordCount()); 
+            var wbmp = _fulltextindex.Query(filter, _objStore.RecordCount());
+            List<int> a = new List<int>();
+            a.AddRange(wbmp.GetBitIndexes());
 
-
-            return r;
+            return a.ToArray();
         }
 
         public Result<T> Query<T>(Expression<Predicate<T>> filter)
@@ -546,16 +582,24 @@ namespace RaptorDB
             _log.Debug("RaptorDB starting...");
             _log.Debug("RaptorDB data folder = " + _Path);
 
+            // check doc & file storage file version and upgrade if needed here
+            int v = StorageFile<Guid>.GetStorageFileHeaderVersion(_Path + "Data" + _S + "data");
+            if (v == 0)
+                UpgradeStorageFile(_Path + "Data" + _S + "data");
 
-            _objStore = new KeyStoreGuid(_Path + "Data" + _S + "data");
-            _fileStore = new KeyStoreGuid(_Path + "Data" + _S + "files");
+            v = StorageFile<Guid>.GetStorageFileHeaderVersion(_Path + "Data" + _S + "files");
+            if (v == 0)
+                UpgradeStorageFile(_Path + "Data" + _S + "files");
+
+            _objStore = new KeyStore<Guid>(_Path + "Data" + _S + "data", true);// new KeyStoreGuid(_Path + "Data" + _S + "data");
+            _fileStore = new KeyStore<Guid>(_Path + "Data" + _S + "files", true);// new KeyStoreGuid(_Path + "Data" + _S + "files");
 
             _viewManager = new Views.ViewManager(_Path + "Views", _objStore);
 
             // load _LastFulltextIndexed 
-            if (File.Exists(_Path + "Data" + _S + "_fulltext.rec"))
+            if (File.Exists(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec"))
             {
-                byte[] b = File.ReadAllBytes(_Path + "Data" + _S + "_fulltext.rec");
+                byte[] b = File.ReadAllBytes(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec");
                 _LastFulltextIndexed = Helper.ToInt32(b, 0, false);
             }
             // load _LastRecordNumberProcessed 
@@ -575,7 +619,7 @@ namespace RaptorDB
             otherviews = this.GetType().GetMethod("SaveInOtherViews", BindingFlags.Instance | BindingFlags.NonPublic);
             save = this.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
 
-            _fulltextindex = new FullTextIndex(_Path + "Data" + _S + "Fulltext", "fulltext");
+            _fulltextindex = new FullTextIndex(_Path + "Data" + _S + "Fulltext", "fulltext", true);
 
             // start backround save to views
             _saveTimer = new System.Timers.Timer(Global.BackgroundSaveViewTimer * 1000);
@@ -592,6 +636,14 @@ namespace RaptorDB
             _fulltextTimer.Start();
         }
 
+        private void UpgradeStorageFile(string filename)
+        {
+            _log.Debug("Upgrading storage file version from 0 to 1 on file : " + filename);
+            throw new Exception("not implemented yet - contact the author if you need this functionality");
+            // FIX : upgrade from v0 to v1
+
+            // read from one file and write to the other 
+        }
 
         private void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
@@ -654,9 +706,6 @@ namespace RaptorDB
         private object _flock = new object();
         void _fulltextTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            // FIX : disable for now
-            return;
-
             if (_shuttingdown)
                 return;
 
@@ -668,7 +717,7 @@ namespace RaptorDB
 
             lock (_flock)
             {
-                int batch = Global.BackgroundViewSaveBatchSize;
+                int batch = Global.BackgroundFullIndexSize;
                 while (batch > 0)
                 {
                     if (_shuttingdown)
@@ -684,10 +733,14 @@ namespace RaptorDB
                     {
                         if (b != null)
                         {
-                            
-                            // FIX : add full text code here
-                            // parse b -> bjson, json depending on type
-                            // foreach d in dictionary -> 
+                            object d = CreateObject(b);
+
+                            if (d != null)
+                            {
+                                // normal string and normal guid 
+                                string json = fastJSON.JSON.Instance.ToJSON(d, new fastJSON.JSONParameters { UseEscapedUnicode = false, UseFastGuid = false });
+                                _fulltextindex.Set(json, _LastFulltextIndexed);
+                            }
                         }
                     }
                     batch--;
@@ -852,6 +905,56 @@ namespace RaptorDB
         public int Count<T>(string viewname, Expression<Predicate<T>> filter)
         {
             return _viewManager.Count(viewname, filter);
+        }
+
+        /// <summary>
+        /// Fetch the change history for a document
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
+        public int[] FetchHistory(Guid docid)
+        {
+            return _objStore.GetHistory(docid);
+        }
+
+        /// <summary>
+        /// Fetch a change history for a file
+        /// </summary>
+        /// <param name="fileid"></param>
+        /// <returns></returns>
+        public int[] FetchBytesHistory(Guid fileid)
+        {
+            return _fileStore.GetHistory(fileid);
+        }
+
+        /// <summary>
+        /// Fetch the specific document version 
+        /// </summary>
+        /// <param name="versionNumber"></param>
+        /// <returns></returns>
+        public object FetchVersion(int versionNumber)
+        {
+            Guid docid;
+            bool isdel;
+            byte[] b = _objStore.Get(versionNumber, out docid, out isdel);
+            if (b != null && isdel == false)
+                return CreateObject(b);
+            return null;
+        }
+
+        /// <summary>
+        /// Fetch the specific file version
+        /// </summary>
+        /// <param name="versionNumber"></param>
+        /// <returns></returns>
+        public byte[] FetchBytesVersion(int versionNumber)
+        {
+            Guid docid;
+            bool isdel;
+            byte[] b = _fileStore.Get(versionNumber, out docid, out isdel);
+            if (isdel == true)
+                return null;
+            return b;
         }
     }
 }

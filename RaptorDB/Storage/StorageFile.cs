@@ -27,12 +27,18 @@ namespace RaptorDB
         private string _recfilename = "";
         private int _lastRecordNum = 0;
         private long _lastWriteOffset = 6;
-        private object _lock = new object();
+        private object _readlock = new object();
+        //private object _writelock = new object(); // TODO : try to make read and write locks work separatly
         private bool _dirty = false;
         IGetBytes<T> _T = null;
+        ILog _log = LogManager.GetLogger(typeof(StorageFile<T>));
+
+        // **** change this if storage format changed ****
+        static int _CurrentVersion = 1;
+
 
         public static byte[] _fileheader = { (byte)'M', (byte)'G', (byte)'D', (byte)'B',
-                                              0, // 4 -- not used,
+                                              0, // 4 -- storage file version number,
                                               0  // 5 -- not used
                                            };
 
@@ -59,6 +65,8 @@ namespace RaptorDB
 
         public StorageFile(string filename)
         {
+            // add version number
+            _fileheader[5] = (byte)_CurrentVersion;
             Initialize(filename, false);
         }
 
@@ -105,6 +113,20 @@ namespace RaptorDB
             }
         }
 
+        public static int GetStorageFileHeaderVersion(string filename)
+        {
+            if (File.Exists(filename))
+            {
+                var fs = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                fs.Seek(0L, SeekOrigin.Begin);
+                byte[] b = new byte[_fileheader.Length];
+                fs.Read(b, 0, _fileheader.Length);
+                fs.Close();
+                return b[5];
+            }
+            return _CurrentVersion;
+        }
+
         public int Count()
         {
             return (int)(_recfilewrite.Length >> 3);
@@ -112,7 +134,7 @@ namespace RaptorDB
 
         public int WriteData(T key, byte[] data, bool deleted)
         {
-            lock (_lock)
+            lock (_readlock)//(_writelock)
             {
                 _dirty = true;
                 byte[] k = _T.GetBytes(key);
@@ -194,11 +216,34 @@ namespace RaptorDB
             if (recnum >= _lastRecordNum)
                 return null;
 
-            lock (_lock)
+            lock (_readlock)
             {
                 long off = ComputeOffset(recnum);
                 byte[] key;
                 return internalReadData(off, out key, out isdeleted);
+            }
+        }
+
+        /// <summary>
+        /// internal use for guid keys only
+        /// </summary>
+        /// <param name="recnum"></param>
+        /// <param name="?"></param>
+        /// <param name="isdeleted"></param>
+        /// <returns></returns>
+        internal byte[] ReadData(int recnum, out Guid docid, out bool isdeleted)
+        {
+            isdeleted = false;
+            docid = Guid.Empty;
+            if (recnum >= _lastRecordNum)
+                return null;
+            lock (_readlock)
+            {
+                long off = ComputeOffset(recnum);
+                byte[] key;
+                byte[] data= internalReadData(off, out key, out isdeleted);
+                docid = new Guid(key);
+                return data;
             }
         }
 
@@ -274,7 +319,7 @@ namespace RaptorDB
 
         internal T GetKey(int recnum, out bool deleted)
         {
-            lock (_lock)
+            lock (_readlock)
             {
                 deleted = false;
                 long off = recnum * 8L;
@@ -312,7 +357,7 @@ namespace RaptorDB
         internal int CopyTo(StorageFile<int> storageFile, int start)
         {
             // copy data here
-            lock (_lock)
+            lock (_readlock)
             {
                 long off = ComputeOffset(start);
                 _dataread.Seek(off, SeekOrigin.Begin);
@@ -332,7 +377,7 @@ namespace RaptorDB
 
         internal IEnumerable<StorageData> Enumerate()
         {
-            lock (_lock)
+            lock (_readlock)
             {
                 long offset = 6;
                 long size = _dataread.Length;

@@ -108,7 +108,7 @@ namespace RaptorDB
                         param = (object[])p.Data;
                         Type t = Type.GetType((string)param[0]);
                         string viewname = _raptor.GetViewName(t);
-                       // if (viewname == "") viewname = _raptor.GetView((string)param[0]);
+                        // if (viewname == "") viewname = _raptor.GetView((string)param[0]);
                         ret.OK = true;
                         ret.Data = _raptor.Query(viewname, (string)param[1], p.Start, p.Count);
                         break;
@@ -172,6 +172,22 @@ namespace RaptorDB
                         //if (viewname3 == "") viewname3 = _raptor.GetView(p.Viewname);
                         ret.OK = true;
                         ret.Data = _raptor.Count(viewname3, (string)p.Data);
+                        break;
+                    case "dochistory":
+                        ret.OK = true;
+                        ret.Data = _raptor.FetchHistory(p.Docid);
+                        break;
+                    case "filehistory":
+                        ret.OK = true;
+                        ret.Data = _raptor.FetchBytesHistory(p.Docid);
+                        break;
+                    case "fetchversion":
+                        ret.OK = true;
+                        ret.Data = _raptor.FetchVersion((int)p.Data);
+                        break;
+                    case "fetchfileversion":
+                        ret.OK = true;
+                        ret.Data = _raptor.FetchBytesVersion((int)p.Data);
                         break;
                 }
             }
@@ -253,7 +269,7 @@ namespace RaptorDB
             Directory.CreateDirectory(_path + _S + "Extensions");
 
             // open extensions folder
-            string path = _path + _S+ "Extensions";
+            string path = _path + _S + "Extensions";
 
             foreach (var f in Directory.GetFiles(path, "*.dll"))
             {
