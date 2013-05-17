@@ -9,21 +9,21 @@ using RaptorDB.Common;
 namespace RaptorDB
 {
     #region [ internal classes ]
-    internal struct CacheTimeOut : IComparable<CacheTimeOut>
-    {
-        public CacheTimeOut(int pagenum, long ticks)
-        {
-            PageNumber = pagenum;
-            Ticks = ticks;
-        }
-        public int PageNumber;
-        public long Ticks;
+    //internal struct CacheTimeOut : IComparable<CacheTimeOut>
+    //{
+    //    public CacheTimeOut(int pagenum, long ticks)
+    //    {
+    //        PageNumber = pagenum;
+    //        Ticks = ticks;
+    //    }
+    //    public int PageNumber;
+    //    public long Ticks;
 
-        public int CompareTo(CacheTimeOut other)
-        {
-            return this.Ticks.CompareTo(other.Ticks);
-        }
-    }
+    //    public int CompareTo(CacheTimeOut other)
+    //    {
+    //        return this.Ticks.CompareTo(other.Ticks);
+    //    }
+    //}
 
     internal struct PageInfo  // FEATURE : change back to class for count access for query caching
     {
@@ -88,7 +88,7 @@ namespace RaptorDB
         ILog _log = LogManager.GetLogger(typeof(MGIndex<T>));
         private SafeSortedList<T, PageInfo> _pageList = new SafeSortedList<T, PageInfo>();
         private SafeDictionary<int, Page<T>> _cache = new SafeDictionary<int, Page<T>>();
-        private SafeDictionary<int, CacheTimeOut> _usage = new SafeDictionary<int, CacheTimeOut>();
+        //private SafeDictionary<int, CacheTimeOut> _usage = new SafeDictionary<int, CacheTimeOut>();
         private List<int> _pageListDiskPages = new List<int>();
         private IndexFile<T> _index;
         private bool _AllowDuplicates = true;
@@ -250,14 +250,20 @@ namespace RaptorDB
 
         public void FreeMemory()
         {
-            // TODO : implement when needed
-
-            //List<CacheTimeOut> a = new List<CacheTimeOut>();
-            //foreach (var i in _usage.Keys())
-            //{
-            //    a.Add(_usage[i]);
-            //}
-            //a.Sort();
+            _index.FreeMemory();
+            try
+            {
+                List<int> free = new List<int>();
+                foreach (var c in _cache)
+                {
+                    if (c.Value.isDirty == false)
+                        free.Add(c.Key);
+                }
+                _log.Debug("releasing page count = " + free.Count + " out of " + _cache.Count);
+                foreach (var i in free)
+                    _cache.Remove(i);
+            }
+            catch { }
         }
 
 
@@ -455,7 +461,7 @@ namespace RaptorDB
                 _cache.Add(pagenum, page);
             }
             // page usage data 
-            _usage.Add(pagenum, new CacheTimeOut(pagenum, FastDateTime.Now.Ticks));
+            //_usage.Add(pagenum, new CacheTimeOut(pagenum, FastDateTime.Now.Ticks));
             return page;
         }
 
@@ -469,7 +475,7 @@ namespace RaptorDB
                 _cache.Add(pagenum, page);
             }
             // page usage data 
-            _usage.Add(pagenum, new CacheTimeOut(pagenum, FastDateTime.Now.Ticks));
+            //_usage.Add(pagenum, new CacheTimeOut(pagenum, FastDateTime.Now.Ticks));
             return page;
         }
 

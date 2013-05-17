@@ -31,7 +31,7 @@ namespace RaptorDB.Views
             {
                 while (_que.Count > 0)
                 {
-                    //_log.Debug("in queue cleanup, count = " + _que.Count);
+                    _log.Debug("in queue cleanup, count = " + _que.Count);
                     if (_shuttingdown)
                         break;
                     Task t = null;

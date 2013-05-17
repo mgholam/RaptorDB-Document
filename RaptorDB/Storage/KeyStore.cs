@@ -141,6 +141,11 @@ namespace RaptorDB
             }
             return "";
         }
+
+        internal void FreeMemory()
+        {
+            _db.FreeMemory();
+        }
     }
     #endregion
 
@@ -563,6 +568,11 @@ namespace RaptorDB
             bool isdel = false;
             b = _archive.ReadData(rowid, out isdel);
             return !isdel;
+        }
+
+        internal void FreeMemory()
+        {
+            _index.FreeMemory();
         }
     }
 }

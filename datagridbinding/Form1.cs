@@ -170,8 +170,10 @@ namespace datagridbinding
 
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var t = rap.FullTextSearch("bc73f619-6035-49a3-99c7-3be4ca4170cb");
-            object o = rap.FetchVersion(t[0]);
+            GC.Collect(2);
+            //var t = rap.FullTextSearch("bc73f619-6035-49a3-99c7-3be4ca4170cb");
+            //object o = rap.FetchVersion(t[0]);
+
             //Guid g = Guid.NewGuid();
             //var inv = new SalesInvoice()
             //{

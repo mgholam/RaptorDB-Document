@@ -29,6 +29,7 @@ namespace SampleViews
         {
             ID = Guid.NewGuid();
         }
+        
         public Guid ID { get; set; }
         public string CustomerName { get; set; }
         public string NoCase {get; set ;}
@@ -80,7 +81,7 @@ namespace SampleViews
             this.Description = "A primary view for SalesInvoices";
             this.isPrimaryList = true;
             this.isActive = true;
-            this.BackgroundIndexing = true;
+            this.BackgroundIndexing = false;
             this.Version = 3;
             //// uncomment the following for transaction mode
             //this.TransactionMode = true;
@@ -120,7 +121,7 @@ namespace SampleViews
             this.Description = "";
             this.isPrimaryList = false;
             this.isActive = true;
-            this.BackgroundIndexing = true;
+            this.BackgroundIndexing = false;
 
             this.Schema = typeof(SalesItemRowsView.RowSchema);
 
@@ -152,7 +153,7 @@ namespace SampleViews
             this.Description = "";
             this.isPrimaryList = false;
             this.isActive = true;
-            this.BackgroundIndexing = true;
+            this.BackgroundIndexing = false;
             this.Version = 1;
 
             this.Schema = typeof(newview.RowSchema);

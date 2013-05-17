@@ -418,5 +418,11 @@ namespace RaptorDB.Views
             }
             return 0;
         }
+
+        internal void FreeMemory()
+        {
+            foreach (var v in _views)
+                v.Value.FreeMemory();                
+        }
     }
 }

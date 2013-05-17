@@ -163,3 +163,12 @@ v2.0.0
 - upgrade to fastBinaryJSON v1.3.7
 - full text indexing and search for the entire original document
 - bug fix linq query with boolean parameter
+
+
+v2.0.5
+------
+- added FreeMemory to classes
+- memory limiting and free memory timer
+- views background save indexes to disk on timer
+- fixed RaptorDBServer.csproj to AnyCPU build
+

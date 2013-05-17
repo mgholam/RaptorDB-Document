@@ -32,7 +32,6 @@ namespace RaptorDB.Views
         }
     }
 
-    // FEATURE : background save indexes to disk on timer
     internal class ViewHandler
     {
         private ILog _log = LogManager.GetLogger(typeof(ViewHandler));
@@ -41,7 +40,14 @@ namespace RaptorDB.Views
         {
             _Path = path;
             _viewmanager = manager;
+            _saveTimer = new System.Timers.Timer();
+            _saveTimer.AutoReset = true;
+            _saveTimer.Elapsed += new System.Timers.ElapsedEventHandler(_saveTimer_Elapsed);
+            _saveTimer.Interval = Global.SaveIndexToDiskTimerSeconds * 1000;
+            _saveTimer.Start();
         }
+
+
         private string _S = Path.DirectorySeparatorChar.ToString();
         private string _Path = "";
         private ViewManager _viewmanager;
@@ -55,6 +61,13 @@ namespace RaptorDB.Views
         private ViewRowDefinition _schema;
         private SafeDictionary<int, Dictionary<Guid, List<object[]>>> _transactions = new SafeDictionary<int, Dictionary<Guid, List<object[]>>>();
         private SafeDictionary<string, int> _nocase = new SafeDictionary<string, int>();
+        private System.Timers.Timer _saveTimer;
+
+        void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            foreach (var i in _indexes)
+                i.Value.SaveIndex();
+        }
 
         internal void SetView<T>(View<T> view, IDocStorage<Guid> docs)
         {
@@ -104,6 +117,7 @@ namespace RaptorDB.Views
 
         internal void FreeMemory()
         {
+            _log.Debug("free memory : " + _view.Name);
             foreach (var i in _indexes)
                 i.Value.FreeMemory();
 

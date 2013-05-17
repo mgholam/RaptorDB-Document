@@ -55,6 +55,14 @@ namespace RaptorDB
         /// <summary>
         /// How many documents to full text index in a batch
         /// </summary>
-        public static int BackgroundFullIndexSize= 10000;
+        public static int BackgroundFullIndexSize = 10000;
+        /// <summary>
+        /// Free memory checking timer (default = 60 sec)
+        /// </summary>
+        public static int FreeMemoryTimerSeconds = 60;
+        /// <summary>
+        /// Memory usage limit for internal caching (default = 100 Mb) [using GC.GetTotalMemory()]
+        /// </summary>
+        public static long MemoryLimit = 100;
     }
 }

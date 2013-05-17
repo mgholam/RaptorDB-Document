@@ -391,6 +391,21 @@ namespace RaptorDB
         }
         #endregion
 
-
+        internal void FreeMemory()
+        {
+            try
+            {
+                List<int> free = new List<int>();
+                foreach (var b in _cache)
+                {
+                    if (b.Value.isDirty == false)
+                        free.Add(b.Key);
+                }
+                log.Debug("releasing bmp count = " + free.Count + " out of " + _cache.Count);
+                foreach (int i in free)
+                    _cache.Remove(i);
+            }
+            catch { }
+        }
     }
 }

@@ -209,11 +209,6 @@ namespace RaptorDB
             return base.Query("" + from, maxsize);
         }
 
-        public void FreeMemory()
-        {
-            //base.FreeMemory(true);
-        }
-
         public void SaveIndex()
         {
             base.Save();

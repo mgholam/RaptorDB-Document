@@ -234,7 +234,7 @@ namespace RaptorDB
                 return new WAHBitArray();
 
             // remove deleted docs
-            WAHBitArray ret ;
+            WAHBitArray ret;
             if (_docMode)
                 ret = bits.AndNot(_deleted.GetBits());
             else
@@ -365,7 +365,7 @@ namespace RaptorDB
 
         private Dictionary<string, int> GenerateWordFreq(string text)
         {
-            Dictionary<string, int> dic = new Dictionary<string, int>(50000);
+            Dictionary<string, int> dic = new Dictionary<string, int>(500);
 
             char[] chars = text.ToCharArray();
             int index = 0;
@@ -374,7 +374,7 @@ namespace RaptorDB
             while (index < count)
             {
                 char c = chars[index++];
-                if (!(char.IsLetterOrDigit(c) || c == '.' || c=='-' || c == '$' || c == '#')) // rdb specific
+                if (!(char.IsLetterOrDigit(c) || c == '.' || c == '-' || c == '$' || c == '#')) // rdb specific
                 {
                     if (run != -1)
                     {
@@ -459,9 +459,17 @@ namespace RaptorDB
         public void Shutdown()
         {
             Save();
-			_deleted.Shutdown();
+            _deleted.Shutdown();
             if (_docMode)
                 _docs.Shutdown();
+        }
+
+        public void FreeMemory()
+        {
+            if (_bitmaps != null)
+                _bitmaps.FreeMemory();
+            if (_docs != null)
+                _docs.FreeMemory();
         }
     }
 }

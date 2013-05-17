@@ -36,6 +36,7 @@ namespace RaptorDB
         private int _CurrentRecordNumber = -1;
         private System.Timers.Timer _saveTimer;
         private System.Timers.Timer _fulltextTimer;
+        private System.Timers.Timer _freeMemTimer;
         private bool _shuttingdown = false;
         private bool _pauseindexer = false;
         private MethodInfo otherviews = null;
@@ -634,6 +635,27 @@ namespace RaptorDB
             _fulltextTimer.Enabled = true;
             _fulltextTimer.AutoReset = true;
             _fulltextTimer.Start();
+
+            // start full text timer 
+            _freeMemTimer = new System.Timers.Timer(Global.FreeMemoryTimerSeconds * 1000);
+            _freeMemTimer.Elapsed += new System.Timers.ElapsedEventHandler(_freeMemTimer_Elapsed);
+            _freeMemTimer.Enabled = true;
+            _freeMemTimer.AutoReset = true;
+            _freeMemTimer.Start();
+        }
+
+        void _freeMemTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            long l = GC.GetTotalMemory(true) / (1024 * 1024);
+            _log.Debug("GC.GetTotalMemory() = " + l.ToString("#,0"));
+            if (l > Global.MemoryLimit) 
+            {
+                _log.Debug("free memory...");
+                _viewManager.FreeMemory();
+                _objStore.FreeMemory();
+                _fileStore.FreeMemory();
+                GC.Collect(2);
+            }
         }
 
         private void UpgradeStorageFile(string filename)
@@ -722,6 +744,7 @@ namespace RaptorDB
                 {
                     if (_shuttingdown)
                         return;
+                    //_log.Debug("batch full text indexing...");
                     while (_pauseindexer) Thread.Sleep(0);
                     if (_CurrentRecordNumber == _LastFulltextIndexed)
                         return;
