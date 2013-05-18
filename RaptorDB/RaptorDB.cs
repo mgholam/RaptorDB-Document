@@ -650,8 +650,9 @@ namespace RaptorDB
             _log.Debug("GC.GetTotalMemory() = " + l.ToString("#,0"));
             if (l > Global.MemoryLimit) 
             {
-                _log.Debug("free memory...");
+                _log.Debug("Freeing memory on "+ Global.MemoryLimit.ToString("#,0") +" limit ...");
                 _viewManager.FreeMemory();
+                _fulltextindex.FreeMemory();
                 _objStore.FreeMemory();
                 _fileStore.FreeMemory();
                 GC.Collect(2);

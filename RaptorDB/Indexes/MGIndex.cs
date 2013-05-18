@@ -300,15 +300,6 @@ namespace RaptorDB
             return b;
         }
 
-        //public Statistics GetStatistics()
-        //{
-        //    Statistics s = new Statistics();
-        //    s.TotalSplitTime = _totalsplits;
-        //    s.PageCount = _pageList.Count;
-
-        //    return s;
-        //}
-
         #region [  P R I V A T E  ]
         private WAHBitArray doMoreOp(RDBExpression exp, T key)
         {
