@@ -16,23 +16,25 @@ namespace RaptorDB
 
         public WAHBitArray()
         {
-            _usingOffsets = true;
+            _state = TYPE.Indexes;
         }
 
         public WAHBitArray(TYPE type, uint[] ints)
         {
-            _usingOffsets = false;
+            _state = type;
             switch (type)
             {
                 case TYPE.WAH:
                     _compressed = ints;
+                    Uncompress();
+                    _state = TYPE.Bitarray;
+                    _compressed = null;
                     break;
                 case TYPE.Bitarray:
                     _uncompressed = ints;
                     break;
                 case TYPE.Indexes:
                     _offsets = new Dictionary<uint, bool>();
-                    _usingOffsets = true;
                     foreach (var i in ints)
                         _offsets.Add(i, true);
                     break;
@@ -42,8 +44,8 @@ namespace RaptorDB
         private uint[] _compressed;
         private uint[] _uncompressed;
         private Dictionary<uint, bool> _offsets = new Dictionary<uint, bool>();
-        private bool _usingOffsets = true;
         private uint _curMax = 0;
+        private TYPE _state;
         public bool isDirty = false;
 
         public WAHBitArray Copy()
@@ -59,7 +61,7 @@ namespace RaptorDB
         {
             lock (_lock)
             {
-                if (_usingOffsets)
+                if (_state == TYPE.Indexes)
                 {
                     bool b = false;
                     var f = _offsets.TryGetValue((uint)index, out b);
@@ -81,7 +83,7 @@ namespace RaptorDB
         {
             lock (_lock)
             {
-                if (_usingOffsets)
+                if (_state == TYPE.Indexes)
                 {
                     isDirty = true;
 
@@ -114,7 +116,7 @@ namespace RaptorDB
         {
             set
             {
-                if (_usingOffsets)
+                if (_state == TYPE.Indexes)
                 {
                     // ignore
                     return;
@@ -131,7 +133,7 @@ namespace RaptorDB
             }
             get
             {
-                if (_usingOffsets)
+                if (_state == TYPE.Indexes)
                 {
                     if (_offsets.Count == 0) return 0;
                     uint[] k = GetOffsets();
@@ -240,7 +242,7 @@ namespace RaptorDB
 
         public long CountOnes()
         {
-            if (_usingOffsets)
+            if (_state == TYPE.Indexes)
             {
                 return _offsets.Count;
             }
@@ -256,7 +258,7 @@ namespace RaptorDB
 
         public long CountZeros()
         {
-            if (_usingOffsets)
+            if (_state == TYPE.Indexes)
             {
                 long ones = _offsets.Count;
                 uint[] k = GetOffsets();
@@ -273,10 +275,14 @@ namespace RaptorDB
 
         public void FreeMemory()
         {
-            if (_uncompressed != null && _usingOffsets == false)
+            if (_state == TYPE.Bitarray)
             {
-                Compress(_uncompressed);
-                _uncompressed = null;
+                if (_uncompressed != null)
+                {
+                    Compress(_uncompressed);
+                    _uncompressed = null;
+                    _state = TYPE.WAH;
+                }
             }
         }
 
@@ -285,7 +291,7 @@ namespace RaptorDB
             type = TYPE.WAH;
 
             ChangeTypeIfNeeded();
-            if (_usingOffsets)
+            if (_state == TYPE.Indexes)
             {
                 //data = UnpackOffsets();
                 type = TYPE.Indexes;
@@ -295,12 +301,14 @@ namespace RaptorDB
                 return new uint[] { 0 };
             uint[] data = _uncompressed;
             Compress(data);
-            return _compressed;
+            uint[] d = new uint[_compressed.Length];
+            _compressed.CopyTo(d, 0);
+            return d;
         }
 
         public IEnumerable<int> GetBitIndexes()
         {
-            if (_usingOffsets)
+            if (_state == TYPE.Indexes)
             {
                 foreach (int i in GetOffsets())
                     yield return i;
@@ -360,7 +368,7 @@ namespace RaptorDB
         {
             lock (_lock)
             {
-                if (_usingOffsets)
+                if (_state == TYPE.Indexes)
                     return UnpackOffsets();
 
                 this.CheckBitArray();
@@ -395,7 +403,7 @@ namespace RaptorDB
 
         private void ChangeTypeIfNeeded()
         {
-            if (_usingOffsets == false)
+            if (_state != TYPE.Indexes)
                 return;
 
             uint T = (_curMax >> 5) + 1;
@@ -403,8 +411,8 @@ namespace RaptorDB
             if (c > T && c > Global.BitmapOffsetSwitchOverCount)
             {
                 // change type to WAH
-                _usingOffsets = false;
-
+                _state = TYPE.Bitarray;
+                _uncompressed = new uint[0];
                 // create bitmap
                 foreach (var i in _offsets.Keys)
                     Set((int)i, true);
@@ -415,6 +423,8 @@ namespace RaptorDB
 
         private void Resize(int index)
         {
+            if (_state == TYPE.Indexes)
+                return;
             int c = index >> 5;
             c++;
             if (c > _uncompressed.Length)
@@ -460,18 +470,17 @@ namespace RaptorDB
 
         private void CheckBitArray()
         {
-            if (_usingOffsets)
+            if (_state == TYPE.Bitarray)
                 return;
 
-            if (_compressed == null && _uncompressed == null)
+            if (_state == TYPE.WAH)
             {
                 _uncompressed = new uint[0];
+                Uncompress();
+                _state = TYPE.Bitarray;
+                _compressed = null;
                 return;
             }
-            if (_uncompressed == null && _compressed !=null)
-                Uncompress();  
-            if (_compressed == null)
-                return;
         }
 
         #region compress / uncompress
@@ -570,25 +579,27 @@ namespace RaptorDB
 
             int off = index % 32;
             int pointer = index >> 5;
-            int cc = (int)count;
+            int ccount = (int)count;
+            int indx = index;
             int x = 32 - off;
 
             if (pointer >= list.Count)
                 list.Add(0);
 
-            if (cc > x) //current pointer
+            if (ccount > x || x == 32) //current pointer
             {
                 list[pointer] |= (uint)((0xffffffff >> off));
-                cc -= x;
+                ccount -= x;
+                indx += x;
             }
             else
             {
-                list[pointer] |= (uint)((0xffffffff << cc) >> off);
-                cc = 0;
+                list[pointer] |= (uint)((0xffffffff << ccount) >> off);
+                ccount = 0;
             }
 
             bool checklast = true;
-            while (cc >= 32)//full ints
+            while (ccount >= 32)//full ints
             {
                 if (checklast && list[list.Count - 1] == 0)
                 {
@@ -597,10 +608,18 @@ namespace RaptorDB
                 }
 
                 list.Add(0xffffffff);
-                cc -= 32;
+                ccount -= 32;
+                indx += 32;
             }
-            if (cc > 0) //remaining
-                list.Add((0xffffffff << (32 - cc)));
+            int p = indx >> 5;
+            off = indx % 32;
+            if (ccount > 0)
+            {
+                if (p < list.Count - 1) //remaining
+                    list.Add((0xffffffff << (32 - ccount)));
+                else
+                    list[p] |= (uint)((0xffffffff >> off));
+            }
         }
 
         private void Uncompress()
@@ -632,5 +651,56 @@ namespace RaptorDB
         #endregion
 
         #endregion
+        /* // --------------------------- tests
+        public static void TestWAHBitArray1()
+        {
+            var org = new WAHBitArray();
+            int count = 36;
+            for (int i = 0; i < count; i++)
+            {
+                org.Set(i, true);
+            }
+            var t = WAHBitArray.TYPE.WAH;
+            var bits = org.GetCompressed(out t);
+            var b2 = new WAHBitArray(t, bits);
+            var x = org.Xor(b2);
+            var l = x.CountOnes();
+        }
+
+        public static void TestWAHBitArray2()
+        {
+            var b = new WAHBitArray();
+            int count = 64;
+            for (int i = 0; i < 5; i++)
+            {
+                b.Set(i, false);
+            }
+            for (int i = 5; i < count + 5; i++)
+            {
+                b.Set(i, true);
+            }
+            var t = WAHBitArray.TYPE.WAH;
+            var bits = b.GetCompressed(out t);
+            var b2 = new WAHBitArray(t, bits);
+            var x = b.Xor(b2);
+            var l = x.CountOnes();
+        }
+
+        public static void tests()
+        {
+            var b = new WAHBitArray();
+            Random r = new Random();
+            for (int i = 0; i < 100; i++)
+            {
+                int l = r.Next(100000);
+                b.Set(l, true);
+            }
+            var t = WAHBitArray.TYPE.WAH;
+            var bits = b.GetCompressed(out t);
+            var b2 = new WAHBitArray(t, bits);
+            var x = b.Xor(b2);
+            var ll = x.CountOnes();
+        }
+        */
     }
 }

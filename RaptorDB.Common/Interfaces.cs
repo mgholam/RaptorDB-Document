@@ -194,9 +194,9 @@ namespace RaptorDB
     {
         int RecordCount();
 
-        byte[] Get(int rowid, out Guid docid, out bool isdeleted);
+        byte[] GetRow(int rowid, out Guid docid, out bool isdeleted);
 
-        bool Get(int rowid, out byte[] doc);
+        bool GetRow(int rowid, out byte[] doc);
 
         bool Get(T key, out byte[] doc);
     }

@@ -558,12 +558,12 @@ namespace RaptorDB
             return _archive.CopyTo(storagefile, start);
         }
 
-        public byte[] Get(int rowid, out Guid docid, out bool isdeleted)
+        public byte[] GetRow(int rowid, out Guid docid, out bool isdeleted)
         {
             return _archive.ReadData(rowid, out docid, out isdeleted);
         }
 
-        public bool Get(int rowid, out byte[] b)
+        public bool GetRow(int rowid, out byte[] b)
         {
             bool isdel = false;
             b = _archive.ReadData(rowid, out isdel);

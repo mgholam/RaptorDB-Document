@@ -703,7 +703,7 @@ namespace RaptorDB
                     _LastRecordNumberProcessed++;
                     Guid docid;
                     bool isdeleted = false;
-                    byte[] b = _objStore.Get(_LastRecordNumberProcessed, out docid, out isdeleted);
+                    byte[] b = _objStore.GetRow(_LastRecordNumberProcessed, out docid, out isdeleted);
                     if (isdeleted)
                         _viewManager.Delete(docid);
                     else
@@ -752,7 +752,7 @@ namespace RaptorDB
                     _LastFulltextIndexed++;
                     Guid docid;
                     bool isdeleted = false;
-                    byte[] b = _objStore.Get(_LastFulltextIndexed, out docid, out isdeleted);
+                    byte[] b = _objStore.GetRow(_LastFulltextIndexed, out docid, out isdeleted);
                     if (isdeleted == false)
                     {
                         if (b != null)
@@ -960,7 +960,7 @@ namespace RaptorDB
         {
             Guid docid;
             bool isdel;
-            byte[] b = _objStore.Get(versionNumber, out docid, out isdel);
+            byte[] b = _objStore.GetRow(versionNumber, out docid, out isdel);
             if (b != null && isdel == false)
                 return CreateObject(b);
             return null;
@@ -975,7 +975,7 @@ namespace RaptorDB
         {
             Guid docid;
             bool isdel;
-            byte[] b = _fileStore.Get(versionNumber, out docid, out isdel);
+            byte[] b = _fileStore.GetRow(versionNumber, out docid, out isdel);
             if (isdel == true)
                 return null;
             return b;

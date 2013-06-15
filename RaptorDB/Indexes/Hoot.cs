@@ -432,7 +432,7 @@ namespace RaptorDB
             }
             if (found == false)
             {
-                string s = new string(chars, start, end - start - 1).ToLowerInvariant().Trim();
+                string s = new string(chars, start, end - start).ToLowerInvariant().Trim();
                 AddDictionary(dic, s);
             }
         }
@@ -445,7 +445,7 @@ namespace RaptorDB
             if (l < 2)
                 return;
             if (char.IsLetterOrDigit(word[l - 1]) == false) // rdb specific
-                word = new string(word.ToCharArray(), 0, l - 2);
+                word = new string(word.ToCharArray(), 0, l - 1);
             if (word.Length < 2)
                 return;
             int cc = 0;

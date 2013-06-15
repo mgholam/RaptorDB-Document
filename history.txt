@@ -172,3 +172,9 @@ v2.0.5
 - views background save indexes to disk on timer
 - fixed RaptorDBServer.csproj to AnyCPU build
 
+v2.0.6
+------
+- bug fix WAHBitArray
+- upgrade to fastJSON v2.0.15
+- bug fix hoot fulltext index on last word 
+- save deleted items bitmap on save timer

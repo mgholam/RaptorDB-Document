@@ -67,6 +67,8 @@ namespace RaptorDB.Views
         {
             foreach (var i in _indexes)
                 i.Value.SaveIndex();
+
+            _deletedRows.SaveIndex();
         }
 
         internal void SetView<T>(View<T> view, IDocStorage<Guid> docs)
@@ -509,7 +511,7 @@ namespace RaptorDB.Views
             {
                 Guid docid = Guid.Empty;
                 bool isdeleted = false;
-                byte[] b = docs.Get(i, out docid, out isdeleted);
+                byte[] b = docs.GetRow(i, out docid, out isdeleted);
                 if (isdeleted)
                     Delete(docid);
                 else
