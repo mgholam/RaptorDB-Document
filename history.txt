@@ -178,3 +178,7 @@ v2.0.6
 - upgrade to fastJSON v2.0.15
 - bug fix hoot fulltext index on last word 
 - save deleted items bitmap on save timer
+
+v2.0.6.1
+--------
+- bug fix WAHBitArray

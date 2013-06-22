@@ -615,7 +615,7 @@ namespace RaptorDB
             off = indx % 32;
             if (ccount > 0)
             {
-                if (p < list.Count - 1) //remaining
+                if (p > (list.Count - 1)) //remaining
                     list.Add((0xffffffff << (32 - ccount)));
                 else
                     list[p] |= (uint)((0xffffffff >> off));
@@ -651,56 +651,5 @@ namespace RaptorDB
         #endregion
 
         #endregion
-        /* // --------------------------- tests
-        public static void TestWAHBitArray1()
-        {
-            var org = new WAHBitArray();
-            int count = 36;
-            for (int i = 0; i < count; i++)
-            {
-                org.Set(i, true);
-            }
-            var t = WAHBitArray.TYPE.WAH;
-            var bits = org.GetCompressed(out t);
-            var b2 = new WAHBitArray(t, bits);
-            var x = org.Xor(b2);
-            var l = x.CountOnes();
-        }
-
-        public static void TestWAHBitArray2()
-        {
-            var b = new WAHBitArray();
-            int count = 64;
-            for (int i = 0; i < 5; i++)
-            {
-                b.Set(i, false);
-            }
-            for (int i = 5; i < count + 5; i++)
-            {
-                b.Set(i, true);
-            }
-            var t = WAHBitArray.TYPE.WAH;
-            var bits = b.GetCompressed(out t);
-            var b2 = new WAHBitArray(t, bits);
-            var x = b.Xor(b2);
-            var l = x.CountOnes();
-        }
-
-        public static void tests()
-        {
-            var b = new WAHBitArray();
-            Random r = new Random();
-            for (int i = 0; i < 100; i++)
-            {
-                int l = r.Next(100000);
-                b.Set(l, true);
-            }
-            var t = WAHBitArray.TYPE.WAH;
-            var bits = b.GetCompressed(out t);
-            var b2 = new WAHBitArray(t, bits);
-            var x = b.Xor(b2);
-            var ll = x.CountOnes();
-        }
-        */
     }
 }
