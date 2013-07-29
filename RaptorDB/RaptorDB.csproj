@@ -95,6 +95,9 @@
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="cron\CronDaemon.cs" />
+    <Compile Include="cron\CronJob.cs" />
+    <Compile Include="cron\CronSchedule.cs" />
     <Compile Include="DataTypes\DataTypes.cs" />
     <Compile Include="Global.cs" />
     <Compile Include="Helper\WAHBitarray2.cs" />
@@ -106,9 +109,15 @@
     <Compile Include="Indexes\IndexFile.cs" />
     <Compile Include="Indexes\MGIndex.cs" />
     <Compile Include="RaptorDBServer.cs" />
+    <Compile Include="Replication\Configuration.cs" />
+    <Compile Include="Replication\Packets.cs" />
+    <Compile Include="Replication\ReplicationClient.cs" />
+    <Compile Include="Replication\ReplicationServer.cs" />
     <Compile Include="Storage\KeyStore.cs" />
     <Compile Include="RaptorDB.cs" />
-    <Compile Include="Storage\StorageFile.cs" />
+    <Compile Include="Storage\StorageFile.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Views\apimapper.cs" />
     <Compile Include="Views\Dynamic.cs" />
     <Compile Include="Views\LINQQuery.cs" />

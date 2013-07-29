@@ -33,7 +33,7 @@ namespace fastJSON
         private SafeDictionary<Type, List<Getters>> _getterscache = new SafeDictionary<Type, List<Getters>>();
 
         #region [   PROPERTY GET SET   ]
-        internal string GetTypeAssemblyName(Type t)
+        public string GetTypeAssemblyName(Type t)
         {
             string val = "";
             if (_tyname.TryGetValue(t, out val))
@@ -97,7 +97,7 @@ namespace fastJSON
             }
             catch (Exception exc)
             {
-                throw new Exception(string.Format("Failed to fast create instance for type '{0}' from assemebly '{1}'",
+                throw new Exception(string.Format("Failed to fast create instance for type '{0}' from assembly '{1}'",
                     objtype.FullName, objtype.AssemblyQualifiedName), exc);
             }
         }
@@ -258,7 +258,7 @@ namespace fastJSON
             if (_getterscache.TryGetValue(type, out val))
                 return val;
 
-            PropertyInfo[] props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo[] props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
             List<Getters> getters = new List<Getters>();
             foreach (PropertyInfo p in props)
             {
@@ -279,7 +279,7 @@ namespace fastJSON
                 }
             }
 
-            FieldInfo[] fi = type.GetFields(BindingFlags.Instance | BindingFlags.Public);
+            FieldInfo[] fi = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static);
             foreach (var f in fi)
             {
                 object[] att = f.GetCustomAttributes(typeof(System.Xml.Serialization.XmlIgnoreAttribute), false);

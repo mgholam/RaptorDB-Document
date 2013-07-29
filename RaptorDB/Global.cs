@@ -64,5 +64,9 @@ namespace RaptorDB
         /// Memory usage limit for internal caching (default = 100 Mb) [using GC.GetTotalMemory()]
         /// </summary>
         public static long MemoryLimit = 100;
+        /// <summary>
+        /// Backup cron schedule (default = "0 0 * * *" [every day at 00:00])  
+        /// </summary>
+        public static string BackupCronSchedule = "0 0 * * *"; 
     }
 }

@@ -17,6 +17,8 @@ namespace RaptorDB
     {
         private RaptorDB(string FolderPath)
         {
+            // FIX: read config info here
+
             Initialize(FolderPath);
         }
 
@@ -24,11 +26,12 @@ namespace RaptorDB
         {
             return new RaptorDB(FolderPath);
         }
+
         private string _S = Path.DirectorySeparatorChar.ToString();
         private ILog _log = LogManager.GetLogger(typeof(RaptorDB));
         private Views.ViewManager _viewManager;
-        private /*KeyStoreGuid*/ KeyStore<Guid> _objStore;
-        private /*KeyStoreGuid*/ KeyStore<Guid> _fileStore;
+        private KeyStore<Guid> _objStore;
+        private KeyStore<Guid> _fileStore;
         private string _Path = "";
         private int _LastRecordNumberProcessed = -1; // used by background saver
         private int _LastFulltextIndexed = -1; // used by the fulltext indexer
@@ -43,17 +46,16 @@ namespace RaptorDB
         private MethodInfo save = null;
         private SafeDictionary<Type, MethodInfo> _savecache = new SafeDictionary<Type, MethodInfo>();
         private FullTextIndex _fulltextindex;
+        private CronDaemon _cron;
 
-        internal string GetViewName(Type type)
+
+        public bool SyncNow(string server, int port, string username, string password)
         {
-            return _viewManager.GetViewName(type);
+
+            return false;
         }
 
-        //internal string GetView(string typefullname)
-        //{
-        //    return _viewManager.GetViewName(typefullname);
-        //}
-
+        #region [   p u b l i c    i n t e r f a c e   ]
         /// <summary>
         /// Save files to RaptorDB
         /// </summary>
@@ -62,7 +64,7 @@ namespace RaptorDB
         public bool SaveBytes(Guid docID, byte[] bytes)
         {
             // save files in storage
-            _fileStore.Set(docID, bytes);
+            _fileStore.SetBytes(docID, bytes);
             return true;
         }
         /// <summary>
@@ -229,11 +231,9 @@ namespace RaptorDB
         /// <returns></returns>
         public object Fetch(Guid docID)
         {
-            byte[] b = null;
-            if (_objStore.Get(docID, out b))
-                return CreateObject(b);
-            else
-                return null;
+            object b = null;
+            _objStore.GetObject(docID, out b);
+            return b;
         }
 
         /// <summary>
@@ -244,7 +244,7 @@ namespace RaptorDB
         public byte[] FetchBytes(Guid fileID)
         {
             byte[] b = null;
-            if (_fileStore.Get(fileID, out b))
+            if (_fileStore.GetBytes(fileID, out b))
                 return b;
             else
                 return null;
@@ -269,6 +269,7 @@ namespace RaptorDB
                 return;
 
             _shuttingdown = true;
+            _cron.Stop();
             _fulltextindex.Shutdown();
             // save records 
             _log.Debug("last full text record = " + _LastFulltextIndexed);
@@ -297,10 +298,10 @@ namespace RaptorDB
                 return false;
             lock (_backuplock)
             {
-                _log.Debug("Backup Started");
+                _log.Debug("Backup Started...");
                 string tempp = _Path + "Temp" + _S + DateTime.Now.ToString("yyyy-MM-dd-HH-mm");
                 Directory.CreateDirectory(tempp);
-                StorageFile<int> backup = new StorageFile<int>(tempp + _S + "backup.mgdat");
+                StorageFile<Guid> backup = new StorageFile<Guid>(tempp + _S + "backup.mgdat", SF_FORMAT.BSON);
                 _log.Debug("Copying data to backup");
                 if (_LastBackupRecordNumber == -1)
                     _LastBackupRecordNumber = 0;
@@ -321,6 +322,7 @@ namespace RaptorDB
                 File.WriteAllBytes(_Path + "Backup" + _S + "LastBackupRecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
                 // cleanup temp folder
                 Directory.Delete(tempp, true);
+                _log.Debug("Backup done.");
                 return true;
             }
         }
@@ -349,22 +351,16 @@ namespace RaptorDB
                         using (FileStream outp = File.Create(tmp))
                             DecompressForBackup(read, outp);
                         _log.Debug("Uncompress done : " + Path.GetFileName(tmp));
-                        StorageFile<int> sf = StorageFile<int>.ReadForward(tmp);
+                        StorageFile<Guid> sf = StorageFile<Guid>.ReadForward(tmp);
                         foreach (var i in sf.Enumerate())
                         {
-                            int len = Helper.ToInt32(i.Data, 0, false);
-                            byte[] key = new byte[len];
-                            Buffer.BlockCopy(i.Data, 4, key, 0, len);
-                            Guid g = new Guid(key);
-                            if (i.isDeleted)
-                                Delete(g);
+                            if (i.meta.isDeleted)
+                                Delete(i.meta.key);
                             else
                             {
-                                byte[] d = new byte[i.Data.Length - 4 - len];
-                                Buffer.BlockCopy(i.Data, 4 + len, d, 0, i.Data.Length - 4 - len);
-                                object obj = CreateObject(d);
+                                object obj = CreateObject(i.data);
                                 var m = GetSave(obj.GetType());
-                                m.Invoke(this, new object[] { g, obj });
+                                m.Invoke(this, new object[] { i.meta.key, obj });
                             }
                         }
                         sf.Shutdown();
@@ -462,330 +458,6 @@ namespace RaptorDB
         {
             return _viewManager.Count<T>(filter);
         }
-        #region [            P R I V A T E     M E T H O D S              ]
-
-        private bool SaveToView<T>(Guid docid, T data, List<string> list)
-        {
-            if (list != null)
-                foreach (string name in list)
-                {
-                    bool ret = _viewManager.InsertTransaction(name, docid, data);
-                    if (ret == false)
-                        return false;
-                }
-            return true;
-        }
-
-        private bool SaveInOtherViewsTransaction<T>(Guid docid, T data)
-        {
-            List<string> list = _viewManager.GetOtherViewsList(data.GetType());
-            return SaveToView<T>(docid, data, list);
-        }
-
-        private bool SaveToConsistentViewsTransaction<T>(Guid docid, T data)
-        {
-            List<string> list = _viewManager.GetConsistentViews(data.GetType());
-            return SaveToView<T>(docid, data, list);
-        }
-
-        private bool SaveInPrimaryViewTransaction<T>(string viewname, Guid docid, T data)
-        {
-            return _viewManager.InsertTransaction(viewname, docid, data);
-        }
-
-        private static void PumpDataForBackup(Stream input, Stream output)
-        {
-            byte[] bytes = new byte[4096 * 2];
-            int n;
-            while ((n = input.Read(bytes, 0, bytes.Length)) != 0)
-                output.Write(bytes, 0, n);
-        }
-
-        private static void CompressForBackup(Stream source, Stream destination)
-        {
-            using (GZipStream gz = new GZipStream(destination, CompressionMode.Compress))
-                PumpDataForBackup(source, gz);
-        }
-
-        private static void DecompressForBackup(Stream source, Stream destination)
-        {
-            using (GZipStream gz = new GZipStream(source, CompressionMode.Decompress))
-                PumpDataForBackup(gz, destination);
-        }
-
-        private void SaveToConsistentViews<T>(Guid docid, T data)
-        {
-            List<string> list = _viewManager.GetConsistentViews(data.GetType());
-            if (list != null)
-                foreach (string name in list)
-                {
-                    _log.Debug("Saving to consistent view : " + name);
-                    _viewManager.Insert(name, docid, data);
-                }
-        }
-
-        private object CreateObject(byte[] b)
-        {
-            if (b[0] < 32)
-                return fastBinaryJSON.BJSON.Instance.ToObject(b);
-            else
-                return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
-        }
-
-        private void SaveInOtherViews<T>(Guid docid, T data)
-        {
-            List<string> list = _viewManager.GetOtherViewsList(data.GetType());
-            if (list != null)
-                foreach (string name in list)
-                    _viewManager.Insert(name, docid, data);
-        }
-
-        private void SaveInPrimaryView<T>(string viewname, Guid docid, T data)
-        {
-            _viewManager.Insert(viewname, docid, data);
-        }
-
-        private int SaveData(Guid docid, object data)
-        {
-            byte[] b = null;
-            if (Global.SaveAsBinaryJSON)
-                b = fastBinaryJSON.BJSON.Instance.ToBJSON(data);
-            else
-            {
-                string s = fastJSON.JSON.Instance.ToJSON(data);
-                b = Encoding.ASCII.GetBytes(s); // json already ascii encoded
-            }
-            return _objStore.Set(docid, b);
-        }
-
-        private void Initialize(string foldername)
-        {
-            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
-
-            // create folders 
-            Directory.CreateDirectory(foldername);
-            foldername = Path.GetFullPath(foldername);
-            if (foldername.EndsWith(_S) == false)
-                foldername += _S;
-            _Path = foldername;
-
-            Directory.CreateDirectory(_Path + "Data");
-            Directory.CreateDirectory(_Path + "Data" + _S + "Fulltext");
-            Directory.CreateDirectory(_Path + "Views");
-            Directory.CreateDirectory(_Path + "Logs");
-            Directory.CreateDirectory(_Path + "Temp");
-            Directory.CreateDirectory(_Path + "Backup");
-            Directory.CreateDirectory(_Path + "Restore");
-            Directory.CreateDirectory(_Path + "Restore" + _S + "Done");
-            // load logger
-            LogManager.Configure(_Path + "Logs" + _S + "log.txt", 500, false);
-
-            _log.Debug("RaptorDB starting...");
-            _log.Debug("RaptorDB data folder = " + _Path);
-
-            // check doc & file storage file version and upgrade if needed here
-            int v = StorageFile<Guid>.GetStorageFileHeaderVersion(_Path + "Data" + _S + "data");
-            if (v == 0)
-                UpgradeStorageFile(_Path + "Data" + _S + "data");
-
-            v = StorageFile<Guid>.GetStorageFileHeaderVersion(_Path + "Data" + _S + "files");
-            if (v == 0)
-                UpgradeStorageFile(_Path + "Data" + _S + "files");
-
-            _objStore = new KeyStore<Guid>(_Path + "Data" + _S + "data", true);// new KeyStoreGuid(_Path + "Data" + _S + "data");
-            _fileStore = new KeyStore<Guid>(_Path + "Data" + _S + "files", true);// new KeyStoreGuid(_Path + "Data" + _S + "files");
-
-            _viewManager = new Views.ViewManager(_Path + "Views", _objStore);
-
-            // load _LastFulltextIndexed 
-            if (File.Exists(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec"))
-            {
-                byte[] b = File.ReadAllBytes(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec");
-                _LastFulltextIndexed = Helper.ToInt32(b, 0, false);
-            }
-            // load _LastRecordNumberProcessed 
-            if (File.Exists(_Path + "Data" + _S + "_lastrecord.rec"))
-            {
-                byte[] b = File.ReadAllBytes(_Path + "Data" + _S + "_lastrecord.rec");
-                _LastRecordNumberProcessed = Helper.ToInt32(b, 0, false);
-            }
-            // load _LastBackupRecordNumber 
-            if (File.Exists(_Path + "Backup" + _S + "LastBackupRecord.rec"))
-            {
-                byte[] b = File.ReadAllBytes(_Path + "Backup" + _S + "LastBackupRecord.rec");
-                _LastBackupRecordNumber = Helper.ToInt32(b, 0, false);
-            }
-            _CurrentRecordNumber = _objStore.RecordCount();
-
-            otherviews = this.GetType().GetMethod("SaveInOtherViews", BindingFlags.Instance | BindingFlags.NonPublic);
-            save = this.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
-
-            _fulltextindex = new FullTextIndex(_Path + "Data" + _S + "Fulltext", "fulltext", true);
-
-            // start backround save to views
-            _saveTimer = new System.Timers.Timer(Global.BackgroundSaveViewTimer * 1000);
-            _saveTimer.Elapsed += new System.Timers.ElapsedEventHandler(_saveTimer_Elapsed);
-            _saveTimer.Enabled = true;
-            _saveTimer.AutoReset = true;
-            _saveTimer.Start();
-
-            // start full text timer 
-            _fulltextTimer = new System.Timers.Timer(Global.FullTextTimerSeconds * 1000);
-            _fulltextTimer.Elapsed += new System.Timers.ElapsedEventHandler(_fulltextTimer_Elapsed);
-            _fulltextTimer.Enabled = true;
-            _fulltextTimer.AutoReset = true;
-            _fulltextTimer.Start();
-
-            // start full text timer 
-            _freeMemTimer = new System.Timers.Timer(Global.FreeMemoryTimerSeconds * 1000);
-            _freeMemTimer.Elapsed += new System.Timers.ElapsedEventHandler(_freeMemTimer_Elapsed);
-            _freeMemTimer.Enabled = true;
-            _freeMemTimer.AutoReset = true;
-            _freeMemTimer.Start();
-        }
-
-        void _freeMemTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            long l = GC.GetTotalMemory(true) / (1024 * 1024);
-            _log.Debug("GC.GetTotalMemory() = " + l.ToString("#,0"));
-            if (l > Global.MemoryLimit) 
-            {
-                _log.Debug("Freeing memory on "+ Global.MemoryLimit.ToString("#,0") +" limit ...");
-                _viewManager.FreeMemory();
-                _fulltextindex.FreeMemory();
-                _objStore.FreeMemory();
-                _fileStore.FreeMemory();
-                GC.Collect(2);
-            }
-        }
-
-        private void UpgradeStorageFile(string filename)
-        {
-            _log.Debug("Upgrading storage file version from 0 to 1 on file : " + filename);
-            throw new Exception("not implemented yet - contact the author if you need this functionality");
-            // FIX : upgrade from v0 to v1
-
-            // read from one file and write to the other 
-        }
-
-        private void CurrentDomain_ProcessExit(object sender, EventArgs e)
-        {
-            _log.Debug("appdomain closing");
-            Shutdown();
-            GC.SuppressFinalize(this);
-        }
-
-        private object _slock = new object();
-        private void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            if (_shuttingdown)
-                return;
-
-            if (Global.BackgroundSaveToOtherViews == false)
-                return;
-
-            if (_CurrentRecordNumber == 0)
-                return;
-
-            if (_CurrentRecordNumber == _LastRecordNumberProcessed)
-                return;
-
-            lock (_slock)
-            {
-                int batch = Global.BackgroundViewSaveBatchSize;
-                while (batch > 0)
-                {
-                    if (_shuttingdown)
-                        return;
-                    while (_pauseindexer) Thread.Sleep(0);
-                    if (_CurrentRecordNumber == _LastRecordNumberProcessed)
-                        return;
-                    _LastRecordNumberProcessed++;
-                    Guid docid;
-                    bool isdeleted = false;
-                    byte[] b = _objStore.GetRow(_LastRecordNumberProcessed, out docid, out isdeleted);
-                    if (isdeleted)
-                        _viewManager.Delete(docid);
-                    else
-                    {
-                        if (b == null)
-                        {
-                            _log.Debug("byte[] is null");
-                            _log.Debug("curr rec = " + _CurrentRecordNumber);
-                            _log.Debug("last rec = " + _LastRecordNumberProcessed);
-                            continue;
-                        }
-                        object obj = CreateObject(b);
-
-                        var m = otherviews.MakeGenericMethod(new Type[] { obj.GetType() });
-                        m.Invoke(this, new object[] { docid, obj });
-                    }
-
-                    batch--;
-                }
-            }
-        }
-
-        private object _flock = new object();
-        void _fulltextTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            if (_shuttingdown)
-                return;
-
-            if (_CurrentRecordNumber == 0)
-                return;
-
-            if (_CurrentRecordNumber == _LastFulltextIndexed)
-                return;
-
-            lock (_flock)
-            {
-                int batch = Global.BackgroundFullIndexSize;
-                while (batch > 0)
-                {
-                    if (_shuttingdown)
-                        return;
-                    //_log.Debug("batch full text indexing...");
-                    while (_pauseindexer) Thread.Sleep(0);
-                    if (_CurrentRecordNumber == _LastFulltextIndexed)
-                        return;
-                    _LastFulltextIndexed++;
-                    Guid docid;
-                    bool isdeleted = false;
-                    byte[] b = _objStore.GetRow(_LastFulltextIndexed, out docid, out isdeleted);
-                    if (isdeleted == false)
-                    {
-                        if (b != null)
-                        {
-                            object d = CreateObject(b);
-
-                            if (d != null)
-                            {
-                                // normal string and normal guid 
-                                string json = fastJSON.JSON.Instance.ToJSON(d, new fastJSON.JSONParameters { UseEscapedUnicode = false, UseFastGuid = false });
-                                _fulltextindex.Set(json, _LastFulltextIndexed);
-                            }
-                        }
-                    }
-                    batch--;
-                }
-
-                return;
-            }
-        }
-
-        private MethodInfo GetSave(Type type)
-        {
-            MethodInfo m = null;
-            if (_savecache.TryGetValue(type, out m))
-                return m;
-
-            m = save.MakeGenericMethod(new Type[] { type });
-            _savecache.Add(type, m);
-            return m;
-        }
-        #endregion
-
 
         /// <summary>
         /// 
@@ -958,12 +630,8 @@ namespace RaptorDB
         /// <returns></returns>
         public object FetchVersion(int versionNumber)
         {
-            Guid docid;
-            bool isdel;
-            byte[] b = _objStore.GetRow(versionNumber, out docid, out isdel);
-            if (b != null && isdel == false)
-                return CreateObject(b);
-            return null;
+            StorageItem<Guid> meta = null;
+            return _objStore.GetObject(versionNumber, out meta);
         }
 
         /// <summary>
@@ -973,12 +641,327 @@ namespace RaptorDB
         /// <returns></returns>
         public byte[] FetchBytesVersion(int versionNumber)
         {
-            Guid docid;
-            bool isdel;
-            byte[] b = _fileStore.GetRow(versionNumber, out docid, out isdel);
-            if (isdel == true)
-                return null;
-            return b;
+            StorageItem<Guid> meta = null;
+            return _fileStore.GetBytes(versionNumber, out meta);
         }
+        #endregion
+
+        #region [            P R I V A T E     M E T H O D S              ]
+
+        internal string GetViewName(Type type)
+        {
+            return _viewManager.GetViewName(type);
+        }
+
+        private bool SaveToView<T>(Guid docid, T data, List<string> list)
+        {
+            if (list != null)
+                foreach (string name in list)
+                {
+                    bool ret = _viewManager.InsertTransaction(name, docid, data);
+                    if (ret == false)
+                        return false;
+                }
+            return true;
+        }
+
+        private bool SaveInOtherViewsTransaction<T>(Guid docid, T data)
+        {
+            List<string> list = _viewManager.GetOtherViewsList(data.GetType());
+            return SaveToView<T>(docid, data, list);
+        }
+
+        private bool SaveToConsistentViewsTransaction<T>(Guid docid, T data)
+        {
+            List<string> list = _viewManager.GetConsistentViews(data.GetType());
+            return SaveToView<T>(docid, data, list);
+        }
+
+        private bool SaveInPrimaryViewTransaction<T>(string viewname, Guid docid, T data)
+        {
+            return _viewManager.InsertTransaction(viewname, docid, data);
+        }
+
+        private static void PumpDataForBackup(Stream input, Stream output)
+        {
+            byte[] bytes = new byte[4096 * 2];
+            int n;
+            while ((n = input.Read(bytes, 0, bytes.Length)) != 0)
+                output.Write(bytes, 0, n);
+        }
+
+        private static void CompressForBackup(Stream source, Stream destination)
+        {
+            using (GZipStream gz = new GZipStream(destination, CompressionMode.Compress))
+                PumpDataForBackup(source, gz);
+        }
+
+        private static void DecompressForBackup(Stream source, Stream destination)
+        {
+            using (GZipStream gz = new GZipStream(source, CompressionMode.Decompress))
+                PumpDataForBackup(gz, destination);
+        }
+
+        private void SaveToConsistentViews<T>(Guid docid, T data)
+        {
+            List<string> list = _viewManager.GetConsistentViews(data.GetType());
+            if (list != null)
+                foreach (string name in list)
+                {
+                    _log.Debug("Saving to consistent view : " + name);
+                    _viewManager.Insert(name, docid, data);
+                }
+        }
+
+        private object CreateObject(byte[] b)
+        {
+            if (b[0] < 32)
+                return fastBinaryJSON.BJSON.Instance.ToObject(b);
+            else
+                return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
+        }
+
+        private void SaveInOtherViews<T>(Guid docid, T data)
+        {
+            List<string> list = _viewManager.GetOtherViewsList(data.GetType());
+            if (list != null)
+                foreach (string name in list)
+                    _viewManager.Insert(name, docid, data);
+        }
+
+        private void SaveInPrimaryView<T>(string viewname, Guid docid, T data)
+        {
+            _viewManager.Insert(viewname, docid, data);
+        }
+
+        private int SaveData(Guid docid, object data)
+        {
+            return _objStore.SetObject(docid, data);
+        }
+
+        private void Initialize(string foldername)
+        {
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
+
+            // create folders 
+            Directory.CreateDirectory(foldername);
+            foldername = Path.GetFullPath(foldername);
+            if (foldername.EndsWith(_S) == false)
+                foldername += _S;
+            _Path = foldername;
+
+            Directory.CreateDirectory(_Path + "Data");
+            Directory.CreateDirectory(_Path + "Data" + _S + "Fulltext");
+            Directory.CreateDirectory(_Path + "Views");
+            Directory.CreateDirectory(_Path + "Logs");
+            Directory.CreateDirectory(_Path + "Temp");
+            Directory.CreateDirectory(_Path + "Backup");
+            Directory.CreateDirectory(_Path + "Restore");
+            Directory.CreateDirectory(_Path + "Restore" + _S + "Done");
+            // load logger
+            LogManager.Configure(_Path + "Logs" + _S + "log.txt", 500, false);
+
+            _log.Debug("RaptorDB starting...");
+            _log.Debug("RaptorDB data folder = " + _Path);
+
+            // check doc & file storage file version and upgrade if needed here
+            int v = StorageFile<Guid>.GetStorageFileHeaderVersion(_Path + "Data" + _S + "data");
+            if (v < StorageFile<int>._CurrentVersion)
+                UpgradeStorageFile(_Path + "Data" + _S + "data", v);
+
+            v = StorageFile<Guid>.GetStorageFileHeaderVersion(_Path + "Data" + _S + "files");
+            if (v < StorageFile<int>._CurrentVersion)
+                UpgradeStorageFile(_Path + "Data" + _S + "files", v);
+
+            _objStore = new KeyStore<Guid>(_Path + "Data" + _S + "data", true);
+            _fileStore = new KeyStore<Guid>(_Path + "Data" + _S + "files", true);
+
+            _viewManager = new Views.ViewManager(_Path + "Views", _objStore);
+
+            // load _LastFulltextIndexed 
+            if (File.Exists(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec"))
+            {
+                byte[] b = File.ReadAllBytes(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec");
+                _LastFulltextIndexed = Helper.ToInt32(b, 0, false);
+            }
+            // load _LastRecordNumberProcessed 
+            if (File.Exists(_Path + "Data" + _S + "_lastrecord.rec"))
+            {
+                byte[] b = File.ReadAllBytes(_Path + "Data" + _S + "_lastrecord.rec");
+                _LastRecordNumberProcessed = Helper.ToInt32(b, 0, false);
+            }
+            // load _LastBackupRecordNumber 
+            if (File.Exists(_Path + "Backup" + _S + "LastBackupRecord.rec"))
+            {
+                byte[] b = File.ReadAllBytes(_Path + "Backup" + _S + "LastBackupRecord.rec");
+                _LastBackupRecordNumber = Helper.ToInt32(b, 0, false);
+            }
+            _CurrentRecordNumber = _objStore.RecordCount();
+
+            otherviews = this.GetType().GetMethod("SaveInOtherViews", BindingFlags.Instance | BindingFlags.NonPublic);
+            save = this.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
+
+            _fulltextindex = new FullTextIndex(_Path + "Data" + _S + "Fulltext", "fulltext", true);
+
+            // start backround save to views
+            _saveTimer = new System.Timers.Timer(Global.BackgroundSaveViewTimer * 1000);
+            _saveTimer.Elapsed += new System.Timers.ElapsedEventHandler(_saveTimer_Elapsed);
+            _saveTimer.Enabled = true;
+            _saveTimer.AutoReset = true;
+            _saveTimer.Start();
+
+            // start full text timer 
+            _fulltextTimer = new System.Timers.Timer(Global.FullTextTimerSeconds * 1000);
+            _fulltextTimer.Elapsed += new System.Timers.ElapsedEventHandler(_fulltextTimer_Elapsed);
+            _fulltextTimer.Enabled = true;
+            _fulltextTimer.AutoReset = true;
+            _fulltextTimer.Start();
+
+            // start full text timer 
+            _freeMemTimer = new System.Timers.Timer(Global.FreeMemoryTimerSeconds * 1000);
+            _freeMemTimer.Elapsed += new System.Timers.ElapsedEventHandler(_freeMemTimer_Elapsed);
+            _freeMemTimer.Enabled = true;
+            _freeMemTimer.AutoReset = true;
+            _freeMemTimer.Start();
+
+            // start cron daemon
+            _cron = new CronDaemon();
+            _cron.AddJob(Global.BackupCronSchedule, () => this.Backup());
+        }
+
+        void _freeMemTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            long l = GC.GetTotalMemory(true) / (1024 * 1024);
+            _log.Debug("GC.GetTotalMemory() = " + l.ToString("#,0"));
+            if (l > Global.MemoryLimit)
+            {
+                _log.Debug("Freeing memory on " + Global.MemoryLimit.ToString("#,0") + " limit ...");
+                _viewManager.FreeMemory();
+                _fulltextindex.FreeMemory();
+                _objStore.FreeMemory();
+                _fileStore.FreeMemory();
+                GC.Collect(2);
+            }
+        }
+
+        private void UpgradeStorageFile(string filename, int ver)
+        {
+            _log.Debug("Upgrading storage file version from " + ver + " to " + StorageFile<int>._CurrentVersion + " on file : " + filename);
+            throw new Exception("not implemented yet - contact the author if you need this functionality");
+            // FIX : upgrade from v0 to v1
+
+            // FIX : upgrade from v1 to v2
+            // read from one file and write to the other 
+        }
+
+        private void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        {
+            _log.Debug("appdomain closing");
+            Shutdown();
+            GC.SuppressFinalize(this);
+        }
+
+        private object _slock = new object();
+        private void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (_shuttingdown)
+                return;
+
+            if (Global.BackgroundSaveToOtherViews == false)
+                return;
+
+            if (_CurrentRecordNumber == 0)
+                return;
+
+            if (_CurrentRecordNumber == _LastRecordNumberProcessed)
+                return;
+
+            lock (_slock)
+            {
+                int batch = Global.BackgroundViewSaveBatchSize;
+                while (batch > 0)
+                {
+                    if (_shuttingdown)
+                        return;
+                    while (_pauseindexer) Thread.Sleep(0);
+                    if (_CurrentRecordNumber == _LastRecordNumberProcessed)
+                        return;
+                    _LastRecordNumberProcessed++;
+                    StorageItem<Guid> meta = null;
+                    object obj = _objStore.GetObject(_LastRecordNumberProcessed, out meta);
+                    if (meta != null && meta.isDeleted)
+                        _viewManager.Delete(meta.key);
+                    else
+                    {
+                        if (obj == null)
+                        {
+                            _log.Debug("byte[] is null");
+                            _log.Debug("curr rec = " + _CurrentRecordNumber);
+                            _log.Debug("last rec = " + _LastRecordNumberProcessed);
+                            continue;
+                        }
+
+                        var m = otherviews.MakeGenericMethod(new Type[] { obj.GetType() });
+                        m.Invoke(this, new object[] { meta.key, obj });
+                    }
+
+                    batch--;
+                }
+            }
+        }
+
+        private object _flock = new object();
+        void _fulltextTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (_shuttingdown)
+                return;
+
+            if (_CurrentRecordNumber == 0)
+                return;
+
+            if (_CurrentRecordNumber == _LastFulltextIndexed)
+                return;
+
+            lock (_flock)
+            {
+                int batch = Global.BackgroundFullIndexSize;
+                while (batch > 0)
+                {
+                    if (_shuttingdown)
+                        return;
+                    //_log.Debug("batch full text indexing...");
+                    while (_pauseindexer) Thread.Sleep(0);
+                    if (_CurrentRecordNumber == _LastFulltextIndexed)
+                        return;
+                    _LastFulltextIndexed++;
+                    StorageItem<Guid> meta = null;
+                    object obj = _objStore.GetObject(_LastFulltextIndexed, out meta);
+                    if (meta != null && meta.isDeleted == false)
+                    {
+                        if (obj != null)
+                        {
+                            // normal string and normal guid 
+                            string json = fastJSON.JSON.Instance.ToJSON(obj, new fastJSON.JSONParameters { UseEscapedUnicode = false, UseFastGuid = false });
+                            _fulltextindex.Set(json, _LastFulltextIndexed);
+                        }
+                    }
+                    batch--;
+                }
+
+                return;
+            }
+        }
+
+        private MethodInfo GetSave(Type type)
+        {
+            MethodInfo m = null;
+            if (_savecache.TryGetValue(type, out m))
+                return m;
+
+            m = save.MakeGenericMethod(new Type[] { type });
+            _savecache.Add(type, m);
+            return m;
+        }
+        #endregion
     }
 }

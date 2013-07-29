@@ -9,11 +9,36 @@ using RaptorDB.Common;
 
 namespace RaptorDB
 {
-    internal class StorageData
+    internal class StorageData<T>
     {
-        public byte[] Key;
-        public byte[] Data;
+        public StorageItem<T> meta;
+        public byte[] data;
+    }
+
+    public class StorageItem<T>
+    {
+        public T key;
+        public string typename;
+        public DateTime date = FastDateTime.Now;
         public bool isDeleted;
+        public bool isReplicated;
+        public int dataLength;
+    }
+
+    public interface IDocStorage<T>
+    {
+        int RecordCount();
+
+        byte[] GetBytes(int rowid, out StorageItem<T> meta);
+        object GetObject(int rowid, out StorageItem<T> meta);
+
+        bool GetObject(T key, out object doc);
+    }
+
+    public enum SF_FORMAT
+    {
+        BSON,
+        JSON
     }
 
     internal class StorageFile<T>
@@ -28,54 +53,39 @@ namespace RaptorDB
         private int _lastRecordNum = 0;
         private long _lastWriteOffset = 6;
         private object _readlock = new object();
-        //private object _writelock = new object(); // TODO : try to make read and write locks work separatly
         private bool _dirty = false;
         IGetBytes<T> _T = null;
         ILog _log = LogManager.GetLogger(typeof(StorageFile<T>));
+        private SF_FORMAT _saveFormat = SF_FORMAT.BSON;
 
         // **** change this if storage format changed ****
-        static int _CurrentVersion = 1;
-
+        internal static int _CurrentVersion = 2;
 
         public static byte[] _fileheader = { (byte)'M', (byte)'G', (byte)'D', (byte)'B',
                                               0, // 4 -- storage file version number,
                                               0  // 5 -- not used
                                            };
 
-        public static byte[] _rowheader = { (byte)'M', (byte)'G', (byte)'R' ,
-                                           0,               // 3     [keylen]
-                                           0,0,0,0,0,0,0,0, // 4-11  [datetime] 8 bytes = insert time
-                                           0,0,0,0,         // 12-15 [data length] 4 bytes
-                                           0,               // 16 -- [flags] = 1 : isDeletd:1
-                                                            //                 2 : isCompressed:1
-                                                            //                 
-                                                            //                 
-                                           0                // 17 -- [crc] = header crc check
-                                       };
-        private enum HDR_POS
-        {
-            KeyLen = 3,
-            DateTime = 4,
-            DataLength = 12,
-            Flags = 16,
-            CRC = 17
-        }
+        // record format :
+        //    1 type (0 = raw no meta data, 1 = bson meta, 2 = json meta)  
+        //    4 byte meta/data length, 
+        //    n byte meta serialized data if exists 
+        //    m byte data (if meta exists then m is in meta.dataLength)
 
-        public bool SkipDateTime = false;
-
-        public StorageFile(string filename)
+        public StorageFile(string filename, SF_FORMAT format)
         {
+            _saveFormat = format;
             // add version number
             _fileheader[5] = (byte)_CurrentVersion;
             Initialize(filename, false);
         }
 
-        public StorageFile(string filename, bool SkipChecking)
+        public StorageFile(string filename, bool ReadMode)
         {
-            Initialize(filename, SkipChecking);
+            Initialize(filename, ReadMode);
         }
 
-        private void Initialize(string filename, bool SkipChecking)
+        private void Initialize(string filename, bool ReadMode)
         {
             _T = RDBDataType<T>.ByteHandler();
             _filename = filename;
@@ -86,7 +96,7 @@ namespace RaptorDB
 
             _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-            if (SkipChecking == false)
+            if (ReadMode == false)
             {
                 // load rec pointers
                 _recfilename = filename.Substring(0, filename.LastIndexOf('.')) + ".mgrec";
@@ -132,48 +142,93 @@ namespace RaptorDB
             return (int)(_recfilewrite.Length >> 3);
         }
 
-        public int WriteData(T key, byte[] data, bool deleted)
+        public int WriteRawData(byte[] b)
         {
-            lock (_readlock)//(_writelock)
-            {
-                _dirty = true;
-                byte[] k = _T.GetBytes(key);
-                int kl = k.Length;
+            return internalWriteData(null, b, true);
+        }
 
-                // seek end of file
-                long offset = _lastWriteOffset;
-                byte[] hdr = CreateRowHeader(kl, (data == null ? 0 : data.Length));
-                if (deleted)
-                    hdr[(int)HDR_POS.Flags] = (byte)1;
-                // write header info
-                _datawrite.Write(hdr, 0, hdr.Length);
-                // write key
-                _datawrite.Write(k, 0, kl);
-                if (data != null)
-                {
-                    // write data block
-                    _datawrite.Write(data, 0, data.Length);
-                    _lastWriteOffset += data.Length;
-                }
-                // update pointer
-                _lastWriteOffset += hdr.Length;
-                _lastWriteOffset += kl;
-                // return starting offset -> recno
-                int recno = _lastRecordNum++;
-                _recfilewrite.Write(Helper.GetBytes(offset, false), 0, 8);
-                if (Global.FlushStorageFileImmetiatley)
-                {
-                    _datawrite.Flush();
-                    _recfilewrite.Flush();
-                }
-                return recno;
-            }
+        public int Delete(T key)
+        {
+            StorageItem<T> meta = new StorageItem<T>();
+            meta.key = key;
+            meta.isDeleted = true;
+
+            return internalWriteData(meta, null, false);
+        }
+
+        public int WriteObject(T key, object obj)
+        {
+            StorageItem<T> meta = new StorageItem<T>();
+            meta.key = key;
+            meta.typename = fastJSON.Reflection.Instance.GetTypeAssemblyName(obj.GetType());
+            byte[] data;
+            if (_saveFormat == SF_FORMAT.BSON)
+                data = fastBinaryJSON.BJSON.Instance.ToBJSON(obj);
+            else
+                data = Helper.GetBytes(fastJSON.JSON.Instance.ToJSON(obj));
+
+            return internalWriteData(meta, data, false);
+        }
+
+        public int WriteData(T key, byte[] data)
+        {
+            StorageItem<T> meta = new StorageItem<T>();
+            meta.key = key;
+
+            return internalWriteData(meta, data, false);
         }
 
         public byte[] ReadData(int recnum)
         {
-            bool isdel = false;
-            return ReadData(recnum, out isdel);
+            StorageItem<T> meta;
+            return ReadData(recnum, out meta);
+        }
+
+        public object ReadObject(int recnum)
+        {
+            StorageItem<T> meta = null;
+            return ReadObject(recnum, out meta);
+        }
+
+        public object ReadObject(int recnum, out StorageItem<T> meta)
+        {
+            byte[] b = ReadData(recnum, out meta);
+            if (b == null)
+                return null;
+            if (b[0] < 32)
+                return fastBinaryJSON.BJSON.Instance.ToObject(b);
+            else
+                return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
+        }
+
+        /// <summary>
+        /// used for views only
+        /// </summary>
+        /// <param name="recnum"></param>
+        /// <returns></returns>
+        public byte[] ReadRawData(int recnum)
+        {
+            if (recnum >= _lastRecordNum)
+                return null;
+
+            lock (_readlock)
+            {
+                long offset = ComputeOffset(recnum);
+                _dataread.Seek(offset, System.IO.SeekOrigin.Begin);
+                byte[] hdr = new byte[5];
+                // read header
+                _dataread.Read(hdr, 0, 5); // meta length
+                int len = Helper.ToInt32(hdr, 1);
+
+                int type = hdr[0];
+                if (type == 0)
+                {
+                    byte[] data = new byte[len];
+                    _dataread.Read(data, 0, len);
+                    return data;
+                }
+                return null;
+            }
         }
 
         public void Shutdown()
@@ -189,60 +244,72 @@ namespace RaptorDB
             _datawrite = null;
         }
 
-        public static StorageFile<int> ReadForward(string filename)
+        public static StorageFile<Guid> ReadForward(string filename)
         {
-            StorageFile<int> sf = new StorageFile<int>(filename, true);
+            StorageFile<Guid> sf = new StorageFile<Guid>(filename, true);
 
             return sf;
         }
 
         #region [ private / internal  ]
 
-        private byte[] CreateRowHeader(int keylen, int datalen)
+        private int internalWriteData(StorageItem<T> meta, byte[] data, bool raw)
         {
-            byte[] rh = new byte[_rowheader.Length];
-            Buffer.BlockCopy(_rowheader, 0, rh, 0, rh.Length);
-            rh[3] = (byte)keylen;
-            if (SkipDateTime == false)
-                Buffer.BlockCopy(Helper.GetBytes(FastDateTime.Now.Ticks, false), 0, rh, 4, 4);
-            Buffer.BlockCopy(Helper.GetBytes(datalen, false), 0, rh, 12, 4);
-
-            return rh;
-        }
-
-        internal byte[] ReadData(int recnum, out bool isdeleted)
-        {
-            isdeleted = false;
-            if (recnum >= _lastRecordNum)
-                return null;
-
             lock (_readlock)
             {
-                long off = ComputeOffset(recnum);
-                byte[] key;
-                return internalReadData(off, out key, out isdeleted);
+                _dirty = true;
+                // seek end of file
+                long offset = _lastWriteOffset;
+
+                if (raw == false)
+                {
+                    if (data != null)
+                        meta.dataLength = data.Length;
+                    byte[] metabytes = fastBinaryJSON.BJSON.Instance.ToBJSON(meta, new fastBinaryJSON.BJSONParameters { UseExtensions = false });
+
+                    // write header info
+                    _datawrite.Write(new byte[] { 1 }, 0, 1); // TODO : add json here, write bson for now
+                    _datawrite.Write(Helper.GetBytes(metabytes.Length, false), 0, 4);
+                    _datawrite.Write(metabytes, 0, metabytes.Length);
+                    // update pointer
+                    _lastWriteOffset += metabytes.Length + 5;
+                }
+                else
+                {
+                    // write header info
+                    _datawrite.Write(new byte[] { 0 }, 0, 1); // write raw
+                    _datawrite.Write(Helper.GetBytes(data.Length, false), 0, 4);
+                    // update pointer
+                    _lastWriteOffset += 5;
+                }
+
+                if (data != null)
+                {
+                    // write data block
+                    _datawrite.Write(data, 0, data.Length);
+                    _lastWriteOffset += data.Length;
+                }
+                // return starting offset -> recno
+                int recno = _lastRecordNum++;
+                _recfilewrite.Write(Helper.GetBytes(offset, false), 0, 8);
+                if (Global.FlushStorageFileImmetiatley)
+                {
+                    _datawrite.Flush();
+                    _recfilewrite.Flush();
+                }
+                return recno;
             }
         }
 
-        /// <summary>
-        /// internal use for guid keys only
-        /// </summary>
-        /// <param name="recnum"></param>
-        /// <param name="?"></param>
-        /// <param name="isdeleted"></param>
-        /// <returns></returns>
-        internal byte[] ReadData(int recnum, out Guid docid, out bool isdeleted)
+        internal byte[] ReadData(int recnum, out StorageItem<T> meta)
         {
-            isdeleted = false;
-            docid = Guid.Empty;
+            meta = null;
             if (recnum >= _lastRecordNum)
                 return null;
             lock (_readlock)
             {
                 long off = ComputeOffset(recnum);
-                byte[] key;
-                byte[] data= internalReadData(off, out key, out isdeleted);
-                docid = new Guid(key);
+                byte[] data = internalReadData(off, out meta);
                 return data;
             }
         }
@@ -265,47 +332,57 @@ namespace RaptorDB
             return off;
         }
 
-        private byte[] internalReadData(long offset, out byte[] key, out bool isdeleted)
+        private byte[] internalReadData(long offset, out StorageItem<T> meta)
         {
             // seek offset in file
-            byte[] hdr = new byte[_rowheader.Length];
             _dataread.Seek(offset, System.IO.SeekOrigin.Begin);
-            // read header
-            _dataread.Read(hdr, 0, _rowheader.Length);
-            // check header
-            if (CheckHeader(hdr))
+            int metalen = 0;
+            meta = ReadMetaData(out metalen);
+            if (meta != null)
             {
-                //isdeleted = false;
-                key = null;
-                byte[] data = null;
-                isdeleted = isDeleted(hdr);
-                //if (isDeleted(hdr) == false)
-                //    isdeleted = false;
-                int kl = hdr[(int)HDR_POS.KeyLen];
-                if (kl > 0)
+                if (meta.isDeleted == false)
                 {
-                    key = new byte[kl];
-                    _dataread.Read(key, 0, key.Length);
+                    byte[] data = new byte[meta.dataLength];
+                    _dataread.Read(data, 0, meta.dataLength);
+                    return data;
                 }
-                int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
-                if (dl > 0)
-                {
-                    data = new byte[dl];
-                    // read data block
-                    _dataread.Read(data, 0, dl);
-                }
-                return data;
             }
             else
-                throw new Exception("data header error at offset : " + offset + " data file size = " + _dataread.Length);
-
+            {
+                byte[] data = new byte[metalen];
+                _dataread.Read(data, 0, metalen);
+                return data;
+            }
+            return null;
         }
 
-        private bool CheckHeader(byte[] hdr)
+        private StorageItem<T> ReadMetaData(out int metasize)
         {
-            if (hdr[0] == (byte)'M' && hdr[1] == (byte)'G' && hdr[2] == (byte)'R' && hdr[(int)HDR_POS.CRC] == (byte)0)
-                return true;
-            return false;
+            byte[] hdr = new byte[5];
+            // read header
+            _dataread.Read(hdr, 0, 5); // meta length
+            int len = Helper.ToInt32(hdr, 1);
+            int type = hdr[0];
+            if (type > 0)
+            {
+                metasize = len + 5;
+                hdr = new byte[len];
+                _dataread.Read(hdr, 0, len);
+                StorageItem<T> meta;
+                if (type == 1)
+                    meta = fastBinaryJSON.BJSON.Instance.ToObject<StorageItem<T>>(hdr);
+                else
+                {
+                    string str = Helper.GetString(hdr, 0, (short)hdr.Length);
+                    meta = fastJSON.JSON.Instance.ToObject<StorageItem<T>>(str);
+                }
+                return meta;
+            }
+            else
+            {
+                metasize = len;
+                return null;
+            }
         }
 
         private void FlushClose(FileStream st)
@@ -326,35 +403,14 @@ namespace RaptorDB
                 byte[] b = new byte[8];
 
                 _recfileread.Seek(off, SeekOrigin.Begin);
-                _recfileread.Read(b, 0, 8);
-                off = Helper.ToInt64(b, 0);
-
-                // seek offset in file
-                byte[] hdr = new byte[_rowheader.Length];
-                _dataread.Seek(off, System.IO.SeekOrigin.Begin);
-                // read header
-                _dataread.Read(hdr, 0, _rowheader.Length);
-
-                if (CheckHeader(hdr))
-                {
-                    deleted = isDeleted(hdr);
-                    byte kl = hdr[3];
-                    byte[] kbyte = new byte[kl];
-
-                    _dataread.Read(kbyte, 0, kl);
-                    return _T.GetObject(kbyte, 0, kl);
-                }
-
-                return default(T);
+                int metalen = 0;
+                StorageItem<T> meta = ReadMetaData(out metalen);
+                deleted = meta.isDeleted;
+                return meta.key;
             }
         }
 
-        private bool isDeleted(byte[] hdr)
-        {
-            return (hdr[(int)HDR_POS.Flags] & (byte)1) > 0;
-        }
-
-        internal int CopyTo(StorageFile<int> storageFile, int start)
+        internal int CopyTo(StorageFile<T> storageFile, int start)
         {
             // copy data here
             lock (_readlock)
@@ -375,7 +431,7 @@ namespace RaptorDB
                 output.Write(bytes, 0, n);
         }
 
-        internal IEnumerable<StorageData> Enumerate()
+        internal IEnumerable<StorageData<T>> Enumerate()
         {
             lock (_readlock)
             {
@@ -383,33 +439,20 @@ namespace RaptorDB
                 long size = _dataread.Length;
                 while (offset < size)
                 {
-                    // skip header
                     _dataread.Seek(offset, SeekOrigin.Begin);
-                    byte[] hdr = new byte[_rowheader.Length];
-                    // read header
-                    _dataread.Read(hdr, 0, _rowheader.Length);
-                    offset += hdr.Length;
-                    if (CheckHeader(hdr))
+                    int metalen = 0;
+                    StorageItem<T> meta = ReadMetaData(out metalen);
+                    offset += metalen;
+                    StorageData<T> sd = new StorageData<T>();
+                    sd.meta = meta;
+                    if (meta.dataLength > 0)
                     {
-                        StorageData sd = new StorageData();
-                        sd.isDeleted = isDeleted(hdr);
-                        byte kl = hdr[3];
-                        byte[] kbyte = new byte[kl];
-                        offset += kl;
-                        _dataread.Read(kbyte, 0, kl);
-                        sd.Key = kbyte;
-                        int dl = Helper.ToInt32(hdr, (int)HDR_POS.DataLength);
-                        byte[] data = new byte[dl];
-                        // read data block
-                        _dataread.Read(data, 0, dl);
-                        sd.Data = data;
-                        offset += dl;
-                        yield return sd;
+                        byte[] data = new byte[meta.dataLength];
+                        _dataread.Read(data, 0, meta.dataLength);
+                        sd.data = data;
                     }
-                    else
-                    {
-                        throw new Exception("Data read failed");
-                    }
+                    offset += meta.dataLength;
+                    yield return sd;
                 }
             }
         }

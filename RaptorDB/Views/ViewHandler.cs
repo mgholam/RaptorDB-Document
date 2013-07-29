@@ -108,8 +108,8 @@ namespace RaptorDB.Views
 
             LoadDeletedRowsBitmap();
 
-            _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat");
-            _viewData.SkipDateTime = true;
+            _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat", SF_FORMAT.BSON);
+            //_viewData.SkipDateTime = true;
 
             CreateResultRowFiller();
 
@@ -297,7 +297,7 @@ namespace RaptorDB.Views
                     skip--;
                     continue;
                 }
-                byte[] b = _viewData.ReadData(i);
+                byte[] b = _viewData.ReadRawData(i);
                 if (b == null) continue;
                 object o = FastCreateObject(_view.Schema);
                 object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
@@ -410,7 +410,7 @@ namespace RaptorDB.Views
                     skip--;
                     continue;
                 }
-                byte[] b = _viewData.ReadData(i);
+                byte[] b = _viewData.ReadRawData(i);
                 if (b == null)
                     continue;
                 object o = FastCreateObject(_view.Schema);
@@ -448,7 +448,7 @@ namespace RaptorDB.Views
                     skip--;
                     continue;
                 }
-                byte[] b = _viewData.ReadData(i);
+                byte[] b = _viewData.ReadRawData(i);
                 if (b == null)
                     continue;
                 object o = FastCreateObject(_view.Schema);
@@ -509,26 +509,27 @@ namespace RaptorDB.Views
             int c = docs.RecordCount();
             for (int i = 0; i < c; i++)
             {
-                Guid docid = Guid.Empty;
-                bool isdeleted = false;
-                byte[] b = docs.GetRow(i, out docid, out isdeleted);
-                if (isdeleted)
-                    Delete(docid);
+                //Guid docid = Guid.Empty;
+                //bool isdeleted = false;
+                StorageItem<Guid> meta = null;
+                object b = docs.GetObject(i, out meta);//out docid, out isdeleted);
+                if (meta != null && meta.isDeleted)
+                    Delete(meta.key);
                 else
                 {
                     if (b != null)
                     {
                         // FEATURE : optimize this by not creating the object if not in FireOnTypes
-                        object obj = CreateObject(b);
+                        object obj = b;// CreateObject(b);
                         Type t = obj.GetType();
                         if (_view.FireOnTypes.Contains(t.AssemblyQualifiedName))
                         {
                             var m = view.MakeGenericMethod(new Type[] { obj.GetType() });
-                            m.Invoke(this, new object[] { docid, obj });
+                            m.Invoke(this, new object[] { meta.key, obj });
                         }
                     }
                     else
-                        _log.Error("Doc is null : " + docid);
+                        _log.Error("Doc is null : " + meta.key);
                 }
             }
             _log.Debug("rebuild done (s) = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
@@ -620,7 +621,7 @@ namespace RaptorDB.Views
                 Array.Copy(row, 0, r, 1, row.Length);
                 byte[] b = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
 
-                int rownum = _viewData.WriteData(guid, b, false);
+                int rownum = _viewData.WriteRawData(b);
 
                 // case insensitve columns here
                 foreach (var kv in _nocase)

@@ -182,3 +182,14 @@ v2.0.6
 v2.0.6.1
 --------
 - bug fix WAHBitArray
+
+v2.1.0
+--------
+- index files are opened in share mode for online copy
+- add cron daemon (thanks to Kevin Coylar)
+- backups are now on a cron schedule
+- restructured storage file for future proofing and replication support
+- storage files now store meta data about objects stored
+- * storage files are not backward compatible *
+- dirty index pages are sorted on save for read performance
+- 

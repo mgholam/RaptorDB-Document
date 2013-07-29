@@ -49,7 +49,7 @@ namespace RaptorDB
             if (File.Exists(filename))
             {
                 // if file exists open and read header
-                _file = File.Open(filename, FileMode.Open, FileAccess.ReadWrite);
+                _file = File.Open(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
                 ReadFileHeader();
                 // compute last page number from file length 
                 _PageLength = (_BlockHeader.Length + _rowSize * (_PageNodeCount));
@@ -58,7 +58,7 @@ namespace RaptorDB
             else
             {
                 // else create new file
-                _file = File.Open(filename, FileMode.Create, FileAccess.ReadWrite);
+                _file = File.Open(filename, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
 
                 _PageLength = (_BlockHeader.Length + _rowSize * (_PageNodeCount));
 
@@ -266,6 +266,7 @@ namespace RaptorDB
                 int i = 0;
                 byte[] b = null;
                 T[] keys = node.tree.Keys();
+                Array.Sort(keys); // sort keys on save for read performance
                 // node children
                 foreach (var kp in keys)
                 {

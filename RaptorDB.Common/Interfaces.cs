@@ -57,7 +57,8 @@ namespace RaptorDB
     {
     }
 
-    public interface IMapAPI
+
+    public interface IQueryInterface
     {
         /// <summary>
         /// Log messages
@@ -161,6 +162,16 @@ namespace RaptorDB
         /// <returns></returns>
         object Fetch(Guid guid);
 
+        // new query model
+        Result<T> Query<T>(Expression<Predicate<T>> Filter);
+        Result<T> Query<T>(Expression<Predicate<T>> Filter, int start, int count);
+        Result<T> Query<T>(string Filter);
+        Result<T> Query<T>(string Filter, int start, int count);
+        int Count<T>(Expression<Predicate<T>> Filter);
+    }
+
+    public interface IMapAPI : IQueryInterface
+    {
         /// <summary>
         /// Emit values, the ordering must match the view schema
         /// </summary>
@@ -180,24 +191,10 @@ namespace RaptorDB
         /// Roll back the transaction if the primary view is in transaction mode
         /// </summary>
         void RollBack();
-
-        // new query model
-        Result<T> Query<T>(Expression<Predicate<T>> Filter);
-        Result<T> Query<T>(Expression<Predicate<T>> Filter, int start, int count);
-        Result<T> Query<T>(string Filter);
-        Result<T> Query<T>(string Filter, int start, int count);
-        int Count<T>(Expression<Predicate<T>> Filter);
-        //int Count<T>(string Filter);
     }
 
-    public interface IDocStorage<T>
+    public interface IClientHandler
     {
-        int RecordCount();
-
-        byte[] GetRow(int rowid, out Guid docid, out bool isdeleted);
-
-        bool GetRow(int rowid, out byte[] doc);
-
-        bool Get(T key, out byte[] doc);
+        bool GenerateClientData(IQueryInterface api, string username, List<Guid> DocsToSend);
     }
 }

@@ -214,11 +214,12 @@ namespace RaptorDB.Views
 
         internal object Fetch(Guid guid)
         {
-            byte[] b = null;
-            if (_objectStore.Get(guid, out b))
-                return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
+            //byte[] b = null;
+            object b = null;
+            _objectStore.GetObject(guid, out b);
+                //return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
 
-            return null;
+            return b;
         }
 
         internal string GetPrimaryViewForType(Type type)

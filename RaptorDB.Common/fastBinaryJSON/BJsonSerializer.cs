@@ -410,7 +410,7 @@ namespace fastBinaryJSON
 
             Type t = obj.GetType();
             bool append = false;
-            //if (useExtension)
+            if (_params.UseExtensions)
             {
                 if (_params.UsingGlobalTypes == false)
                     WritePairFast("$type", Reflection.Instance.GetTypeAssemblyName(t));

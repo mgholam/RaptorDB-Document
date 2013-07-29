@@ -81,7 +81,7 @@ namespace SampleViews
             this.Description = "A primary view for SalesInvoices";
             this.isPrimaryList = true;
             this.isActive = true;
-            this.BackgroundIndexing = false;
+            this.BackgroundIndexing = true;
             this.Version = 3;
             //// uncomment the following for transaction mode
             //this.TransactionMode = true;
@@ -121,7 +121,7 @@ namespace SampleViews
             this.Description = "";
             this.isPrimaryList = false;
             this.isActive = true;
-            this.BackgroundIndexing = false;
+            this.BackgroundIndexing = true;
 
             this.Schema = typeof(SalesItemRowsView.RowSchema);
 
@@ -153,7 +153,7 @@ namespace SampleViews
             this.Description = "";
             this.isPrimaryList = false;
             this.isActive = true;
-            this.BackgroundIndexing = false;
+            this.BackgroundIndexing = true;
             this.Version = 1;
 
             this.Schema = typeof(newview.RowSchema);
