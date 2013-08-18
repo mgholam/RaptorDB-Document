@@ -380,7 +380,7 @@ namespace RaptorDB
         private void CheckInternalOP()
         {
             if (_optimizing)
-                lock (_oplock) ;
+                lock (_oplock) ; // yes! this is good
             _que.Enqueue(1);
         }
 

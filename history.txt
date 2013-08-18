@@ -183,7 +183,7 @@ v2.0.6.1
 --------
 - bug fix WAHBitArray
 
-v2.1.0
+v2.5.0
 --------
 - index files are opened in share mode for online copy
 - add cron daemon (thanks to Kevin Coylar)
@@ -192,4 +192,12 @@ v2.1.0
 - storage files now store meta data about objects stored
 - * storage files are not backward compatible *
 - dirty index pages are sorted on save for read performance
-- 
+- restore is now resumable after a shutdown
+- you can disable the primary view to be defined on save with Global.RequirePrimaryView (K/V mode) 
+- view rebuilds are now done in the background (non-blocking on restart)
+- you can define views in c# script format (*.view) to be compiled at runtime in 'datafolder\views'
+- row schema defined in script views will be tranfered to the client if they don't exist
+- added HQ-Branch replication feature
+- fastJSON now serializes static properties
+
+

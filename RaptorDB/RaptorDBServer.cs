@@ -28,7 +28,6 @@ namespace RaptorDB
         private string _S = Path.DirectorySeparatorChar.ToString();
         private Dictionary<string, uint> _users = new Dictionary<string, uint>();
         private string _path = "";
-        //private bool _backupDone = false;
         private ILog log = LogManager.GetLogger(typeof(RaptorDBServer));
         private NetworkServer _server;
         private RaptorDB _raptor;
@@ -36,7 +35,6 @@ namespace RaptorDB
         private MethodInfo save = null;
         private SafeDictionary<Type, MethodInfo> _savecache = new SafeDictionary<Type, MethodInfo>();
         private SafeDictionary<string, ServerSideFunc> _ssidecache = new SafeDictionary<string, ServerSideFunc>();
-        //private System.Timers.Timer _backupTimer;
 
         private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
@@ -190,6 +188,12 @@ namespace RaptorDB
                         ret.OK = true;
                         ret.Data = _raptor.FetchBytesVersion((int)p.Data);
                         break;
+                    case "checkassembly":
+                        ret.OK = true;
+                        string typ = "";
+                        ret.Data = _raptor.GetAssemblyForView(p.Viewname, out typ);
+                        ret.Error = typ;
+                        break;
                 }
             }
             catch (Exception ex)
@@ -282,38 +286,24 @@ namespace RaptorDB
                 {
                     foreach (var att in t.GetCustomAttributes(typeof(RegisterViewAttribute), false))
                     {
-                        object o = Activator.CreateInstance(t);
-                        //  handle types when view<T> also
-                        Type[] args = t.GetGenericArguments();
-                        if (args.Length == 0)
-                            args = t.BaseType.GetGenericArguments();
-                        Type tt = args[0];
-                        var m = register.MakeGenericMethod(new Type[] { tt });
-                        m.Invoke(_raptor, new object[] { o });
+                        try
+                        {
+                            object o = Activator.CreateInstance(t);
+                            //  handle types when view<T> also
+                            Type[] args = t.GetGenericArguments();
+                            if (args.Length == 0)
+                                args = t.BaseType.GetGenericArguments();
+                            Type tt = args[0];
+                            var m = register.MakeGenericMethod(new Type[] { tt });
+                            m.Invoke(_raptor, new object[] { o });
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error(ex);
+                        }
                     }
                 }
             }
-
-            //_backupTimer = new System.Timers.Timer();
-            //_backupTimer.Elapsed += new System.Timers.ElapsedEventHandler(_backupTimer_Elapsed);
-            //_backupTimer.AutoReset = true;
-            //_backupTimer.Interval = 60 * 1000; // 1 min timer
-            //_backupTimer.Enabled = true;
-            //_backupTimer.Start();
         }
-
-        //void _backupTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        //{
-        //    DateTime dt = FastDateTime.Now;
-
-        //    if (dt.Hour == 0 && dt.Minute < 2 && _backupDone == false)
-        //    {
-        //        _backupDone = true;
-        //        _raptor.Backup();
-        //    }
-
-        //    if (dt.Hour == 1 && dt.Minute > 3 && _backupDone == true)
-        //        _backupDone = false;
-        //}
     }
 }

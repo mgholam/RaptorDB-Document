@@ -25,9 +25,9 @@ namespace RaptorDB
         /// </summary>
         public static int SaveIndexToDiskTimerSeconds = 60;
         /// <summary>
-        /// Flush the StorageFile stream immediatley
+        /// Flush the StorageFile stream immediately
         /// </summary>
-        public static bool FlushStorageFileImmetiatley = false;
+        public static bool FlushStorageFileImmediately = false;
         /// <summary>
         /// Save doc as binary json
         /// </summary>
@@ -47,7 +47,7 @@ namespace RaptorDB
         /// <summary>
         /// Check the restore folder for new backup files to restore
         /// </summary>
-        public static int RestoreTimerSeconds = 10;
+        public static int RestoreTimerSeconds = 10; // FIX : implement this
         /// <summary>
         /// Timer for full text indexing of original documents (default = 15 sec)
         /// </summary>
@@ -55,7 +55,7 @@ namespace RaptorDB
         /// <summary>
         /// How many documents to full text index in a batch
         /// </summary>
-        public static int BackgroundFullIndexSize = 10000;
+        public static int BackgroundFullTextIndexBatchSize = 10000;
         /// <summary>
         /// Free memory checking timer (default = 60 sec)
         /// </summary>
@@ -67,6 +67,18 @@ namespace RaptorDB
         /// <summary>
         /// Backup cron schedule (default = "0 0 * * *" [every day at 00:00])  
         /// </summary>
-        public static string BackupCronSchedule = "0 0 * * *"; 
+        public static string BackupCronSchedule = "0 0 * * *";
+        /// <summary>
+        /// Require primary view to be defined for save, false = key/value store (default = true)
+        /// </summary>
+        public static bool RequirePrimaryView = true;
+        /// <summary>
+        /// Maximum documents in each package for replication
+        /// </summary>
+        public static int PackageSizeItemCountLimit = 10000;
+        /// <summary>
+        /// Process inbox timer (default = 60 sec)
+        /// </summary>
+        public static int ProcessInboxTimerSeconds = 10;
     }
 }

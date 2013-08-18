@@ -18,7 +18,7 @@ namespace RaptorDB
 
         #region Private Instance Members
 
-        private readonly string _expression;
+        internal readonly string _expression;
         public List<int> minutes;
         public List<int> hours;
         public List<int> days_of_month;

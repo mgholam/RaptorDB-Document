@@ -4,6 +4,7 @@ using System.Text;
 using System.Reflection.Emit;
 using System.Reflection;
 using System.Collections;
+using System.Linq;
 using RaptorDB.Common;
 
 namespace fastJSON
@@ -54,6 +55,12 @@ namespace fastJSON
             else
             {
                 Type t = Type.GetType(typename);
+                if (t == null) // RaptorDB : loading runtime assemblies
+                {
+                    t = Type.GetType(typename, (name) => {
+                        return AppDomain.CurrentDomain.GetAssemblies().Where(z => z.FullName == name.FullName).FirstOrDefault();
+                    }, null, true);
+                }
                 _typecache.Add(typename, t);
                 return t;
             }

@@ -31,6 +31,7 @@ namespace RaptorDB
 
         byte[] GetBytes(int rowid, out StorageItem<T> meta);
         object GetObject(int rowid, out StorageItem<T> meta);
+        StorageItem<T> GetMeta(int rowid);
 
         bool GetObject(T key, out object doc);
     }
@@ -51,7 +52,7 @@ namespace RaptorDB
         private string _filename = "";
         private string _recfilename = "";
         private int _lastRecordNum = 0;
-        private long _lastWriteOffset = 6;
+        private long _lastWriteOffset = _fileheader.Length;
         private object _readlock = new object();
         private bool _dirty = false;
         IGetBytes<T> _T = null;
@@ -72,12 +73,12 @@ namespace RaptorDB
         //    n byte meta serialized data if exists 
         //    m byte data (if meta exists then m is in meta.dataLength)
 
-        public StorageFile(string filename, SF_FORMAT format)
+        public StorageFile(string filename, SF_FORMAT format, bool readmode)
         {
             _saveFormat = format;
             // add version number
             _fileheader[5] = (byte)_CurrentVersion;
-            Initialize(filename, false);
+            Initialize(filename, readmode);
         }
 
         public StorageFile(string filename, bool ReadMode)
@@ -96,6 +97,17 @@ namespace RaptorDB
 
             _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
+            if (_datawrite.Length == 0)
+            {
+                // new file
+                _datawrite.Write(_fileheader, 0, _fileheader.Length);
+                _datawrite.Flush();
+                _lastWriteOffset = _fileheader.Length;
+            }
+            else
+            {
+                _lastWriteOffset = _datawrite.Seek(0L, SeekOrigin.End);
+            }
             if (ReadMode == false)
             {
                 // load rec pointers
@@ -107,17 +119,6 @@ namespace RaptorDB
 
                 _recfileread = new FileStream(_recfilename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-                if (_datawrite.Length == 0)
-                {
-                    // new file
-                    _datawrite.Write(_fileheader, 0, _fileheader.Length);
-                    _datawrite.Flush();
-                    _lastWriteOffset = _fileheader.Length;
-                }
-                else
-                {
-                    _lastWriteOffset = _datawrite.Seek(0L, SeekOrigin.End);
-                }
                 _lastRecordNum = (int)(_recfilewrite.Length / 8);
                 _recfilewrite.Seek(0L, SeekOrigin.End);
             }
@@ -156,10 +157,35 @@ namespace RaptorDB
             return internalWriteData(meta, null, false);
         }
 
+        public int DeleteReplicated(T key)
+        {
+            StorageItem<T> meta = new StorageItem<T>();
+            meta.key = key;
+            meta.isReplicated = true;
+            meta.isDeleted = true;
+
+            return internalWriteData(meta, null, false);
+        }
+
         public int WriteObject(T key, object obj)
         {
             StorageItem<T> meta = new StorageItem<T>();
             meta.key = key;
+            meta.typename = fastJSON.Reflection.Instance.GetTypeAssemblyName(obj.GetType());
+            byte[] data;
+            if (_saveFormat == SF_FORMAT.BSON)
+                data = fastBinaryJSON.BJSON.Instance.ToBJSON(obj);
+            else
+                data = Helper.GetBytes(fastJSON.JSON.Instance.ToJSON(obj));
+
+            return internalWriteData(meta, data, false);
+        }
+
+        public int WriteReplicationObject(T key, object obj)
+        {
+            StorageItem<T> meta = new StorageItem<T>();
+            meta.key = key;
+            meta.isReplicated = true;
             meta.typename = fastJSON.Reflection.Instance.GetTypeAssemblyName(obj.GetType());
             byte[] data;
             if (_saveFormat == SF_FORMAT.BSON)
@@ -251,6 +277,20 @@ namespace RaptorDB
             return sf;
         }
 
+        public StorageItem<T> ReadMeta(int rowid)
+        {
+            if (rowid >= _lastRecordNum)
+                return null;
+            lock (_readlock)
+            {
+                int metalen = 0;
+                long off = ComputeOffset(rowid);
+                _dataread.Seek(off, SeekOrigin.Begin);
+                StorageItem<T> meta = ReadMetaData(out metalen);
+                return meta;
+            }
+        }
+
         #region [ private / internal  ]
 
         private int internalWriteData(StorageItem<T> meta, byte[] data, bool raw)
@@ -291,11 +331,13 @@ namespace RaptorDB
                 }
                 // return starting offset -> recno
                 int recno = _lastRecordNum++;
-                _recfilewrite.Write(Helper.GetBytes(offset, false), 0, 8);
-                if (Global.FlushStorageFileImmetiatley)
+                if (_recfilewrite != null)
+                    _recfilewrite.Write(Helper.GetBytes(offset, false), 0, 8);
+                if (Global.FlushStorageFileImmediately)
                 {
                     _datawrite.Flush();
-                    _recfilewrite.Flush();
+                    if (_recfilewrite != null)
+                        _recfilewrite.Flush();
                 }
                 return recno;
             }
@@ -399,10 +441,13 @@ namespace RaptorDB
             lock (_readlock)
             {
                 deleted = false;
-                long off = recnum * 8L;
-                byte[] b = new byte[8];
+                long off = ComputeOffset(recnum);
+                _dataread.Seek(off, SeekOrigin.Begin);
+                //long off = recnum * 8L;
+                //byte[] b = new byte[8];
 
-                _recfileread.Seek(off, SeekOrigin.Begin);
+                //_recfileread.Seek(off, SeekOrigin.Begin);
+
                 int metalen = 0;
                 StorageItem<T> meta = ReadMetaData(out metalen);
                 deleted = meta.isDeleted;
@@ -431,11 +476,16 @@ namespace RaptorDB
                 output.Write(bytes, 0, n);
         }
 
-        internal IEnumerable<StorageData<T>> Enumerate()
+        //internal IEnumerable<StorageData<T>> Enumerate()
+        //{
+        //    return Enumerate(6); // skip header
+        //}
+
+        internal IEnumerable<StorageData<T>> Enumerate()//long start)
         {
             lock (_readlock)
             {
-                long offset = 6;
+                long offset = _fileheader.Length;// start; // skip header
                 long size = _dataread.Length;
                 while (offset < size)
                 {

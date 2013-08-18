@@ -98,10 +98,10 @@ namespace RaptorDB
         {
             byte[] bkey = Encoding.Unicode.GetBytes(key);
             int hc = (int)Helper.MurMur.Hash(bkey);
-            MemoryStream ms = new MemoryStream();
-            ms.Write(Helper.GetBytes(bkey.Length, false), 0, 4);
-            ms.Write(bkey, 0, bkey.Length);
-            return _db.Delete(hc, ms.ToArray());
+            //MemoryStream ms = new MemoryStream();
+            //ms.Write(Helper.GetBytes(bkey.Length, false), 0, 4);
+            //ms.Write(bkey, 0, bkey.Length);
+            return _db.Delete(hc);//, ms.ToArray());
         }
 
         public void SaveIndex()
@@ -149,7 +149,7 @@ namespace RaptorDB
     }
     #endregion
 
-    #region [   KeyStoreGuid   ]
+    #region [   KeyStoreGuid  removed ]
     //internal class KeyStoreGuid : IDisposable //, IDocStorage
     //{
     //    public KeyStoreGuid(string filename)
@@ -361,16 +361,6 @@ namespace RaptorDB
             return _archive.ReadData(record);
         }
 
-        public bool RemoveKey(T key)
-        {
-            // remove and store key in storage file
-            byte[] bkey = _T.GetBytes(key);
-            MemoryStream ms = new MemoryStream();
-            ms.Write(Helper.GetBytes(bkey.Length, false), 0, 4);
-            ms.Write(bkey, 0, bkey.Length);
-            return Delete(key, ms.ToArray());
-        }
-
         public long Count()
         {
             int c = _archive.Count();
@@ -493,7 +483,10 @@ namespace RaptorDB
 
             _index = new MGIndex<T>(_Path, _FileName + _idxExtension, _MaxKeySize, Global.PageItemCount, AllowDuplicateKeys);
 
-            _archive = new StorageFile<T>(db, SF_FORMAT.BSON);
+            if (Global.SaveAsBinaryJSON)
+                _archive = new StorageFile<T>(db, SF_FORMAT.BSON, false);
+            else
+                _archive = new StorageFile<T>(db, SF_FORMAT.JSON, false);
 
             _deleted = new BoolIndex(_Path, _FileName + "_deleted.idx");
 
@@ -568,10 +561,18 @@ namespace RaptorDB
             return b;
         }
 
-        internal bool Delete(T id, byte[] data)
+        internal bool Delete(T id)
         {
             // write a delete record
             int rec = _archive.Delete(id);
+            _deleted.Set(true, rec);
+            return _index.RemoveKey(id);
+        }
+
+        internal bool DeleteReplicated(T id)
+        {
+            // write a delete record for replicated object
+            int rec = _archive.DeleteReplicated(id);
             _deleted.Set(true, rec);
             return _index.RemoveKey(id);
         }
@@ -594,6 +595,22 @@ namespace RaptorDB
         public object GetObject(int rowid, out StorageItem<T> meta)
         {
             return _archive.ReadObject(rowid, out meta);
+        }
+
+        public StorageItem<T> GetMeta(int rowid)
+        {
+            return _archive.ReadMeta(rowid);
+        }
+
+        internal int SetReplicationObject(T key, object doc)
+        {
+            int recno = -1;
+            // save to storage
+            recno = _archive.WriteReplicationObject(key, doc);
+            // save to index
+            _index.Set(key, recno);
+
+            return recno;
         }
     }
 }

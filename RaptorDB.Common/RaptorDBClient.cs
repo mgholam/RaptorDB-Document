@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using RaptorDB.Common;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.IO;
 
 namespace RaptorDB
 {
@@ -19,6 +21,7 @@ namespace RaptorDB
         private NetworkClient _client;
         private string _username;
         private string _password;
+        private SafeDictionary<string, bool> _assembly = new SafeDictionary<string, bool>();
 
         /// <summary>
         /// Save a document to RaptorDB
@@ -297,14 +300,7 @@ namespace RaptorDB
         /// <returns></returns>
         public Result<object> Query(string viewname, int start, int count)
         {
-            Packet p = CreatePacket();
-            p.Command = "querystr";
-            p.Viewname = viewname;
-            p.Data = "";
-            p.Start = start;
-            p.Count = count;
-            ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (Result<object>)ret.Data;
+            return Query(viewname, "", start, count);
         }
 
         /// <summary>
@@ -335,6 +331,27 @@ namespace RaptorDB
         /// <returns></returns>
         public Result<object> Query(string viewname, string filter, int start, int count)
         {
+            bool b = false;
+            // check if return type exists and copy assembly if needed
+            if (_assembly.TryGetValue(viewname, out b) == false)
+            {
+                Packet pp = CreatePacket();
+                pp.Command = "checkassembly";
+                pp.Viewname = viewname;
+                ReturnPacket r = (ReturnPacket)_client.Send(pp);
+                string type = r.Error;
+                Type t = Type.GetType(type);
+                if (t == null)
+                {
+                    if (r.Data != null)
+                    {
+                        var a = Assembly.Load((byte[])r.Data);
+                        _assembly.Add(viewname, true);
+                    }
+                }
+                else
+                    _assembly.Add(viewname, true);
+            }
             Packet p = CreatePacket();
             p.Command = "querystr";
             p.Viewname = viewname;
@@ -505,7 +522,7 @@ namespace RaptorDB
         /// <returns></returns>
         public Result<T> Query<T>(Expression<Predicate<T>> filter)
         {
-            return Query<T>(filter, 0, 0);           
+            return Query<T>(filter, 0, 0);
         }
 
         /// <summary>

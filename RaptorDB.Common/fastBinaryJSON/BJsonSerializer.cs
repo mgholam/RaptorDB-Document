@@ -203,7 +203,7 @@ namespace fastBinaryJSON
 
         private void WriteChar(char p)
         {
-            // FIX : 
+            // TODO : 
             //_output.WriteByte(TOKENS.CHAR);
             //_output.Write(Helper.GetBytes(
             throw new Exception("char not implemented yet");
@@ -290,7 +290,7 @@ namespace fastBinaryJSON
                 m.Info.Add(c.ColumnName);
                 m.Info.Add(c.DataType.ToString());
             }
-            // TODO : serialize relations and constraints here
+            // FEATURE : serialize relations and constraints here
 
             return m;
         }
@@ -312,7 +312,7 @@ namespace fastBinaryJSON
                     m.Info.Add(c.DataType.ToString());
                 }
             }
-            // TODO : serialize relations and constraints here
+            // FEATURE : serialize relations and constraints here
 
             return m;
         }

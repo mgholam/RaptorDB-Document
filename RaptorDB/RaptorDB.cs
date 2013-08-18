@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 using System.Reflection;
 using RaptorDB.Common;
 using System.IO.Compression;
+using System.CodeDom.Compiler;
+using System.Text.RegularExpressions;
+using System.ComponentModel;
 
 namespace RaptorDB
 {
@@ -17,8 +20,10 @@ namespace RaptorDB
     {
         private RaptorDB(string FolderPath)
         {
-            // FIX: read config info here
-
+            // FIX : read/write global or another object?
+            // read raptordb.config here (running parameters)
+            if (File.Exists("raptordb.config"))
+                fastJSON.JSON.Instance.FillObject(new Global(), File.ReadAllText("raptordb.config"));
             Initialize(FolderPath);
         }
 
@@ -40,14 +45,19 @@ namespace RaptorDB
         private System.Timers.Timer _saveTimer;
         private System.Timers.Timer _fulltextTimer;
         private System.Timers.Timer _freeMemTimer;
+        private System.Timers.Timer _processinboxTimer;
         private bool _shuttingdown = false;
         private bool _pauseindexer = false;
         private MethodInfo otherviews = null;
         private MethodInfo save = null;
+        private MethodInfo saverep = null;
         private SafeDictionary<Type, MethodInfo> _savecache = new SafeDictionary<Type, MethodInfo>();
+        private SafeDictionary<Type, MethodInfo> _saverepcache = new SafeDictionary<Type, MethodInfo>();
         private FullTextIndex _fulltextindex;
         private CronDaemon _cron;
-
+        private Replication.ReplicationServer _repserver;
+        private Replication.ReplicationClient _repclient;
+        //private bool _clientReplicationEnabled;
 
         public bool SyncNow(string server, int port, string username, string password)
         {
@@ -74,7 +84,7 @@ namespace RaptorDB
         /// <returns></returns>
         public bool Delete(Guid docid)
         {
-            bool b = _objStore.RemoveKey(docid);
+            bool b = _objStore.Delete(docid);
             _viewManager.Delete(docid);
             return b;
         }
@@ -86,7 +96,7 @@ namespace RaptorDB
         /// <returns></returns>
         public bool DeleteBytes(Guid bytesid)
         {
-            return _fileStore.RemoveKey(bytesid);
+            return _fileStore.Delete(bytesid);
         }
 
         /// <summary>
@@ -99,13 +109,13 @@ namespace RaptorDB
         public bool Save<T>(Guid docid, T data)
         {
             string viewname = _viewManager.GetPrimaryViewForType(data.GetType());
-            if (viewname == "")
+            if (viewname == "" && Global.RequirePrimaryView == true)
             {
                 _log.Debug("Primary View not defined for object : " + data.GetType());
                 return false;
             }
             _pauseindexer = true;
-            if (_viewManager.isTransaction(viewname))
+            if (viewname != "" && _viewManager.isTransaction(viewname))
             {
                 _log.Debug("TRANSACTION started for docid : " + docid);
                 // add code here
@@ -121,7 +131,7 @@ namespace RaptorDB
                         if (b == true)
                         {
                             _viewManager.Commit(Thread.CurrentThread.ManagedThreadId);
-                            int recnum = SaveData(docid, data);
+                            int recnum = _objStore.SetObject(docid, data); //SaveData(docid, data);
                             _CurrentRecordNumber = recnum;
                             _pauseindexer = false;
                             return true;
@@ -134,17 +144,20 @@ namespace RaptorDB
             }
             else
             {
-                int recnum = SaveData(docid, data);
+                int recnum = _objStore.SetObject(docid, data); //SaveData(docid, data);
                 _CurrentRecordNumber = recnum;
 
-                SaveInPrimaryView(viewname, docid, data);
-
-                SaveToConsistentViews(docid, data);
-
-                if (Global.BackgroundSaveToOtherViews == false)
+                if (viewname != "")
                 {
-                    SaveInOtherViews(docid, data);
-                    _LastRecordNumberProcessed = recnum;
+                    SaveInPrimaryView(viewname, docid, data);
+
+                    SaveToConsistentViews(docid, data);
+
+                    if (Global.BackgroundSaveToOtherViews == false)
+                    {
+                        SaveInOtherViews(docid, data);
+                        _LastRecordNumberProcessed = recnum;
+                    }
                 }
                 _pauseindexer = false;
                 return true;
@@ -269,7 +282,18 @@ namespace RaptorDB
                 return;
 
             _shuttingdown = true;
-            _cron.Stop();
+
+            if (_repserver != null)
+                _repserver.Shutdown();
+
+            if (_repclient != null)
+                _repclient.Shutdown();
+
+            // FIX : write global or something else?
+            if (File.Exists("RaptorDB.config") == false)
+                File.WriteAllText("RaptorDB.config", fastJSON.JSON.Instance.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
+            if (_cron != null)
+                _cron.Stop();
             _fulltextindex.Shutdown();
             // save records 
             _log.Debug("last full text record = " + _LastFulltextIndexed);
@@ -287,6 +311,8 @@ namespace RaptorDB
             LogManager.Shutdown();
         }
 
+
+        #region [   BACKUP/RESTORE and REPLICATION   ]
         private object _backuplock = new object();
         /// <summary>
         /// Backup the document storage file incrementally to "Backup" folder
@@ -301,13 +327,13 @@ namespace RaptorDB
                 _log.Debug("Backup Started...");
                 string tempp = _Path + "Temp" + _S + DateTime.Now.ToString("yyyy-MM-dd-HH-mm");
                 Directory.CreateDirectory(tempp);
-                StorageFile<Guid> backup = new StorageFile<Guid>(tempp + _S + "backup.mgdat", SF_FORMAT.BSON);
+                StorageFile<Guid> backup = new StorageFile<Guid>(tempp + _S + "backup.mgdat", SF_FORMAT.BSON, true);
                 _log.Debug("Copying data to backup");
                 if (_LastBackupRecordNumber == -1)
                     _LastBackupRecordNumber = 0;
                 int rec = _objStore.CopyTo(backup, _LastBackupRecordNumber);
                 backup.Shutdown();
-                _LastBackupRecordNumber = rec;
+
                 _log.Debug("Last backup rec# = " + rec);
 
                 // compress the file
@@ -323,8 +349,123 @@ namespace RaptorDB
                 // cleanup temp folder
                 Directory.Delete(tempp, true);
                 _log.Debug("Backup done.");
+                _LastBackupRecordNumber = rec;
                 return true;
             }
+        }
+
+        private DateTime _lastFailedTime = DateTime.Now;
+        private object _replock = new object();
+        private void ProcessReplicationInbox(string inboxfolder)
+        {
+            //if (_clientReplicationEnabled == false)
+            //    return;
+
+            lock (_replock)
+            {
+                string[] files = Directory.GetFiles(inboxfolder, "*.counter");// _Path + "Replicaton" + _S + "Inbox", 
+
+                // check if ".counter" file exists
+                if (files.Length > 0)
+                {
+                    // FIX: if lastfailedtime < 15 -> wait 15 min and retry (avoid extra cpu burning)
+                    // recovery mode
+                    string fn = files[0];
+                    int start = -1;
+                    if (int.TryParse(File.ReadAllText(fn).Trim(), out start))
+                    {
+                        if (DoRepProcessing(fn.Replace(".counter", ".mgdat"), start) == false)
+                            return;
+                    }
+                    else
+                    {
+                        _log.Error("Unable to parse counter value in : " + fn);
+                        return;
+                    }
+                }
+
+                files = Directory.GetFiles(inboxfolder, "*.gz"); // _Path + "Replicaton" + _S + "Inbox", 
+
+                Array.Sort(files);
+                foreach (var filename in files)
+                {
+
+                    string tmp = filename.Replace(".gz", "");// FEATURE : to temp folder ??
+                    if (File.Exists(tmp))
+                        File.Delete(tmp);
+                    using (FileStream read = File.OpenRead(filename))
+                    using (FileStream outp = File.Create(tmp))
+                        DecompressForRestore(read, outp);
+                    _log.Debug("Uncompress done : " + Path.GetFileName(tmp));
+                    if (DoRepProcessing(tmp, 0) == false)
+                        return;
+                    if (_shuttingdown)
+                        return;
+                }
+            }
+        }
+
+        private bool DoRepProcessing(string filename, int start)
+        {
+            string fn = Path.GetFileNameWithoutExtension(filename);
+            string path = Path.GetDirectoryName(filename);
+            StorageFile<Guid> sf = StorageFile<Guid>.ReadForward(filename);
+            int counter = 0;
+            if (start > 0)
+                _log.Debug("skipping replication items : " + start);
+            foreach (var i in sf.Enumerate())
+            {
+                if (start > 0) // skip already done
+                {
+                    start--;
+                    counter++;
+                }
+                else
+                {
+                    if (i.meta.isDeleted)
+                        DeleteReplicate(i.meta.key);
+                    else
+                    {
+                        try
+                        {
+                            object obj = CreateObject(i.data);
+                            var m = GetSaveReplicate(obj.GetType());
+                            m.Invoke(this, new object[] { i.meta.key, obj });
+                        }
+                        catch (Exception ex)
+                        {
+                            _log.Error(ex);
+                            sf.Shutdown();
+                            string err = Properties.Resources.msg.Replace("%js%", fastJSON.JSON.Instance.Beautify(Helper.GetString(i.data, 0, (short)i.data.Length)))
+                                .Replace("%ex%", "" + ex)
+                                .Replace("%c%", path + _S + fn + ".counter");
+
+                            File.WriteAllText(path + _S + fn + ".error.txt", err);
+                            _lastFailedTime = DateTime.Now;
+                            return false;
+                        }
+                    }
+                    counter++;
+                    File.WriteAllText(path + _S + fn + ".counter", "" + counter);
+                    if (_shuttingdown)
+                    {
+                        _log.Debug("shutting down before replicate data completed...");
+                        sf.Shutdown();
+                        return false;
+                    }
+                }
+            }
+            sf.Shutdown();
+            _log.Debug("File replicate complete : " + Path.GetFileName(filename));
+            foreach (var f in Directory.GetFiles(path, fn + ".*"))
+                File.Delete(f);
+            return true;
+        }
+
+        private void DeleteReplicate(Guid docid)
+        {
+            bool b = _objStore.DeleteReplicated(docid);
+            _viewManager.Delete(docid);
         }
 
         private object _restoreLock = new object();
@@ -337,8 +478,26 @@ namespace RaptorDB
             {
                 try
                 {
+                    string[] files = Directory.GetFiles(_Path + "Restore", "*.counter");
+                    // check if ".counter" file exists
+                    if (files.Length > 0)
+                    {
+                        // resume mode
+                        string fn = files[0];
+                        int start = -1;
+                        if (int.TryParse(File.ReadAllText(fn).Trim(), out start))
+                        {
+                            if (DoRestoreProcessinng(fn.Replace(".counter", ".mgdat"), start) == false)
+                                return;
+                        }
+                        else
+                        {
+                            _log.Error("Unable to parse counter value in : " + fn);
+                            return;
+                        }
+                    }
                     // do restore 
-                    string[] files = Directory.GetFiles(_Path + "Restore" + _S, "*.gz");
+                    files = Directory.GetFiles(_Path + "Restore", "*.gz");
                     Array.Sort(files);
                     _log.Debug("Restoring file count = " + files.Length);
 
@@ -349,24 +508,11 @@ namespace RaptorDB
                             File.Delete(tmp);
                         using (FileStream read = File.OpenRead(file))
                         using (FileStream outp = File.Create(tmp))
-                            DecompressForBackup(read, outp);
+                            DecompressForRestore(read, outp);
                         _log.Debug("Uncompress done : " + Path.GetFileName(tmp));
-                        StorageFile<Guid> sf = StorageFile<Guid>.ReadForward(tmp);
-                        foreach (var i in sf.Enumerate())
-                        {
-                            if (i.meta.isDeleted)
-                                Delete(i.meta.key);
-                            else
-                            {
-                                object obj = CreateObject(i.data);
-                                var m = GetSave(obj.GetType());
-                                m.Invoke(this, new object[] { i.meta.key, obj });
-                            }
-                        }
-                        sf.Shutdown();
-                        _log.Debug("File restore complete : " + Path.GetFileName(tmp));
-                        File.Delete(tmp);
-                        File.Move(file, _Path + _S + "Restore" + _S + "Done" + _S + Path.GetFileName(file));
+
+                        if (DoRestoreProcessinng(tmp, 0))
+                            File.Move(file, _Path + "Restore" + _S + "Done" + _S + Path.GetFileName(file));
                     }
                 }
                 catch (Exception ex)
@@ -375,6 +521,73 @@ namespace RaptorDB
                 }
             }
         }
+
+        private bool DoRestoreProcessinng(string filename, int start)
+        {
+            string fn = Path.GetFileNameWithoutExtension(filename);
+            string path = Path.GetDirectoryName(filename);
+            int counter = 0;
+            StorageFile<Guid> sf = StorageFile<Guid>.ReadForward(filename);
+            foreach (var i in sf.Enumerate())
+            {
+                if (start > 0)
+                {
+                    start--;
+                    counter++;
+                }
+                else
+                {
+                    if (i.meta.isDeleted)
+                        Delete(i.meta.key);
+                    else
+                    {
+                        object obj = CreateObject(i.data);
+                        var m = GetSave(obj.GetType());
+                        m.Invoke(this, new object[] { i.meta.key, obj });
+                    }
+                    counter++;
+                    File.WriteAllText(path + _S + fn + ".counter", "" + counter);
+                    if (_shuttingdown)
+                    {
+                        _log.Debug("shutting down before restore completed...");
+                        sf.Shutdown();
+                        return false;
+                    }
+                }
+            }
+            sf.Shutdown();
+            _log.Debug("File restore complete : " + Path.GetFileName(filename));
+            foreach (var f in Directory.GetFiles(path, fn + ".*"))
+                File.Delete(f);
+
+            return true;
+        }
+
+        private bool SaveReplicationObject<T>(Guid docid, T data)
+        {
+            string viewname = _viewManager.GetPrimaryViewForType(data.GetType());
+            if (viewname == "")
+            {
+                _log.Debug("Primary View not defined for object : " + data.GetType());
+                return false;
+            }
+            _pauseindexer = true;
+            int recnum = _objStore.SetReplicationObject(docid, data);
+            _CurrentRecordNumber = recnum;
+
+            SaveInPrimaryView(viewname, docid, data);
+
+            SaveToConsistentViews(docid, data);
+
+            if (Global.BackgroundSaveToOtherViews == false)
+            {
+                SaveInOtherViews(docid, data);
+                _LastRecordNumberProcessed = recnum;
+            }
+            _pauseindexer = false;
+            return true;
+        }
+        #endregion
 
         /// <summary>
         /// Add a user (only supported in server mode)
@@ -696,7 +909,7 @@ namespace RaptorDB
                 PumpDataForBackup(source, gz);
         }
 
-        private static void DecompressForBackup(Stream source, Stream destination)
+        private static void DecompressForRestore(Stream source, Stream destination)
         {
             using (GZipStream gz = new GZipStream(source, CompressionMode.Decompress))
                 PumpDataForBackup(gz, destination);
@@ -734,11 +947,6 @@ namespace RaptorDB
             _viewManager.Insert(viewname, docid, data);
         }
 
-        private int SaveData(Guid docid, object data)
-        {
-            return _objStore.SetObject(docid, data);
-        }
-
         private void Initialize(string foldername)
         {
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
@@ -761,7 +969,7 @@ namespace RaptorDB
             // load logger
             LogManager.Configure(_Path + "Logs" + _S + "log.txt", 500, false);
 
-            _log.Debug("RaptorDB starting...");
+            _log.Debug("\r\n\r\nRaptorDB starting...");
             _log.Debug("RaptorDB data folder = " + _Path);
 
             // check doc & file storage file version and upgrade if needed here
@@ -800,6 +1008,7 @@ namespace RaptorDB
 
             otherviews = this.GetType().GetMethod("SaveInOtherViews", BindingFlags.Instance | BindingFlags.NonPublic);
             save = this.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
+            saverep = this.GetType().GetMethod("SaveReplicationObject", BindingFlags.Instance | BindingFlags.NonPublic);
 
             _fulltextindex = new FullTextIndex(_Path + "Data" + _S + "Fulltext", "fulltext", true);
 
@@ -824,9 +1033,137 @@ namespace RaptorDB
             _freeMemTimer.AutoReset = true;
             _freeMemTimer.Start();
 
+            // start inbox procesor timer 
+            _processinboxTimer = new System.Timers.Timer(Global.ProcessInboxTimerSeconds * 1000);
+            _processinboxTimer.Elapsed += new System.Timers.ElapsedEventHandler(_processinboxTimer_Elapsed);
+            _processinboxTimer.Enabled = true;
+            _processinboxTimer.AutoReset = true;
+            _processinboxTimer.Start();
+
             // start cron daemon
             _cron = new CronDaemon();
             _cron.AddJob(Global.BackupCronSchedule, () => this.Backup());
+
+            // compile & register view files
+            CompileAndRegisterScriptViews(_Path + "Views");
+
+
+            if (File.Exists("Replication.config"))
+            {
+                // if replication.config exists -> start replication server
+                _repserver = new Replication.ReplicationServer(_Path, File.ReadAllText("Replication.config"), _objStore);
+            }
+            else if (File.Exists("branch.config"))
+            {
+                // if branch.config exists -> start replication client
+                _repclient = new Replication.ReplicationClient(_Path, File.ReadAllText("branch.config"), _objStore);
+            }
+        }
+
+        object _inboxlock = new object();
+        void _processinboxTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            lock (_inboxlock)
+            {
+                // start inbox processing timer
+                ProcessReplicationInbox(_Path + "Replication" + _S + "Inbox");
+
+                foreach (var f in Directory.GetDirectories(_Path + "Replication" + _S + "Inbox"))
+                    ProcessReplicationInbox(f);
+            }
+        }
+
+        private void CompileAndRegisterScriptViews(string viewfolder)
+        {
+            // compile & register views
+            string[] files = Directory.GetFiles(viewfolder, "*.view");
+            MethodInfo register = this.GetType().GetMethod("RegisterView", BindingFlags.Instance | BindingFlags.Public);
+            foreach (var fn in files)
+            {
+                Assembly a = CompileScript(fn);
+                if (a != null)
+                {
+                    foreach (var t in a.GetTypes())
+                    {
+                        foreach (var att in t.GetCustomAttributes(typeof(RegisterViewAttribute), false))
+                        {
+                            try
+                            {
+                                object o = Activator.CreateInstance(t);
+                                //  handle types when view<T> also
+                                Type[] args = t.GetGenericArguments();
+                                if (args.Length == 0)
+                                    args = t.BaseType.GetGenericArguments();
+                                Type tt = args[0];
+                                var m = register.MakeGenericMethod(new Type[] { tt });
+                                m.Invoke(this, new object[] { o });
+                            }
+                            catch (Exception ex)
+                            {
+                                _log.Error(ex);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private Assembly CompileScript(string file)
+        {
+            try
+            {
+                _log.Debug("Compiling script view : " + file);
+                CodeDomProvider compiler = CodeDomProvider.CreateProvider("CSharp");
+
+                CompilerParameters compilerparams = new CompilerParameters();
+                compilerparams.GenerateInMemory = false;
+                compilerparams.GenerateExecutable = false;
+                compilerparams.OutputAssembly = file.Replace(".view", ".dll");
+                compilerparams.CompilerOptions = "/optimize";
+
+                Regex regex = new Regex(
+                    @"\/\/\s*ref\s*\:\s*(?<refs>.*)",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                compilerparams.ReferencedAssemblies.Add(typeof(View<>).Assembly.Location);
+                compilerparams.ReferencedAssemblies.Add(typeof(object).Assembly.Location);
+                compilerparams.ReferencedAssemblies.Add(typeof(ICustomTypeDescriptor).Assembly.Location);
+
+                foreach (Match m in regex.Matches(File.ReadAllText(file)))
+                {
+                    string str = m.Groups["refs"].Value.Trim();
+                    Assembly a = Assembly.LoadWithPartialName(Path.GetFileNameWithoutExtension(str));//load from GAC if possible
+                    if (a != null)
+                        compilerparams.ReferencedAssemblies.Add(a.Location);
+                    else
+                    {
+                        string assm = Path.GetDirectoryName(this.GetType().Assembly.Location) + _S + str;
+                        a = Assembly.LoadFrom(assm);
+                        if (a != null)
+                            compilerparams.ReferencedAssemblies.Add(a.Location);
+                        else
+                            _log.Error("unable to find referenced file for view compiling : " + str);
+                    }
+                }
+
+                CompilerResults results = compiler.CompileAssemblyFromFile(compilerparams, file);
+
+                if (results.Errors.HasErrors == true)
+                {
+                    _log.Error("Error compiling view definition : " + file);
+                    foreach (var e in results.Errors)
+                        _log.Error(e.ToString());
+                    return null;
+                }
+
+                return results.CompiledAssembly;
+            }
+            catch (Exception ex)
+            {
+                _log.Error("Error compiling view definition : " + file);
+                _log.Error(ex);
+                return null;
+            }
         }
 
         void _freeMemTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -848,9 +1185,9 @@ namespace RaptorDB
         {
             _log.Debug("Upgrading storage file version from " + ver + " to " + StorageFile<int>._CurrentVersion + " on file : " + filename);
             throw new Exception("not implemented yet - contact the author if you need this functionality");
-            // FIX : upgrade from v0 to v1
+            // FEATURE : upgrade from v0 to v1
 
-            // FIX : upgrade from v1 to v2
+            // FEATURE : upgrade from v1 to v2
             // read from one file and write to the other 
         }
 
@@ -924,7 +1261,7 @@ namespace RaptorDB
 
             lock (_flock)
             {
-                int batch = Global.BackgroundFullIndexSize;
+                int batch = Global.BackgroundFullTextIndexBatchSize;
                 while (batch > 0)
                 {
                     if (_shuttingdown)
@@ -962,6 +1299,22 @@ namespace RaptorDB
             _savecache.Add(type, m);
             return m;
         }
+
+        private MethodInfo GetSaveReplicate(Type type)
+        {
+            MethodInfo m = null;
+            if (_saverepcache.TryGetValue(type, out m))
+                return m;
+
+            m = saverep.MakeGenericMethod(new Type[] { type });
+            _saverepcache.Add(type, m);
+            return m;
+        }
         #endregion
+
+        internal object GetAssemblyForView(string viewname, out string typename)
+        {
+            return _viewManager.GetAssemblyForView(viewname, out typename);
+        }
     }
 }

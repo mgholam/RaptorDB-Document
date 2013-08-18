@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using RaptorDB;
 
 
@@ -29,10 +27,10 @@ namespace SampleViews
         {
             ID = Guid.NewGuid();
         }
-        
+
         public Guid ID { get; set; }
         public string CustomerName { get; set; }
-        public string NoCase {get; set ;}
+        public string NoCase { get; set; }
         public string Address { get; set; }
         public List<LineItem> Items { get; set; }
         public DateTime Date { get; set; }
@@ -44,37 +42,24 @@ namespace SampleViews
     #endregion
 
     #region [  views  ]
+
+    public class SalesInvoiceViewRowSchema : RDBSchema
+    {
+        //[FullText]
+        public string CustomerName;
+        [CaseInsensitive]
+        public string NoCase;
+        public DateTime Date;
+        public string Address;
+        public int Serial;
+        public byte Status;
+        public bool Approved;
+        //public State InvoiceState;
+    }
+
     [RegisterView]
     public class SalesInvoiceView : View<SalesInvoice>
     {
-        public class RowSchema : RDBSchema
-        {
-            //[FullText]
-            public string CustomerName;
-            [CaseInsensitive]
-            public string NoCase;
-            public DateTime Date;
-            public string Address;
-            public int Serial;
-            public byte Status;
-            public bool Approved;
-            //public State InvoiceState;
-        }
-
-        // define your own row schema below (you must define a 'docid' property)
-
-        //public class RowSchema
-        //{
-        //    public string CustomerName { get; set; }
-        //    public DateTime Date { get; set; }
-        //    public string Address { get; set; }
-        //    public int Serial { get; set; }
-        //    public byte Status { get; set; }
-        //    public bool Approved { get; set; }
-
-        //    public Guid docid { get; set; }
-        //}
-
         public SalesInvoiceView()
         {
             this.Name = "SalesInvoice";
@@ -86,7 +71,7 @@ namespace SampleViews
             //// uncomment the following for transaction mode
             //this.TransactionMode = true;
 
-            this.Schema = typeof(SalesInvoiceView.RowSchema);
+            this.Schema = typeof(SalesInvoiceViewRowSchema);
 
             this.FullTextColumns.Add("customername"); // this or the attribute
 
@@ -104,17 +89,17 @@ namespace SampleViews
         }
     }
 
+    public class SalesItemRowsViewRowSchema : RDBSchema
+    {
+        public string Product;
+        public decimal QTY;
+        public decimal Price;
+        public decimal Discount;
+    }
+
     [RegisterView]
     public class SalesItemRowsView : View<SalesInvoice>
     {
-        public class RowSchema : RDBSchema
-        {
-            public string Product;
-            public decimal QTY;
-            public decimal Price;
-            public decimal Discount;
-        }
-
         public SalesItemRowsView()
         {
             this.Name = "SalesItemRows";
@@ -123,7 +108,7 @@ namespace SampleViews
             this.isActive = true;
             this.BackgroundIndexing = true;
 
-            this.Schema = typeof(SalesItemRowsView.RowSchema);
+            this.Schema = typeof(SalesItemRowsViewRowSchema);
 
             this.AddFireOnTypes(typeof(SalesInvoice));
 
@@ -136,17 +121,17 @@ namespace SampleViews
         }
     }
 
+    public class NewViewRowSchema : RDBSchema
+    {
+        public string Product;
+        public decimal QTY;
+        public decimal Price;
+        public decimal Discount;
+    }
+
     [RegisterView]
     public class newview : View<SalesInvoice>
     {
-        public class RowSchema : RDBSchema
-        {
-            public string Product;
-            public decimal QTY;
-            public decimal Price;
-            public decimal Discount;
-        }
-
         public newview()
         {
             this.Name = "newview";
@@ -156,7 +141,7 @@ namespace SampleViews
             this.BackgroundIndexing = true;
             this.Version = 1;
 
-            this.Schema = typeof(newview.RowSchema);
+            this.Schema = typeof(NewViewRowSchema);
 
             this.AddFireOnTypes(typeof(SalesInvoice));
 

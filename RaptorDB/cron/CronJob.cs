@@ -5,9 +5,9 @@ namespace RaptorDB
 {
     public class CronJob
     {
-        private readonly CronSchedule _cron_schedule = new CronSchedule();
+        internal readonly CronSchedule _cron_schedule = new CronSchedule();
         private readonly ThreadStart _thread_start;
-        private Thread _thread;
+        internal Thread _thread;
 
         public CronJob(string schedule, ThreadStart thread_start)
         {

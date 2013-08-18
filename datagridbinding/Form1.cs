@@ -68,7 +68,7 @@ namespace datagridbinding
 
             DateTime dt = FastDateTime.Now;
             var q = //rap.Query(typeof(SalesItemRowsView), (LineItem l) => (l.Product == "prod 1" || l.Product == "prod 3"));
-                rap.Query<SalesItemRowsView.RowSchema>(x => x.Product == "prod 1" || x.Product == "prod 3");
+                rap.Query<SalesItemRowsViewRowSchema>(x => x.Product == "prod 1" || x.Product == "prod 3");
             //List<SalesItemRowsView.RowSchema> list = q.Rows.Cast<SalesItemRowsView.RowSchema>().ToList();
             var res = from item in q.Rows//list
                       group item by item.Product into grouped
@@ -148,9 +148,9 @@ namespace datagridbinding
         string prod3 = "prod 3";
         private void serverSideSumQueryToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string prod1 = "prod 1";
+            //string prod1 = "prod 1";
             objclass c = new objclass() { val = "prod 3" };
-            decimal i = 20;
+            //decimal i = 20;
 
             //var q = rap.Count(typeof(SalesItemRowsView), 
             //    (LineItem l) => (l.Product == prod1 || l.Product == prod3) && l.Price.Between(10,i)
@@ -195,10 +195,10 @@ namespace datagridbinding
             //int[] revs = rap.FetchHistory(g);
             //object oo = rap.FetchVersion(revs[0]);
 
-            int c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial < 100);
-            c = rap.Count<SalesInvoiceView.RowSchema>(x => x.Serial != 100);
+            int c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < 100);
+            c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial != 100);
             c = rap.Count("SalesInvoice", "serial != 100");
-            var q = rap.Query<SalesInvoiceView.RowSchema>(x => x.Serial < 100, 0, 10);
+            var q = rap.Query<SalesInvoiceViewRowSchema>(x => x.Serial < 100, 0, 10);
             //var p = rap.Query("SalesInvoice");
             //var pp = rap.Query(typeof(SalesInvoiceView));
             //var ppp = rap.Query(typeof(SalesItemRowsView.RowSchema));
@@ -206,7 +206,7 @@ namespace datagridbinding
             //var ppppp = rap.Query(typeof(SalesInvoiceView.RowSchema), (SalesInvoiceView.RowSchema r) => r.Serial < 10);
             //var pppppp = rap.Query<SalesInvoiceView.RowSchema>("serial <10");
             //Guid g = new Guid("82997e60-f8f4-4b37-ae35-02d033512673");
-            var qq = rap.Query<SalesInvoiceView.RowSchema>(x => x.docid == new Guid("82997e60-f8f4-4b37-ae35-02d033512673"));
+            var qq = rap.Query<SalesInvoiceViewRowSchema>(x => x.docid == new Guid("82997e60-f8f4-4b37-ae35-02d033512673"));
             dataGridView1.DataSource = q.Rows;
             //q= rap.Query<SalesInvoiceView.RowSchema>("serial <100");
             //string s = q.Rows[0].CustomerName;

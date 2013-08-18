@@ -20,7 +20,7 @@ namespace RaptorDB.Views
         }
         public Stack<object> _stack = new Stack<object>();
         public Stack<object> _bitmap = new Stack<object>();
-        QueryFromTo qfromto;
+        //QueryFromTo qfromto;
         QueryExpression qexpression;
 
         protected override Expression VisitBinary(BinaryExpression b)
@@ -84,7 +84,7 @@ namespace RaptorDB.Views
             string mc = s.Substring(s.IndexOf('.') + 1);
             if (mc.Contains("Between"))
             {
-                // FIX : add code for between parsing here
+                // TODO : add code for between parsing here
 
                 string name = m.Arguments[0].ToString().Split('.')[1];
                 object from = GetValueForMember(m.Arguments[1]);

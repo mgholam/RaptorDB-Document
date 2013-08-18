@@ -32,7 +32,7 @@ namespace datagridbinding
                 var p = RaptorDB.RaptorDB.Open(txtFolder.Text);
                 p.RegisterView(new SalesInvoiceView());
                 p.RegisterView(new SalesItemRowsView());
-                p.RegisterView(new newview());
+                //p.RegisterView(new newview());
                 _rap = p;
             }
             else

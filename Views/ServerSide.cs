@@ -22,7 +22,7 @@ namespace Views
         {
             var q = rap.Query(typeof(SalesItemRowsView), filter);
 
-            List<SalesItemRowsView.RowSchema> list = q.Rows.Cast<SalesItemRowsView.RowSchema>().ToList();
+            List<SalesItemRowsViewRowSchema> list = q.Rows.Cast<SalesItemRowsViewRowSchema>().ToList();
             var res = from item in list
                       group item by item.Product into grouped
                       select new sumtype // avoid annymous types
@@ -44,7 +44,7 @@ namespace Views
             api.Log("generating data for user : " + username);
 
             // query data to send to client here as needed
-            var r = api.Query<SalesInvoiceView.RowSchema>(x => x.Serial < 10);
+            var r = api.Query<SalesInvoiceViewRowSchema>(x => x.Serial < 10);
             foreach (var p in r.Rows)
             {
                 DocsToSend.Add(p.docid);

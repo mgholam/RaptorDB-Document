@@ -47,7 +47,7 @@ namespace RaptorDB.Views
             _log.Error("view not found", viewname);
             return 0;
         }
-             
+
         internal int Count(Type objtype, string filter)
         {
             string viewname = null;
@@ -74,7 +74,7 @@ namespace RaptorDB.Views
             return 0;
         }
 
-        internal int Count(string  viewname, string filter)
+        internal int Count(string viewname, string filter)
         {
             ViewHandler view = null;
             // find view from name
@@ -105,7 +105,7 @@ namespace RaptorDB.Views
             string viewname = GetViewName(objtype);
 
             // find view from name
-            if (viewname!="") //_primaryView.TryGetValue(objtype, out viewname))
+            if (viewname != "") //_primaryView.TryGetValue(objtype, out viewname))
                 return Query(viewname, filter, start, count);
 
             //// search for viewtype here
@@ -205,7 +205,7 @@ namespace RaptorDB.Views
                     _log.Debug("view is not active, skipping insert : " + viewname);
                     return false;
                 }
-    
+
                 return vman.InsertTransaction<T>(docid, data);
             }
             _log.Error("view not found", viewname);
@@ -214,10 +214,8 @@ namespace RaptorDB.Views
 
         internal object Fetch(Guid guid)
         {
-            //byte[] b = null;
             object b = null;
             _objectStore.GetObject(guid, out b);
-                //return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
 
             return b;
         }
@@ -249,12 +247,11 @@ namespace RaptorDB.Views
             if (_views.TryGetValue(view.Name.ToLower(), out vh))
             {
                 _log.Error("View already added and exists : " + view.Name);
-                //vh.RebuildExisting(_objectStore, view);
             }
             else
             {
                 vh = new ViewHandler(_Path, this);
-                vh.SetView(view , _objectStore);
+                vh.SetView(view, _objectStore);
                 _views.Add(view.Name.ToLower(), vh);
                 _otherViewTypes.Add(view.GetType(), view.Name.ToLower());
 
@@ -311,7 +308,7 @@ namespace RaptorDB.Views
                 }
             }
         }
-        
+
         //// for when the type full name is not found in server mode
         //internal string GetViewName(string typefullname)
         //{
@@ -361,7 +358,7 @@ namespace RaptorDB.Views
             // commit all data in vews with tran id
             foreach (var v in _views)
                 v.Value.Commit(ID);
-            
+
             _transactions.Remove(ID);
         }
 
@@ -423,7 +420,19 @@ namespace RaptorDB.Views
         internal void FreeMemory()
         {
             foreach (var v in _views)
-                v.Value.FreeMemory();                
+                v.Value.FreeMemory();
+        }
+
+        internal object GetAssemblyForView(string viewname, out string typename)
+        {
+            ViewHandler view = null;
+            typename = "";
+            // find view from name
+            if (_views.TryGetValue(viewname.ToLower(), out view))
+            {
+                return view.GetAssembly(out typename);
+            }
+            return null;
         }
     }
 }

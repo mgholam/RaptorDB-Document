@@ -87,6 +87,13 @@ namespace fastJSON
         public JSONParameters Parameters = new JSONParameters();
         private JSONParameters _params;
 
+        public string ToNiceJSON(object obj, JSONParameters param)
+        {
+            string s = ToJSON(obj, param);
+
+            return Beautify(s);
+        }
+
         public string ToJSON(object obj)
         {
             _params = Parameters;
@@ -288,7 +295,7 @@ namespace fastJSON
             else
             {
                 sd = new SafeDictionary<string, myPropInfo>();
-                PropertyInfo[] pr = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                PropertyInfo[] pr = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                 foreach (PropertyInfo p in pr)
                 {
                     myPropInfo d = CreateMyProp(p.PropertyType, p.Name);
@@ -297,7 +304,7 @@ namespace fastJSON
                     d.getter = Reflection.CreateGetMethod(type, p);
                     sd.Add(p.Name, d);
                 }
-                FieldInfo[] fi = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+                FieldInfo[] fi = type.GetFields(BindingFlags.Public | BindingFlags.Instance |  BindingFlags.Static);
                 foreach (FieldInfo f in fi)
                 {
                     myPropInfo d = CreateMyProp(f.FieldType, f.Name);

@@ -108,13 +108,12 @@ namespace RaptorDB.Views
 
             LoadDeletedRowsBitmap();
 
-            _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat", SF_FORMAT.BSON);
-            //_viewData.SkipDateTime = true;
+            _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat", SF_FORMAT.BSON, false);
 
             CreateResultRowFiller();
 
             if (rebuild)
-                RebuildFromScratch(docs);
+                Task.Factory.StartNew(() => RebuildFromScratch(docs));
         }
 
         internal void FreeMemory()
@@ -196,7 +195,7 @@ namespace RaptorDB.Views
             Dictionary<Guid, List<object[]>> rows = new Dictionary<Guid, List<object[]>>();
             if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
             {
-                // FIX : exists -> merge data??
+                // TODO : exists -> merge data??
             }
             else
             {
@@ -310,7 +309,7 @@ namespace RaptorDB.Views
             }
 
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
-            _log.Debug("query rows count : " + rows.Count);
+            _log.Debug("query rows count : " + rows.Count.ToString("#,0"));
             ret.OK = true;
             ret.Count = rows.Count;
             ret.TotalCount = rows.Count;
@@ -333,7 +332,8 @@ namespace RaptorDB.Views
             _viewData.Shutdown();
 
             // write view version
-            File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
+            if (File.Exists(_Path + "version_.dat") == false)
+                File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
         }
 
         internal void Delete(Guid docid)
@@ -426,7 +426,7 @@ namespace RaptorDB.Views
                 foreach (var o in trows)
                     rows.Add(o);
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
-            _log.Debug("query rows count : " + rows.Count);
+            _log.Debug("query rows count : " + rows.Count.ToString("#,0"));
             ret.OK = true;
             ret.Count = rows.Count;
             ret.TotalCount = rows.Count;
@@ -464,7 +464,7 @@ namespace RaptorDB.Views
                 foreach (var o in trows)
                     rows.Add(o);
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
-            _log.Debug("query rows count : " + rows.Count);
+            _log.Debug("query rows count : " + rows.Count.ToString("#,0"));
             ret.OK = true;
             ret.Count = rows.Count;
             ret.TotalCount = rows.Count;
@@ -509,10 +509,8 @@ namespace RaptorDB.Views
             int c = docs.RecordCount();
             for (int i = 0; i < c; i++)
             {
-                //Guid docid = Guid.Empty;
-                //bool isdeleted = false;
                 StorageItem<Guid> meta = null;
-                object b = docs.GetObject(i, out meta);//out docid, out isdeleted);
+                object b = docs.GetObject(i, out meta);
                 if (meta != null && meta.isDeleted)
                     Delete(meta.key);
                 else
@@ -520,7 +518,7 @@ namespace RaptorDB.Views
                     if (b != null)
                     {
                         // FEATURE : optimize this by not creating the object if not in FireOnTypes
-                        object obj = b;// CreateObject(b);
+                        object obj = b;
                         Type t = obj.GetType();
                         if (_view.FireOnTypes.Contains(t.AssemblyQualifiedName))
                         {
@@ -532,7 +530,10 @@ namespace RaptorDB.Views
                         _log.Error("Doc is null : " + meta.key);
                 }
             }
-            _log.Debug("rebuild done (s) = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+            _log.Debug("rebuild view '" + _view.Name + "' done (s) = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+
+            // write version.dat file when done
+            File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
         }
 
         private object CreateObject(byte[] b)
@@ -682,7 +683,7 @@ namespace RaptorDB.Views
             else if (type == typeof(bool))
                 return new BoolIndex(_Path, name);
 
-            else if(type.IsEnum)
+            else if (type.IsEnum)
                 return (IIndex)Activator.CreateInstance(
                     typeof(EnumIndex<>).MakeGenericType(type),
                     new object[] { _Path, name });
@@ -782,7 +783,7 @@ namespace RaptorDB.Views
             List<T> trows = null;
             if (_viewmanager.inTransaction())
             {
-                // query from transaction own data
+                // query from transactions own data
                 Dictionary<Guid, List<object[]>> rows = null;
                 if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
                 {
@@ -828,6 +829,12 @@ namespace RaptorDB.Views
             dt = FastDateTime.Now;
             // exec query return rows
             return ReturnRows2<T>(ba, null, start, count);
+        }
+
+        internal object GetAssembly(out string typename)
+        {
+            typename = _view.Schema.AssemblyQualifiedName;
+            return File.ReadAllBytes(_view.Schema.Assembly.Location);
         }
     }
 }

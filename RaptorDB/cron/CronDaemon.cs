@@ -24,6 +24,12 @@ namespace RaptorDB
             cron_jobs.Add(cj);
         }
 
+        public void RemoveJob(string schedule)//, ThreadStart action)
+        {
+            var f = cron_jobs.Find((x) => { return x._cron_schedule._expression == schedule; });
+            if(f!=null)
+                cron_jobs.Remove(f);
+        }
         //public void Start()
         //{
         //    timer.Start();

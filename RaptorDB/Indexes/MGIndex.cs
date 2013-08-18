@@ -120,7 +120,7 @@ namespace RaptorDB
 
         public WAHBitArray Query(T from, T to, int maxsize)
         {           
-            // FIX : add BETWEEN code here
+            // TODO : add BETWEEN code here
             T temp = default(T);
             if (from.CompareTo(to) > 0) // check values order
             {
@@ -146,7 +146,7 @@ namespace RaptorDB
             if (exp == RDBExpression.Equal || exp == RDBExpression.NotEqual)
                 return doEqualOp(exp, key, maxsize);
 
-            // FIX : optimize complement search if page count less for the complement pages
+            // TODO : optimize complement search if page count less for the complement pages
             //bool found = false;
             //int last = _pageList.Count - 1;
             //int pos = FindPageOrLowerPosition(key, ref found);

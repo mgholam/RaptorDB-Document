@@ -108,6 +108,11 @@
     <Compile Include="Indexes\Indexes.cs" />
     <Compile Include="Indexes\IndexFile.cs" />
     <Compile Include="Indexes\MGIndex.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="RaptorDBServer.cs" />
     <Compile Include="Replication\Configuration.cs" />
     <Compile Include="Replication\Packets.cs" />
@@ -126,13 +131,20 @@
     <Compile Include="Views\ViewManager.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Properties\" />
+    <None Include="Replication\Readme.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RaptorDB.Common\RaptorDB.Common.csproj">
       <Project>{32331D51-5BE0-41E2-AF1A-9B086C5AE809}</Project>
       <Name>RaptorDB.Common</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Replication\msg.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
