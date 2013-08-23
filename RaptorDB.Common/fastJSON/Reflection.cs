@@ -23,7 +23,7 @@ namespace fastJSON
         {
         }
 
-        public bool ShowReadOnlyProperties = false;
+        //public bool ShowReadOnlyProperties = false;
         public delegate object GenericSetter(object target, object value);
         public delegate object GenericGetter(object obj);
         private delegate object CreateObject();
@@ -259,7 +259,7 @@ namespace fastJSON
             return (GenericGetter)getter.CreateDelegate(typeof(GenericGetter));
         }
 
-        public List<Getters> GetGetters(Type type)
+        public List<Getters> GetGetters(Type type, bool showreadonly)
         {
             List<Getters> val = null;
             if (_getterscache.TryGetValue(type, out val))
@@ -269,7 +269,7 @@ namespace fastJSON
             List<Getters> getters = new List<Getters>();
             foreach (PropertyInfo p in props)
             {
-                if (!p.CanWrite && ShowReadOnlyProperties == false) continue;
+                if (!p.CanWrite && showreadonly == false) continue;
 
                 object[] att = p.GetCustomAttributes(typeof(System.Xml.Serialization.XmlIgnoreAttribute), false);
                 if (att != null && att.Length > 0)

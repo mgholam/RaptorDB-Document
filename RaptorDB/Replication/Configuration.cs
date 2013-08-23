@@ -37,7 +37,7 @@ namespace RaptorDB.Replication
             ReplicationPort = 9999;
         }
         public int ReplicationPort;
-
+        //public string EmbeddedClientHandler;
         public List<WhereItem> Where;
         public List<WhatItem> What;
     }
@@ -52,10 +52,8 @@ namespace RaptorDB.Replication
     {
         public ClientConfiguration()
         {
-            ReplicationMode = REPMODE.Branch;
             ServerReplicationPort = 9999;
         }
-        public REPMODE ReplicationMode;
         public string ServerAddress = "";
         public int ServerReplicationPort;
         public string Password = "";

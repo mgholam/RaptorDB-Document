@@ -321,7 +321,7 @@ namespace fastJSON
                 append = true;
             }
 
-            List<Getters> g = Reflection.Instance.GetGetters(t);
+            List<Getters> g = Reflection.Instance.GetGetters(t, _params.ShowReadOnlyProperties);
 
             foreach (var p in g)
             {

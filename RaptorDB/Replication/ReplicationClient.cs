@@ -21,6 +21,12 @@ namespace RaptorDB.Replication
         public int lastPackageIndex;
     }
 
+    public class ClientWhatWhenConfig
+    {
+        public WhatItem what;
+        public string whencron;
+    }
+
     /// <summary>
     /// Replication package processing is done in RaptorDB.cs
     /// </summary>
@@ -50,7 +56,7 @@ namespace RaptorDB.Replication
             //  read what config
             if (File.Exists(_path + "Replication" + _S + "branch.dat"))
                 _clientConfig = fastBinaryJSON.BJSON.Instance.ToObject<ClientRepConfig>(File.ReadAllBytes(_path + "Replication" + _S + "branch.dat"));
-            // FIX : starting jobs
+            // starting jobs
             _cron.AddJob(_clientConfig.whencron, Replicate);
         }
 
@@ -91,7 +97,6 @@ namespace RaptorDB.Replication
         {
             lock (_lock)
             {
-                //CreatePackageForSend();
                 try
                 {
                     if (ConnectToHQ())
@@ -129,7 +134,9 @@ namespace RaptorDB.Replication
 
                     if (pack.datahash == Helper.MurMur.Hash((byte[])pack.data))
                     {
-                        File.WriteAllBytes(_InboxPath+ pack.filename, (byte[])pack.data);
+                        _log.Debug("package recieved from server : " + pack.filename);
+                        _log.Debug("package size : " + (pack.data as byte[]).Length.ToString("#,0"));
+                        File.WriteAllBytes(_InboxPath + pack.filename, (byte[])pack.data);
                         p = createpacket();
                         p.command = "hqpackageok";
                         p.filename = pack.filename;
@@ -153,7 +160,6 @@ namespace RaptorDB.Replication
                 p.command = "packageforhq";
                 p.data = File.ReadAllBytes(fn);
                 p.datahash = Helper.MurMur.Hash((byte[])p.data);
-                //p.lastrecord = 
                 ReturnPacket ret = (ReturnPacket)_client.Send(p);
                 string path = Path.GetDirectoryName(fn);
                 string fnn = Path.GetFileNameWithoutExtension(fn);
@@ -184,8 +190,20 @@ namespace RaptorDB.Replication
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             if (ret.OK)
             {
-                _clientConfig.what = (WhatItem)ret.Data;
+                ClientWhatWhenConfig c = (ClientWhatWhenConfig)ret.Data;
+
+                _clientConfig.what = c.what;
+
                 _clientConfig.isConfigured = true;
+
+                if (_clientConfig.whencron != c.whencron)
+                {
+                    _cron.Stop();
+                    _clientConfig.whencron = c.whencron;
+                    _cron = new CronDaemon();
+                    _cron.AddJob(_clientConfig.whencron, Replicate);
+                }
+
                 SaveConfig();
             }
             return ret.OK;
@@ -200,11 +218,11 @@ namespace RaptorDB.Replication
             int packageNumber = _clientConfig.outPackageNumber;
             int i = _clientConfig.lastCounter;
             string filename = outFolder + packageNumber.ToString("0000000000") + ".mgdat";
-
-            if (i < _docs.RecordCount())
+            int total = _docs.RecordCount();
+            if (i < total)
             {
                 StorageFile<Guid> package = new StorageFile<Guid>(filename, SF_FORMAT.JSON, true);
-                while (maxc > 0)
+                while (maxc > 0 && i < total)
                 {
                     var meta = _docs.GetMeta(i);
                     if (meta == null)
@@ -213,10 +231,10 @@ namespace RaptorDB.Replication
                     {
                         object obj = _docs.GetObject(i, out meta);
                         package.WriteObject(meta.key, obj);
+                        maxc--;
                     }
 
                     i++;
-                    maxc--;
                 }
                 package.Shutdown();
                 packageNumber++;

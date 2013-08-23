@@ -22,15 +22,8 @@ namespace testing
         static RaptorDBServer server;
         public static void Main(string[] args)
         {
-            //Program3.Main3(args); // delete test
-            //return;
-
-            //program2.Main2(args); // multithread test
-            //return;
-
-
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
-            server = new RaptorDBServer(90, @"..\..\..\RaptorDBdata");
+            server = new RaptorDBServer(90, @"..\RaptorDBdata");
             
             Console.WriteLine("Server started on port 90");
             Console.WriteLine("Press Enter to exit...");

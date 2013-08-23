@@ -49,6 +49,8 @@
     <Compile Include="fastBinaryJSON\BJSON.cs" />
     <Compile Include="fastBinaryJSON\BJsonParser.cs" />
     <Compile Include="fastBinaryJSON\BJsonSerializer.cs" />
+    <Compile Include="fastBinaryJSON\dynamic.cs" />
+    <Compile Include="fastJSON\dynamic.cs" />
     <Compile Include="fastJSON\Formatter.cs" />
     <Compile Include="fastJSON\Getters.cs" />
     <Compile Include="fastJSON\JSON.cs" />

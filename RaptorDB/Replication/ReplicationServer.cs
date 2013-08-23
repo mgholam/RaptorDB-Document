@@ -31,6 +31,7 @@ namespace RaptorDB.Replication
 
         private void Initialize(string config)
         {
+            _log.Debug("Starting replication server...");
             Directory.CreateDirectory(_Path + "Replication");
             Directory.CreateDirectory(_Path + "Replication" + _S + "Inbox");
             Directory.CreateDirectory(_Path + "Replication" + _S + "Outbox");
@@ -118,14 +119,22 @@ namespace RaptorDB.Replication
         }
 
 
-        private WhatItem GetBranchConfig(string branchname)
+        private ClientWhatWhenConfig GetBranchConfig(string branchname)
         {
             WhatItem ret = _config.What.Find((WhatItem w) => { return w.Name.ToLower() == branchname.ToLower(); });
 
             if (ret == null)
                 ret = _config.What.Find((WhatItem w) => { return w.Name.ToLower() == "default"; });
 
-            return ret;
+            ClientWhatWhenConfig c = new ClientWhatWhenConfig();
+            c.what = ret;
+            var where = _config.Where.Find(w => { return w.BranchName.ToLower() == branchname.ToLower(); });
+            if (where != null)
+                c.whencron = where.When;
+            else
+                c.whencron = "* * * * *";
+
+            return c;
         }
 
         private bool PackageForHQ(ReplicationPacket p)
@@ -136,8 +145,10 @@ namespace RaptorDB.Replication
             // save file to \replication\inbox\branchname
             Directory.CreateDirectory(_InboxPath + _S + p.branchname);
             string fn = _InboxPath + _S + p.branchname + _S + p.filename;
+            _log.Debug("package recieved from : " + p.branchname);
+            _log.Debug("package name : " + p.filename);
+            _log.Debug("package size : " + (p.data as byte[]).Length.ToString("#,0"));
             File.WriteAllBytes(fn, (byte[])p.data);
-            //if p.lastrecord 
             return true;
         }
 
@@ -176,7 +187,7 @@ namespace RaptorDB.Replication
         private string CreatePackageForSend(ReplicationPacket packet, out int last)
         {
             int maxc = INTERNALLIMIT;
-            WhatItem what = GetBranchConfig(packet.branchname);
+            WhatItem what = GetBranchConfig(packet.branchname).what;
             if (what.PackageItemLimit > 0)
                 maxc = what.PackageItemLimit;
             string outFolder = _OutboxPath;
@@ -194,12 +205,15 @@ namespace RaptorDB.Replication
                         break;
                     if (meta.isReplicated == false && MatchType(meta.typename, what))
                     {
-                        object obj = _docs.GetObject(i, out meta);
-                        package.WriteObject(meta.key, obj);
+                        if (meta.isDeleted == false || what.PropogateHQDeletes)
+                        {
+                            object obj = _docs.GetObject(i, out meta);
+                            package.WriteObject(meta.key, obj);                
+                            maxc--;
+                        }
                     }
 
                     i++;
-                    maxc--;
                 }
                 package.Shutdown();
                 packageNumber++;

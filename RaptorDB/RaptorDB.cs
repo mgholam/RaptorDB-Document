@@ -20,11 +20,33 @@ namespace RaptorDB
     {
         private RaptorDB(string FolderPath)
         {
-            // FIX : read/write global or another object?
+            // if configs !exists create template config files
+            CreateTemplateConfigFiles();
+
+            // TODO : read/write global or another object?
             // read raptordb.config here (running parameters)
-            if (File.Exists("raptordb.config"))
-                fastJSON.JSON.Instance.FillObject(new Global(), File.ReadAllText("raptordb.config"));
+            if (File.Exists("RaptorDB.config"))
+                fastJSON.JSON.Instance.FillObject(new Global(), File.ReadAllText("RaptorDB.config"));
             Initialize(FolderPath);
+        }
+
+        private void CreateTemplateConfigFiles()
+        {
+            if(File.Exists("RaptorDB.config")== false)
+                File.WriteAllText("-RaptorDB.config", fastJSON.JSON.Instance.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
+
+            if (File.Exists("RaptorDB-Branch.config") == false)
+                File.WriteAllText("-RaptorDB-Branch.config", fastJSON.JSON.Instance.ToNiceJSON(new Replication.ClientConfiguration(), new fastJSON.JSONParameters { UseExtensions = false }));
+
+            if (File.Exists("RaptorDB-Replication.config") == false)
+            {
+                Replication.ServerConfiguration s = new Replication.ServerConfiguration();
+                s.What.Add(new Replication.WhatItem { Name = "default", PackageItemLimit = 10000, Version = 1, B2HQtypes = new List<string> { "*" }, HQ2Btypes = new List<string> { "*" } });
+                s.What.Add(new Replication.WhatItem { Name = "b2", PackageItemLimit = 10000, Version = 1, B2HQtypes = new List<string> { "*" }, HQ2Btypes = new List<string> { "config.*" } });
+                s.Where.Add(new Replication.WhereItem { BranchName = "b1", Password = "123", When = "*/5 * * * *", What = "default" });
+                s.Where.Add(new Replication.WhereItem { BranchName = "b2", Password = "321", When = "*/20 * * * *", What = "b2" });
+                File.WriteAllText("-RaptorDB-Replication.config", fastJSON.JSON.Instance.ToNiceJSON(s, new fastJSON.JSONParameters { UseExtensions = false }));
+            }
         }
 
         public static RaptorDB Open(string FolderPath)
@@ -289,7 +311,7 @@ namespace RaptorDB
             if (_repclient != null)
                 _repclient.Shutdown();
 
-            // FIX : write global or something else?
+            // TODO : write global or something else?
             if (File.Exists("RaptorDB.config") == false)
                 File.WriteAllText("RaptorDB.config", fastJSON.JSON.Instance.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
             if (_cron != null)
@@ -358,12 +380,9 @@ namespace RaptorDB
         private object _replock = new object();
         private void ProcessReplicationInbox(string inboxfolder)
         {
-            //if (_clientReplicationEnabled == false)
-            //    return;
-
             lock (_replock)
             {
-                string[] files = Directory.GetFiles(inboxfolder, "*.counter");// _Path + "Replicaton" + _S + "Inbox", 
+                string[] files = Directory.GetFiles(inboxfolder, "*.counter");
 
                 // check if ".counter" file exists
                 if (files.Length > 0)
@@ -384,7 +403,7 @@ namespace RaptorDB
                     }
                 }
 
-                files = Directory.GetFiles(inboxfolder, "*.gz"); // _Path + "Replicaton" + _S + "Inbox", 
+                files = Directory.GetFiles(inboxfolder, "*.gz"); 
 
                 Array.Sort(files);
                 foreach (var filename in files)
@@ -1048,15 +1067,15 @@ namespace RaptorDB
             CompileAndRegisterScriptViews(_Path + "Views");
 
 
-            if (File.Exists("Replication.config"))
+            if (File.Exists("RaptorDB-Replication.config"))
             {
                 // if replication.config exists -> start replication server
-                _repserver = new Replication.ReplicationServer(_Path, File.ReadAllText("Replication.config"), _objStore);
+                _repserver = new Replication.ReplicationServer(_Path, File.ReadAllText("RaptorDB-Replication.config"), _objStore);
             }
-            else if (File.Exists("branch.config"))
+            else if (File.Exists("RaptorDB-Branch.config"))
             {
                 // if branch.config exists -> start replication client
-                _repclient = new Replication.ReplicationClient(_Path, File.ReadAllText("branch.config"), _objStore);
+                _repclient = new Replication.ReplicationClient(_Path, File.ReadAllText("RaptorDB-Branch.config"), _objStore);
             }
         }
 

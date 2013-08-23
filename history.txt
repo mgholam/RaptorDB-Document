@@ -183,7 +183,7 @@ v2.0.6.1
 --------
 - bug fix WAHBitArray
 
-v2.5.0
+v3.0.0
 --------
 - index files are opened in share mode for online copy
 - add cron daemon (thanks to Kevin Coylar)
@@ -196,8 +196,10 @@ v2.5.0
 - you can disable the primary view to be defined on save with Global.RequirePrimaryView (K/V mode) 
 - view rebuilds are now done in the background (non-blocking on restart)
 - you can define views in c# script format (*.view) to be compiled at runtime in 'datafolder\views'
-- row schema defined in script views will be tranfered to the client if they don't exist
-- added HQ-Branch replication feature
+- row schema defined in script views will be transferred to the client if they don't exist
 - fastJSON now serializes static properties
-
-
+- upgrade to fastJSON v2.0.18
+- upgrade to fastBinaryJSON v1.3.8
+- added HQ-Branch replication feature
+- automatic generate config files if they don't exist with a '-' prefix
+- 'output' in the root of the solution folder is the new build destination of projects for easy access

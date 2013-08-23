@@ -87,7 +87,7 @@
             this.txtFolder.Name = "txtFolder";
             this.txtFolder.Size = new System.Drawing.Size(288, 22);
             this.txtFolder.TabIndex = 1;
-            this.txtFolder.Text = "..\\..\\..\\RaptorDBdata";
+            this.txtFolder.Text = "..\\RaptorDBdata";
             // 
             // groupBox2
             // 

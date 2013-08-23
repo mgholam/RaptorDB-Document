@@ -643,7 +643,7 @@ namespace RaptorDB.Views
             {
                 object[] r = new object[colcount];
                 int i = 0;
-                List<fastJSON.Getters> getters = Reflection.Instance.GetGetters(obj.GetType());
+                List<fastJSON.Getters> getters = Reflection.Instance.GetGetters(obj.GetType(),false);
                 foreach (var c in _schema.Columns)
                 {
                     foreach (var g in getters)

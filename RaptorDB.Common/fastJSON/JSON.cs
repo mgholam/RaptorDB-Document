@@ -61,9 +61,9 @@ namespace fastJSON
         public void FixValues()
         {
             if (UseExtensions == false) // disable conflicting params
-            {
                 UsingGlobalTypes = false;
-            }
+            if (EnableAnonymousTypes)
+                ShowReadOnlyProperties = true;
         }
     }
 
@@ -98,7 +98,7 @@ namespace fastJSON
         {
             _params = Parameters;
             _params.FixValues();
-            Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
+            //Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
             return ToJSON(obj, Parameters);
         }
 
@@ -106,7 +106,7 @@ namespace fastJSON
         {
             _params = param;
             _params.FixValues();
-            Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
+            //Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
             Type t = null;
 
             if (obj == null)
@@ -118,7 +118,7 @@ namespace fastJSON
                 _params.UsingGlobalTypes = false;
 
             // FEATURE : enable extensions when you can deserialize anon types
-            if (_params.EnableAnonymousTypes) { _params.UseExtensions = false; _params.UsingGlobalTypes = false; Reflection.Instance.ShowReadOnlyProperties = true; }
+            if (_params.EnableAnonymousTypes) { _params.UseExtensions = false; _params.UsingGlobalTypes = false; }
             _usingglobals = _params.UsingGlobalTypes;
             return new JSONSerializer(_params).ConvertToJSON(obj);
         }
@@ -126,8 +126,13 @@ namespace fastJSON
         public object Parse(string json)
         {
             _params = Parameters;
-            Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
+            //Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
             return new JsonParser(json, _params.IgnoreCaseOnDeserialize).Decode();
+        }
+
+        public dynamic ToDynamic(string json)
+        {
+            return new DynamicJson(json);
         }
 
         public T ToObject<T>(string json)
@@ -144,7 +149,7 @@ namespace fastJSON
         {
             _params = Parameters;
             _params.FixValues();
-            Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
+            //Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
             Type t = null;
             if (type != null && type.IsGenericType)
                 t = type.GetGenericTypeDefinition();
@@ -197,7 +202,7 @@ namespace fastJSON
         {
             _params = Parameters;
             _params.FixValues();
-            Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
+            //Reflection.Instance.ShowReadOnlyProperties = _params.ShowReadOnlyProperties;
             Dictionary<string, object> ht = new JsonParser(json, Parameters.IgnoreCaseOnDeserialize).Decode() as Dictionary<string, object>;
             if (ht == null) return null;
             return ParseDictionary(ht, null, input.GetType(), input);

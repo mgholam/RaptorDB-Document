@@ -79,7 +79,7 @@ namespace RaptorDB
                 sb.AppendLine(kv.Key + " , " + kv.Value);
             }
 
-            File.WriteAllText(_path + _S + "users.config", sb.ToString());
+            File.WriteAllText(_path + _S + "RaptorDB-Users.config", sb.ToString());
         }
 
         private object processpayload(object data)
@@ -254,9 +254,9 @@ namespace RaptorDB
         private void Initialize()
         {
             // load users here
-            if (File.Exists(_path + _S + "users.config"))
+            if (File.Exists(_path + _S + "RaptorDB-Users.config"))
             {
-                foreach (string line in File.ReadAllLines(_path + _S + "users.config"))
+                foreach (string line in File.ReadAllLines(_path + _S + "RaptorDB-Users.config"))
                 {
                     if (line.Contains("#") == false)
                     {
