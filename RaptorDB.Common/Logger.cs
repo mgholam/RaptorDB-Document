@@ -40,6 +40,8 @@ namespace RaptorDB
 
         public void Init(string filename, int sizelimitKB, bool showmethodnames)
         {
+            if (_output != null)
+                return;
             _que = new Queue();
             _showMethodName = showmethodnames;
             _sizeLimit = sizelimitKB;

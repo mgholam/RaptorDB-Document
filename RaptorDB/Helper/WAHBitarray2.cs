@@ -615,10 +615,11 @@ namespace RaptorDB
             off = indx % 32;
             if (ccount > 0)
             {
+                uint i = 0xffffffff << (32 - ccount);
                 if (p > (list.Count - 1)) //remaining
-                    list.Add((0xffffffff << (32 - ccount)));
+                    list.Add(i);
                 else
-                    list[p] |= (uint)((0xffffffff >> off));
+                    list[p] |= (uint)(i >> off);
             }
         }
 

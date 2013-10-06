@@ -27,7 +27,7 @@ namespace RaptorDBServer
 
         protected override void OnStop()
         {
-            _raptor.Shutdown();
+            //_raptor.Shutdown();
         }
     }
 }

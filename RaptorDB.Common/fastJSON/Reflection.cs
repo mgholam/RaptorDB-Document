@@ -13,7 +13,7 @@ namespace fastJSON
     {
         public string Name;
         public Reflection.GenericGetter Getter;
-        public Type propertyType;
+        //public Type propertyType;
     }
 
     public sealed class Reflection
@@ -23,7 +23,6 @@ namespace fastJSON
         {
         }
 
-        //public bool ShowReadOnlyProperties = false;
         public delegate object GenericSetter(object target, object value);
         public delegate object GenericGetter(object obj);
         private delegate object CreateObject();
@@ -31,7 +30,7 @@ namespace fastJSON
         private SafeDictionary<Type, string> _tyname = new SafeDictionary<Type, string>();
         private SafeDictionary<string, Type> _typecache = new SafeDictionary<string, Type>();
         private SafeDictionary<Type, CreateObject> _constrcache = new SafeDictionary<Type, CreateObject>();
-        private SafeDictionary<Type, List<Getters>> _getterscache = new SafeDictionary<Type, List<Getters>>();
+        private SafeDictionary<Type, Getters[]> _getterscache = new SafeDictionary<Type, Getters[]>();
 
         #region [   PROPERTY GET SET   ]
         public string GetTypeAssemblyName(Type t)
@@ -259,9 +258,9 @@ namespace fastJSON
             return (GenericGetter)getter.CreateDelegate(typeof(GenericGetter));
         }
 
-        public List<Getters> GetGetters(Type type, bool showreadonly)
+        public Getters[] GetGetters(Type type, bool showreadonly)
         {
-            List<Getters> val = null;
+            Getters[] val = null;
             if (_getterscache.TryGetValue(type, out val))
                 return val;
 
@@ -281,7 +280,7 @@ namespace fastJSON
                     Getters gg = new Getters();
                     gg.Name = p.Name;
                     gg.Getter = g;
-                    gg.propertyType = p.PropertyType;
+                    //gg.propertyType = p.PropertyType;
                     getters.Add(gg);
                 }
             }
@@ -299,13 +298,13 @@ namespace fastJSON
                     Getters gg = new Getters();
                     gg.Name = f.Name;
                     gg.Getter = g;
-                    gg.propertyType = f.FieldType;
+                    //gg.propertyType = f.FieldType;
                     getters.Add(gg);
                 }
             }
-
-            _getterscache.Add(type, getters);
-            return getters;
+            val = getters.ToArray();
+            _getterscache.Add(type, val);
+            return val;
         }
 
         #endregion

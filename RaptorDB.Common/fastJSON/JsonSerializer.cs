@@ -97,7 +97,7 @@ namespace fastJSON
             else if (obj is byte[])
                 WriteBytes((byte[])obj);
 
-            else if (obj is IEnumerable)// Array || obj is IList || obj is ICollection)
+            else if (obj is IEnumerable)
                 WriteArray((IEnumerable)obj);
 
             else if (obj is Enum)
@@ -321,10 +321,11 @@ namespace fastJSON
                 append = true;
             }
 
-            List<Getters> g = Reflection.Instance.GetGetters(t, _params.ShowReadOnlyProperties);
-
-            foreach (var p in g)
+            Getters[] g = Reflection.Instance.GetGetters(t, _params.ShowReadOnlyProperties);
+            int c = g.Length;
+            for(int ii=0; ii<c; ii++)//foreach (var p in g)
             {
+                var p = g[ii];
                 object o = p.Getter(obj);
                 if ((o == null || o is DBNull) && _params.SerializeNullValues == false)
                 {
@@ -443,8 +444,8 @@ namespace fastJSON
             _output.Append('\"');
 
             int runIndex = -1;
-
-            for (var index = 0; index < s.Length; ++index)
+            int l = s.Length;
+            for (var index = 0; index < l; ++index)
             {
                 var c = s[index];
 

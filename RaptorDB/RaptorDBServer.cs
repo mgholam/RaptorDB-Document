@@ -10,12 +10,13 @@ using System.Threading;
 
 namespace RaptorDB
 {
-    public class RaptorDBServer
+    public class RaptorDBServer 
     {
         public RaptorDBServer(int port, string DataPath)
         {
             _path = Directory.GetCurrentDirectory();
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
             _server = new NetworkServer();
 
             _raptor = RaptorDB.Open(DataPath);
@@ -23,6 +24,13 @@ namespace RaptorDB
             save = _raptor.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
             Initialize();
             _server.Start(port, processpayload);
+        }
+
+        void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        {
+            //perform cleanup here
+            log.Debug("process exited");
+            Shutdown();   
         }
 
         private string _S = Path.DirectorySeparatorChar.ToString();
@@ -65,7 +73,6 @@ namespace RaptorDB
         {
             WriteUsers();
             _server.Stop();
-            _raptor.Shutdown();
         }
 
         private void WriteUsers()

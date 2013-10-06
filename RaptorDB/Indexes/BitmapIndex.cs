@@ -224,9 +224,10 @@ namespace RaptorDB
         {
             bool d1 = false;
             bool d2 = false;
-            Flush();
+
             if (_shutdownDone == false)
-            {
+            {          
+                Flush();
                 if (_recordFileWrite.Length == 0) d1 = true;
                 if (_bitmapFileWrite.Length == 0) d2 = true;
                 _recordFileRead.Close();
@@ -239,12 +240,20 @@ namespace RaptorDB
                     File.Delete(_Path + _FileName + _recExt);
                 if (d2)
                     File.Delete(_Path + _FileName + _bmpExt);
+                _recordFileWrite = null;
+                _recordFileRead = null;
+                _bitmapFileRead = null;
+                _bitmapFileWrite = null;
+                _recordFileRead = null;
+                _recordFileWrite = null;
                 _shutdownDone = true;
             }
         }
 
         private void Flush()
         {
+            if (_shutdownDone)
+                return;
             if (_recordFileWrite != null)
                 _recordFileWrite.Flush();
             if (_bitmapFileWrite != null)

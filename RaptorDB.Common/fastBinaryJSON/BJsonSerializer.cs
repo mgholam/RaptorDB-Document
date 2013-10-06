@@ -130,7 +130,7 @@ namespace fastBinaryJSON
             else if (obj is byte[])
                 WriteBytes((byte[])obj);
 
-            else if (obj is IEnumerable)// Array || obj is IList || obj is ICollection)
+            else if (obj is IEnumerable)
                 WriteArray((IEnumerable)obj);
 
             else if (obj is Enum)
@@ -428,10 +428,11 @@ namespace fastBinaryJSON
                 append = true;
             }
 
-            List<Getters> g = Reflection.Instance.GetGetters(t, _params.ShowReadOnlyProperties);
-
-            foreach (var p in g)
+            Getters[] g = Reflection.Instance.GetGetters(t, _params.ShowReadOnlyProperties);
+            int c = g.Length;
+            for(int ii =0 ; ii<c;ii++)//foreach (var p in g)
             {
+                var p = g[ii];
                 var o = p.Getter(obj);
                 if ((o == null || o is DBNull) && _params.SerializeNulls == false)
                 {

@@ -20,16 +20,15 @@ namespace Views
 
         public static List<object> Sum_Products_based_on_filter(IRaptorDB rap, string filter)
         {
-            var q = rap.Query(typeof(SalesItemRowsView), filter);
+            var q = rap.Query<SalesItemRowsViewRowSchema>(filter);
 
-            List<SalesItemRowsViewRowSchema> list = q.Rows.Cast<SalesItemRowsViewRowSchema>().ToList();
-            var res = from item in list
-                      group item by item.Product into grouped
+            var res = from x in q.Rows
+                      group x by x.Product into g
                       select new sumtype // avoid annymous types
                       {
-                          Product = grouped.Key,
-                          TotalPrice = grouped.Sum(product => product.Price),
-                          TotalQTY = grouped.Sum(product => product.QTY)
+                          Product = g.Key,
+                          TotalPrice = g.Sum(p => p.Price),
+                          TotalQTY = g.Sum(p => p.QTY)
                       };
 
             return res.ToList<object>();

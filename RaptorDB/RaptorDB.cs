@@ -16,7 +16,7 @@ using System.ComponentModel;
 
 namespace RaptorDB
 {
-    public class RaptorDB : IDisposable, IRaptorDB
+    public class RaptorDB : IRaptorDB
     {
         private RaptorDB(string FolderPath)
         {
@@ -32,7 +32,7 @@ namespace RaptorDB
 
         private void CreateTemplateConfigFiles()
         {
-            if(File.Exists("RaptorDB.config")== false)
+            if (File.Exists("RaptorDB.config") == false)
                 File.WriteAllText("-RaptorDB.config", fastJSON.JSON.Instance.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
 
             if (File.Exists("RaptorDB-Branch.config") == false)
@@ -79,13 +79,14 @@ namespace RaptorDB
         private CronDaemon _cron;
         private Replication.ReplicationServer _repserver;
         private Replication.ReplicationClient _repclient;
+        //private bool _disposed = false;
         //private bool _clientReplicationEnabled;
 
-        public bool SyncNow(string server, int port, string username, string password)
-        {
+        //public bool SyncNow(string server, int port, string username, string password)
+        //{
 
-            return false;
-        }
+        //    return false;
+        //}
 
         #region [   p u b l i c    i n t e r f a c e   ]
         /// <summary>
@@ -153,7 +154,7 @@ namespace RaptorDB
                         if (b == true)
                         {
                             _viewManager.Commit(Thread.CurrentThread.ManagedThreadId);
-                            int recnum = _objStore.SetObject(docid, data); //SaveData(docid, data);
+                            int recnum = _objStore.SetObject(docid, data); 
                             _CurrentRecordNumber = recnum;
                             _pauseindexer = false;
                             return true;
@@ -166,7 +167,7 @@ namespace RaptorDB
             }
             else
             {
-                int recnum = _objStore.SetObject(docid, data); //SaveData(docid, data);
+                int recnum = _objStore.SetObject(docid, data); 
                 _CurrentRecordNumber = recnum;
 
                 if (viewname != "")
@@ -382,6 +383,9 @@ namespace RaptorDB
         {
             lock (_replock)
             {
+                if (Directory.Exists(inboxfolder) == false)
+                    return;
+
                 string[] files = Directory.GetFiles(inboxfolder, "*.counter");
 
                 // check if ".counter" file exists
@@ -403,7 +407,7 @@ namespace RaptorDB
                     }
                 }
 
-                files = Directory.GetFiles(inboxfolder, "*.gz"); 
+                files = Directory.GetFiles(inboxfolder, "*.gz");
 
                 Array.Sort(files);
                 foreach (var filename in files)
@@ -618,13 +622,6 @@ namespace RaptorDB
         public bool AddUser(string username, string oldpassword, string newpassword)
         {
             return false;
-        }
-
-        public void Dispose()
-        {
-            _log.Debug("dispose called");
-            Shutdown();
-            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -1084,10 +1081,14 @@ namespace RaptorDB
         {
             lock (_inboxlock)
             {
-                // start inbox processing timer
-                ProcessReplicationInbox(_Path + "Replication" + _S + "Inbox");
+                string d = _Path + "Replication" + _S + "Inbox";
+                if (Directory.Exists(d) == false)
+                    return;
 
-                foreach (var f in Directory.GetDirectories(_Path + "Replication" + _S + "Inbox"))
+                // start inbox processing timer
+                ProcessReplicationInbox(d);
+
+                foreach (var f in Directory.GetDirectories(d))
                     ProcessReplicationInbox(f);
             }
         }
@@ -1214,7 +1215,6 @@ namespace RaptorDB
         {
             _log.Debug("appdomain closing");
             Shutdown();
-            GC.SuppressFinalize(this);
         }
 
         private object _slock = new object();

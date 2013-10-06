@@ -94,16 +94,6 @@ namespace RaptorDB
             return (int)_db.RecordCount();
         }
 
-        public bool RemoveKey(string key)
-        {
-            byte[] bkey = Encoding.Unicode.GetBytes(key);
-            int hc = (int)Helper.MurMur.Hash(bkey);
-            //MemoryStream ms = new MemoryStream();
-            //ms.Write(Helper.GetBytes(bkey.Length, false), 0, 4);
-            //ms.Write(bkey, 0, bkey.Length);
-            return _db.Delete(hc);//, ms.ToArray());
-        }
-
         public void SaveIndex()
         {
             _db.SaveIndex();

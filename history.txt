@@ -184,7 +184,7 @@ v2.0.6.1
 - bug fix WAHBitArray
 
 v3.0.0
---------
+------
 - index files are opened in share mode for online copy
 - add cron daemon (thanks to Kevin Coylar)
 - backups are now on a cron schedule
@@ -203,3 +203,11 @@ v3.0.0
 - added HQ-Branch replication feature
 - automatic generate config files if they don't exist with a '-' prefix
 - 'output' in the root of the solution folder is the new build destination of projects for easy access
+
+v3.0.1
+------
+- upgrade to fastJSON v2.0.22
+- upgrade to fastBinaryJSON v1.3.10
+- detect process exit and shutdown cleanly so you can omit the explicit Shutdown()
+- bug fix WAH bitarray 
+

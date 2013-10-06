@@ -643,11 +643,13 @@ namespace RaptorDB.Views
             {
                 object[] r = new object[colcount];
                 int i = 0;
-                List<fastJSON.Getters> getters = Reflection.Instance.GetGetters(obj.GetType(),false);
+                Getters[] getters = Reflection.Instance.GetGetters(obj.GetType(),false);
+
                 foreach (var c in _schema.Columns)
                 {
                     foreach (var g in getters)
                     {
+                        //var g = getters[ii];
                         if (g.Name == c.Key)
                         {
                             r[i] = g.Getter(obj);

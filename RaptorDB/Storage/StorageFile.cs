@@ -476,12 +476,7 @@ namespace RaptorDB
                 output.Write(bytes, 0, n);
         }
 
-        //internal IEnumerable<StorageData<T>> Enumerate()
-        //{
-        //    return Enumerate(6); // skip header
-        //}
-
-        internal IEnumerable<StorageData<T>> Enumerate()//long start)
+        internal IEnumerable<StorageData<T>> Enumerate()
         {
             lock (_readlock)
             {
