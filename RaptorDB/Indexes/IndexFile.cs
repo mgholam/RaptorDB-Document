@@ -15,16 +15,16 @@ namespace RaptorDB
             0,               // 3 = [keysize]   max 255
             0,0,             // 4 = [node size] max 65536
             0,0,0,0,         // 6 = [root page num]
-            0,               // 10 = Index file type : 0=mgindex   --0=BTREE 1=HASH 2= 
+            0,               // 10 = Index file type : 0=mgindex   
             0,0,0,0          // 11 = last record number indexed 
             };
 
         private byte[] _BlockHeader = new byte[] { 
             (byte)'P',(byte)'A',(byte)'G',(byte)'E',
-            0,               // 4 = [Flag] = 0=page 1=page list    --0=free 1=leaf 2=root 4=revisionpage --8=bucket 16=revisionbucket
+            0,               // 4 = [Flag] = 0=page 1=page list   
             0,0,             // 5 = [item count] 
-            0,0,0,0,         // 7 = reserved               --[parent page number] / [bucket number]
-            0,0,0,0          // 11 = [right page number]   -- /[next page number]
+            0,0,0,0,         // 7 = reserved               
+            0,0,0,0          // 11 = [right page number] / [next page number]
         };
 
         internal byte _maxKeySize;
@@ -207,6 +207,7 @@ namespace RaptorDB
             while (nextpage != -1)
             {
                 nextpage = LoadPageListData(nextpage, PageList);
+
                 if (nextpage != -1)
                     PageListDiskPages.Add(nextpage);
             }
@@ -335,40 +336,41 @@ namespace RaptorDB
                 // save page list
                 int c = (_pages.Count / Global.PageItemCount) + 1;
                 // allocate pages needed 
-                while (c > diskpages.Count)
+               while (c > diskpages.Count)
                     diskpages.Add(GetNewPageNumber());
+
+                byte[] page = new byte[_PageLength];
 
                 for (int i = 0; i < (diskpages.Count - 1); i++)
                 {
-                    byte[] page = new byte[_PageLength];
                     byte[] block = CreateBlockHeader(1, Global.PageItemCount, diskpages[i + 1]);
                     Buffer.BlockCopy(block, 0, page, 0, block.Length);
+
                     for (int j = 0; j < Global.PageItemCount; j++)
-                    {
-                        CreatePageListData(_pages, i, page, block.Length, j);
-                    }
+                        CreatePageListData(_pages, i * Global.PageItemCount, block.Length, j, page);
+
                     SeekPage(diskpages[i]);
                     _file.Write(page, 0, page.Length);
                 }
+
                 c = _pages.Count % Global.PageItemCount;
                 byte[] lastblock = CreateBlockHeader(1, (ushort)c, -1);
-                byte[] lastpage = new byte[_PageLength];
-                Buffer.BlockCopy(lastblock, 0, lastpage, 0, lastblock.Length);
+                Buffer.BlockCopy(lastblock, 0, page, 0, lastblock.Length);
                 int lastoffset = (_pages.Count / Global.PageItemCount) * Global.PageItemCount;
+
                 for (int j = 0; j < c; j++)
-                {
-                    CreatePageListData(_pages, diskpages.Count - 1, lastpage, lastblock.Length, j);
-                }
+                    CreatePageListData(_pages, lastoffset, lastblock.Length, j, page);
+
                 SeekPage(diskpages[diskpages.Count - 1]);
-                _file.Write(lastpage, 0, lastpage.Length);
+                _file.Write(page, 0, page.Length);
             }
         }
 
-        private void CreatePageListData(SafeSortedList<T, PageInfo> _pages, int i, byte[] page, int index, int j)
+        private void CreatePageListData(SafeSortedList<T, PageInfo> _pages, int offset, int index, int counter, byte[] page)
         {
-            int idx = index + _rowSize * j;
+            int idx = index + _rowSize * counter;
             // key bytes
-            byte[] kk = _T.GetBytes(_pages.GetKey(j + i));
+            byte[] kk = _T.GetBytes(_pages.GetKey(counter + offset));
             byte size = (byte)kk.Length;
             if (size > _maxKeySize)
                 size = _maxKeySize;
@@ -376,10 +378,10 @@ namespace RaptorDB
             page[idx] = size;
             Buffer.BlockCopy(kk, 0, page, idx + 1, page[idx]);
             // offset = 4 bytes
-            byte[] b = Helper.GetBytes(_pages.GetValue(i + j).PageNumber, false);
+            byte[] b = Helper.GetBytes(_pages.GetValue(offset + counter).PageNumber, false);
             Buffer.BlockCopy(b, 0, page, idx + 1 + _maxKeySize, b.Length);
             // add counts 
-            b = Helper.GetBytes(_pages.GetValue(i + j).UniqueCount, false);
+            b = Helper.GetBytes(_pages.GetValue(offset + counter).UniqueCount, false);
             Buffer.BlockCopy(b, 0, page, idx + 1 + _maxKeySize + 4, b.Length);
             // FEATURE : add dup counts
         }

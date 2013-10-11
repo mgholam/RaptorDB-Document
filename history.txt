@@ -211,3 +211,6 @@ v3.0.1
 - detect process exit and shutdown cleanly so you can omit the explicit Shutdown()
 - bug fix WAH bitarray 
 
+v3.0.5
+------
+- bug fix saving page list to disk for counts > 50 million items
