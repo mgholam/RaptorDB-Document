@@ -214,3 +214,12 @@ v3.0.1
 v3.0.5
 ------
 - bug fix saving page list to disk for counts > 50 million items
+
+v3.0.6
+------
+- Result.TotalCount reflects the original row count and differs from Result.Count when paging
+- internal changed FireOnType to handle Type instead of strings
+- Query() can now handle empty filter strings correctly
+- Upgrade to fastJSON v2.0.24
+- Upgrade to fastBinaryJSON v1.3.11
+

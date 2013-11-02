@@ -260,8 +260,8 @@ namespace RaptorDB.Views
 
                 if (view.isPrimaryList)
                 {
-                    foreach (string tn in view.FireOnTypes)
-                        _primaryView.Add(Type.GetType(tn), view.Name.ToLower());
+                    foreach (var tn in view.FireOnTypes)
+                        _primaryView.Add(tn, view.Name.ToLower());
                 }
                 else
                 {
@@ -294,10 +294,10 @@ namespace RaptorDB.Views
 
         private void AddToViewList<T>(SafeDictionary<Type, List<string>> diclist, View<T> view)
         {
-            foreach (string tn in view.FireOnTypes)
+            foreach (var tn in view.FireOnTypes)
             {
                 List<string> list = null;
-                Type t = Type.GetType(tn);
+                Type t = tn;// Type.GetType(tn);
                 if (diclist.TryGetValue(t, out list))
                     list.Add(view.Name);
                 else

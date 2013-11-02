@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace RaptorDB
 {
-    public class CronJob
+    internal class CronJob
     {
         internal readonly CronSchedule _cron_schedule = new CronSchedule();
         private readonly ThreadStart _thread_start;

@@ -32,7 +32,7 @@ namespace RaptorDB
         /// A list of Types that this view responds to (inheiratance is supported)
         /// Use AddFireOnTypes() to add to this list
         /// </summary>
-        public List<string> FireOnTypes { get; set; }
+        public List<Type> FireOnTypes { get; set; }
         
         /// <summary>
         /// Is this the primary list and will be populated synchronously
@@ -71,7 +71,7 @@ namespace RaptorDB
         /// <param name="type"></param>
         public void AddFireOnTypes(Type type)
         {
-            FireOnTypes.Add(type.AssemblyQualifiedName);
+            FireOnTypes.Add(type);
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace RaptorDB
         public View()
         {
             isActive = true;
-            FireOnTypes = new List<string>();
+            FireOnTypes = new List<Type>();
             DeleteBeforeInsert = true;
             BackgroundIndexing = true;
             FullTextColumns = new List<string>();

@@ -42,7 +42,7 @@ namespace fastJSON
         /// </summary>
         public bool UsingGlobalTypes = true;
         /// <summary>
-        /// ** work in progress
+        /// Ignore case when processing json and deserializing 
         /// </summary>
         public bool IgnoreCaseOnDeserialize = false;
         /// <summary>
@@ -57,6 +57,10 @@ namespace fastJSON
         /// Use escaped unicode i.e. \uXXXX format for non ASCII characters (default = True)
         /// </summary>
         public bool UseEscapedUnicode = true;
+        /// <summary>
+        /// Output string key dictionaries as "k"/"v" format (default = False) 
+        /// </summary>
+        public bool KVStyleStringDictionary = false;
 
         public void FixValues()
         {
@@ -338,7 +342,10 @@ namespace fastJSON
                     d.Flags |= myPropInfoFlags.CanWrite;
                     d.setter = Reflection.CreateSetMethod(type, p);
                     d.getter = Reflection.CreateGetMethod(type, p);
-                    sd.Add(p.Name, d);
+                    if (_params.IgnoreCaseOnDeserialize)
+                        sd.Add(p.Name.ToLower(), d);
+                    else
+                        sd.Add(p.Name, d);
                 }
                 FieldInfo[] fi = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                 foreach (FieldInfo f in fi)
@@ -346,7 +353,10 @@ namespace fastJSON
                     myPropInfo d = CreateMyProp(f.FieldType, f.Name);
                     d.setter = Reflection.CreateSetField(type, f);
                     d.getter = Reflection.CreateGetField(type, f);
-                    sd.Add(f.Name, d);
+                    if (_params.IgnoreCaseOnDeserialize)
+                        sd.Add(f.Name.ToLower(), d);
+                    else
+                        sd.Add(f.Name, d);
                 }
 
                 _propertycache.Add(typename, sd);

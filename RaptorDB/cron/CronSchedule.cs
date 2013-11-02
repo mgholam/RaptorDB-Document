@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace RaptorDB
 {
-    public class CronSchedule
+    internal class CronSchedule
     {
         #region Readonly Class Members
 

@@ -216,18 +216,23 @@ namespace RaptorDB.Views
             _log.Debug("query : " + _view.Name);
             _log.Debug("query : " + filter);
 
-            WAHBitArray ba = new WAHBitArray();
-
-            LambdaExpression le = null;
-            if (_lambdacache.TryGetValue(filter, out le) == false)
-            {
-                le = System.Linq.Dynamic.DynamicExpression.ParseLambda(_view.Schema, typeof(bool), filter, null);
-                _lambdacache.Add(filter, le);
-            }
-            QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
-            qv.Visit(le.Body);
+            WAHBitArray ba = new WAHBitArray();    
             var delbits = _deletedRows.GetBits();
-            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+            if (filter != "")
+            {
+                LambdaExpression le = null;
+                if (_lambdacache.TryGetValue(filter, out le) == false)
+                {
+                    le = System.Linq.Dynamic.DynamicExpression.ParseLambda(_view.Schema, typeof(bool), filter, null);
+                    _lambdacache.Add(filter, le);
+                }
+                QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
+                qv.Visit(le.Body);
+
+                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+            }
+            else
+                ba = ba.Fill(_viewData.Count()).AndNot(delbits);
 
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
@@ -287,6 +292,7 @@ namespace RaptorDB.Views
             int skip = start;
             int cc = 0;
             WAHBitArray del = _deletedRows.GetBits();
+            ret.TotalCount = c;
             for (int i = 0; i < c; i++)
             {
                 if (del.Get(i) == true)
@@ -312,7 +318,7 @@ namespace RaptorDB.Views
             _log.Debug("query rows count : " + rows.Count.ToString("#,0"));
             ret.OK = true;
             ret.Count = rows.Count;
-            ret.TotalCount = rows.Count;
+            //ret.TotalCount = rows.Count;
             ret.Rows = rows;
             return ret;
         }
@@ -403,6 +409,7 @@ namespace RaptorDB.Views
             Result<object> ret = new Result<object>();
             int skip = start;
             int c = 0;
+            ret.TotalCount = (int)ba.CountOnes();
             foreach (int i in ba.GetBitIndexes())
             {
                 if (skip > 0)
@@ -429,7 +436,7 @@ namespace RaptorDB.Views
             _log.Debug("query rows count : " + rows.Count.ToString("#,0"));
             ret.OK = true;
             ret.Count = rows.Count;
-            ret.TotalCount = rows.Count;
+            //ret.TotalCount = rows.Count;
             ret.Rows = rows;
             return ret;
         }
@@ -441,6 +448,7 @@ namespace RaptorDB.Views
             Result<T> ret = new Result<T>();
             int skip = start;
             int c = 0;
+            ret.TotalCount = (int)ba.CountOnes();
             foreach (int i in ba.GetBitIndexes())
             {
                 if (skip > 0)
@@ -467,7 +475,7 @@ namespace RaptorDB.Views
             _log.Debug("query rows count : " + rows.Count.ToString("#,0"));
             ret.OK = true;
             ret.Count = rows.Count;
-            ret.TotalCount = rows.Count;
+            //ret.TotalCount = rows.Count;
             ret.Rows = rows;
             return ret;
         }
@@ -520,7 +528,7 @@ namespace RaptorDB.Views
                         // FEATURE : optimize this by not creating the object if not in FireOnTypes
                         object obj = b;
                         Type t = obj.GetType();
-                        if (_view.FireOnTypes.Contains(t.AssemblyQualifiedName))
+                        if (_view.FireOnTypes.Contains(t))//.AssemblyQualifiedName))
                         {
                             var m = view.MakeGenericMethod(new Type[] { obj.GetType() });
                             m.Invoke(this, new object[] { meta.key, obj });
@@ -643,7 +651,7 @@ namespace RaptorDB.Views
             {
                 object[] r = new object[colcount];
                 int i = 0;
-                Getters[] getters = Reflection.Instance.GetGetters(obj.GetType(),false);
+                Getters[] getters = Reflection.Instance.GetGetters(obj.GetType(), false);
 
                 foreach (var c in _schema.Columns)
                 {
@@ -815,17 +823,23 @@ namespace RaptorDB.Views
             _log.Debug("query : " + filter);
 
             WAHBitArray ba = new WAHBitArray();
-
-            LambdaExpression le = null;
-            if (_lambdacache.TryGetValue(filter, out le) == false)
-            {
-                le = System.Linq.Dynamic.DynamicExpression.ParseLambda(_view.Schema, typeof(bool), filter, null);
-                _lambdacache.Add(filter, le);
-            }
-            QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
-            qv.Visit(le.Body);
             var delbits = _deletedRows.GetBits();
-            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+
+            if (filter != "")
+            {
+                LambdaExpression le = null;
+                if (_lambdacache.TryGetValue(filter, out le) == false)
+                {
+                    le = System.Linq.Dynamic.DynamicExpression.ParseLambda(_view.Schema, typeof(bool), filter, null);
+                    _lambdacache.Add(filter, le);
+                }
+                QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
+                qv.Visit(le.Body);
+
+                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+            }
+            else
+                ba = ba.Fill(_viewData.Count()).AndNot(delbits);
 
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
