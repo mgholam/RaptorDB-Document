@@ -195,19 +195,19 @@ namespace RaptorDB
         /// <returns></returns>
         public Result<object> Query(string viewname)
         {
-            return _viewManager.Query(viewname, 0, 0);
+            return _viewManager.Query(viewname, 0, -1);
         }
 
-        /// <summary>
-        /// Query a primary view -> get all rows
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="view"></param>
-        /// <returns></returns>
-        public Result<object> Query(Type view)
-        {
-            return _viewManager.Query(view, 0, 0);
-        }
+        ///// <summary>
+        ///// Query a primary view -> get all rows
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="view"></param>
+        ///// <returns></returns>
+        //public Result<object> Query(Type view)
+        //{
+        //    return _viewManager.Query(view, 0, -1);
+        //}
 
         /// <summary>
         /// Query a view using a string filter
@@ -218,47 +218,47 @@ namespace RaptorDB
         public Result<object> Query(string viewname, string filter)
         {
             if (filter == "")
-                return _viewManager.Query(viewname, 0, 0);
+                return _viewManager.Query(viewname, 0, -1);
 
-            return _viewManager.Query(viewname, filter, 0, 0);
+            return _viewManager.Query(viewname, filter, 0, -1);
         }
 
-        // FEATURE : add paging to queries -> start, count
-        /// <summary>
-        /// Query any view with filters
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="viewname">view name</param>
-        /// <param name="filter"></param>
-        /// <returns></returns>
-        public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter)
-        {
-            return _viewManager.Query<T>(viewname, filter, 0, 0);
-        }
+        //// FEATURE : add paging to queries -> start, count
+        ///// <summary>
+        ///// Query any view with filters
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="viewname">view name</param>
+        ///// <param name="filter"></param>
+        ///// <returns></returns>
+        //public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter)
+        //{
+        //    return _viewManager.Query<T>(viewname, filter, 0, -1);
+        //}
 
-        /// <summary>
-        /// Query a view with filters
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="view">base entity type, or typeof the view </param>
-        /// <param name="filter"></param>
-        /// <returns></returns>
-        public Result<object> Query<T>(Type type, Expression<Predicate<T>> filter)
-        {
-            return _viewManager.Query<T>(type, filter, 0, 0);
-        }
+        ///// <summary>
+        ///// Query a view with filters
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="view">base entity type, or typeof the view </param>
+        ///// <param name="filter"></param>
+        ///// <returns></returns>
+        //public Result<object> Query<T>(Type type, Expression<Predicate<T>> filter)
+        //{
+        //    return _viewManager.Query<T>(type, filter, 0, -1);
+        //}
 
-        /// <summary>
-        /// Query a view with filters
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="view">base entity type, or typeof the view </param>
-        /// <param name="filter"></param>
-        /// <returns></returns>
-        public Result<object> Query(Type type, string filter)
-        {
-            return _viewManager.Query(type, filter, 0, 0);
-        }
+        ///// <summary>
+        ///// Query a view with filters
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="view">base entity type, or typeof the view </param>
+        ///// <param name="filter"></param>
+        ///// <returns></returns>
+        //public Result<object> Query(Type type, string filter)
+        //{
+        //    return _viewManager.Query(type, filter, 0, -1);
+        //}
 
         /// <summary>
         /// Fetch a document by it's ID
@@ -665,17 +665,22 @@ namespace RaptorDB
 
         public Result<T> Query<T>(Expression<Predicate<T>> filter)
         {
-            return _viewManager.Query<T>(filter, 0, 0);
+            return _viewManager.Query<T>(filter, 0, -1);
         }
 
         public Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count)
         {
-            return _viewManager.Query<T>(filter, start, count);
+            return _viewManager.Query<T>(filter, start, count, "");
+        }
+
+        public Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count, string orderby)
+        {
+            return _viewManager.Query<T>(filter, start, count, orderby);
         }
 
         public Result<T> Query<T>(string filter)
         {
-            return _viewManager.Query<T>(filter, 0, 0);
+            return _viewManager.Query<T>(filter, 0, -1);
         }
 
         public Result<T> Query<T>(string filter, int start, int count)
@@ -700,17 +705,17 @@ namespace RaptorDB
             return _viewManager.Query(viewname, start, count);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="view"></param>
-        /// <param name="start"></param>
-        /// <param name="count"></param>
-        /// <returns></returns>
-        public Result<object> Query(Type view, int start, int count)
-        {
-            return _viewManager.Query(view, start, count);
-        }
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="view"></param>
+        ///// <param name="start"></param>
+        ///// <param name="count"></param>
+        ///// <returns></returns>
+        //public Result<object> Query(Type view, int start, int count)
+        //{
+        //    return _viewManager.Query(view, start, count);
+        //}
 
         /// <summary>
         /// 
@@ -725,79 +730,79 @@ namespace RaptorDB
             return _viewManager.Query(viewname, filter, start, count);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="viewname"></param>
-        /// <param name="filter"></param>
-        /// <param name="start"></param>
-        /// <param name="count"></param>
-        /// <returns></returns>
-        public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
-        {
-            return _viewManager.Query(viewname, filter, start, count);
-        }
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="viewname"></param>
+        ///// <param name="filter"></param>
+        ///// <param name="start"></param>
+        ///// <param name="count"></param>
+        ///// <returns></returns>
+        //public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
+        //{
+        //    return _viewManager.Query(viewname, filter, start, count);
+        //}
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="type"></param>
-        /// <param name="filter"></param>
-        /// <param name="start"></param>
-        /// <param name="count"></param>
-        /// <returns></returns>
-        public Result<object> Query<T>(Type type, Expression<Predicate<T>> filter, int start, int count)
-        {
-            return _viewManager.Query(type, filter, start, count);
-        }
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="type"></param>
+        ///// <param name="filter"></param>
+        ///// <param name="start"></param>
+        ///// <param name="count"></param>
+        ///// <returns></returns>
+        //public Result<object> Query<T>(Type type, Expression<Predicate<T>> filter, int start, int count)
+        //{
+        //    return _viewManager.Query(type, filter, start, count);
+        //}
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="filter"></param>
-        /// <param name="start"></param>
-        /// <param name="count"></param>
-        /// <returns></returns>
-        public Result<object> Query(Type type, string filter, int start, int count)
-        {
-            return _viewManager.Query(type, filter, start, count);
-        }
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="type"></param>
+        ///// <param name="filter"></param>
+        ///// <param name="start"></param>
+        ///// <param name="count"></param>
+        ///// <returns></returns>
+        //public Result<object> Query(Type type, string filter, int start, int count)
+        //{
+        //    return _viewManager.Query(type, filter, start, count);
+        //}
 
-        /// <summary>
-        /// Count all data associated with the Documnet Type or the View Type
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public int Count(Type type)
-        {
-            return _viewManager.Count(type, "");
-        }
+        ///// <summary>
+        ///// Count all data associated with the Documnet Type or the View Type
+        ///// </summary>
+        ///// <param name="type"></param>
+        ///// <returns></returns>
+        //public int Count(Type type)
+        //{
+        //    return _viewManager.Count(type, "");
+        //}
 
-        /// <summary>
-        /// Count all data associated with the Documnet Type or the View Type with a string filter
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="filter"></param>
-        /// <returns></returns>
-        public int Count(Type type, string filter)
-        {
-            return _viewManager.Count(type, filter);
-        }
+        ///// <summary>
+        ///// Count all data associated with the Documnet Type or the View Type with a string filter
+        ///// </summary>
+        ///// <param name="type"></param>
+        ///// <param name="filter"></param>
+        ///// <returns></returns>
+        //public int Count(Type type, string filter)
+        //{
+        //    return _viewManager.Count(type, filter);
+        //}
 
-        /// <summary>
-        /// Count all data associated with the Documnet Type or the View Type with a LINQ filter
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="type"></param>
-        /// <param name="filter"></param>
-        /// <returns></returns>
-        public int Count<T>(Type type, Expression<Predicate<T>> filter)
-        {
-            return _viewManager.Count(type, filter);
-        }
+        ///// <summary>
+        ///// Count all data associated with the Documnet Type or the View Type with a LINQ filter
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="type"></param>
+        ///// <param name="filter"></param>
+        ///// <returns></returns>
+        //public int Count<T>(Type type, Expression<Predicate<T>> filter)
+        //{
+        //    return _viewManager.Count(type, filter);
+        //}
 
         /// <summary>
         /// Count all data associated with View name
@@ -820,17 +825,17 @@ namespace RaptorDB
             return _viewManager.Count(viewname, filter);
         }
 
-        /// <summary>
-        /// Count all data associated with View name and LINQ filter
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="viewname"></param>
-        /// <param name="filter"></param>
-        /// <returns></returns>
-        public int Count<T>(string viewname, Expression<Predicate<T>> filter)
-        {
-            return _viewManager.Count(viewname, filter);
-        }
+        ///// <summary>
+        ///// Count all data associated with View name and LINQ filter
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="viewname"></param>
+        ///// <param name="filter"></param>
+        ///// <returns></returns>
+        //public int Count<T>(string viewname, Expression<Predicate<T>> filter)
+        //{
+        //    return _viewManager.Count(viewname, filter);
+        //}
 
         /// <summary>
         /// Fetch the change history for a document
@@ -1334,6 +1339,31 @@ namespace RaptorDB
         internal object GetAssemblyForView(string viewname, out string typename)
         {
             return _viewManager.GetAssemblyForView(viewname, out typename);
+        }
+
+        public List<ViewBase> GetViews()
+        {
+            return _viewManager.GetViews();
+        }
+
+        public ViewRowDefinition GetSchema(string view)
+        {
+            return _viewManager.GetSchema(view);
+        }
+
+        public Result<object> Query(string viewname, string filter, int start, int count, string orderby)
+        {
+            return _viewManager.Query(viewname, filter, start, count, orderby);
+        }
+
+        //public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count, string orderby)
+        //{
+        //    return _viewManager.Query<T>(viewname, filter, start, count, orderby);
+        //}
+
+        public Result<T> Query<T>(string filter, int start, int count, string orderby)
+        {
+            return _viewManager.Query<T>(filter, start, count, orderby);
         }
     }
 }

@@ -223,3 +223,7 @@ v3.0.6
 - Upgrade to fastJSON v2.0.24
 - Upgrade to fastBinaryJSON v1.3.11
 
+v3.1.0
+------
+- added sort for queries 
+- removed extra query overloads in favour of the new model

@@ -116,11 +116,11 @@ namespace RaptorDB
                         string viewname = _raptor.GetViewName(t);
                         // if (viewname == "") viewname = _raptor.GetView((string)param[0]);
                         ret.OK = true;
-                        ret.Data = _raptor.Query(viewname, (string)param[1], p.Start, p.Count);
+                        ret.Data = _raptor.Query(viewname, (string)param[1], p.Start, p.Count, p.OrderBy);
                         break;
                     case "querystr":
                         ret.OK = true;
-                        ret.Data = _raptor.Query(p.Viewname, (string)p.Data, p.Start, p.Count);
+                        ret.Data = _raptor.Query(p.Viewname, (string)p.Data, p.Start, p.Count, p.OrderBy);
                         break;
                     case "fetch":
                         ret.OK = true;

@@ -511,5 +511,17 @@ namespace RaptorDB
             return lastlower;
         }
         #endregion
+
+        internal object[] GetKeys()
+        {
+            List<object> keys = new List<object>();
+            for (int i = 0; i < _pageList.Count; i++)
+            {
+                Page<T> page = LoadPage(_pageList.GetValue(i).PageNumber);
+                foreach (var k in page.tree.Keys())
+                    keys.Add(k);
+            }
+            return keys.ToArray();
+        }
     }
 }

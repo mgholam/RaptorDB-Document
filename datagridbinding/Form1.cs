@@ -195,11 +195,11 @@ namespace datagridbinding
 
             //int[] revs = rap.FetchHistory(g);
             //object oo = rap.FetchVersion(revs[0]);
-
+            
             int c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < 100);
             c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial != 100);
             c = rap.Count("SalesInvoice", "serial != 100");
-            var q = rap.Query<SalesInvoiceViewRowSchema>(x => x.Serial < 100, 0, 10);
+            var q = rap.Query<SalesInvoiceViewRowSchema>(x => x.Serial < 100, 0, 10, "serial desc");
             //var p = rap.Query("SalesInvoice");
             //var pp = rap.Query(typeof(SalesInvoiceView));
             //var ppp = rap.Query(typeof(SalesItemRowsView.RowSchema));

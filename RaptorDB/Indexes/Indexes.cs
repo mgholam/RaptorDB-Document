@@ -56,22 +56,26 @@ namespace RaptorDB
             base.Shutdown();
         }
 
-        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
+        object[] IIndex.GetKeys()
         {
-            T f = default(T);
-            if (typeof(T).Equals(fromkey.GetType()) == false)
-                f = (T)Convert.ChangeType(fromkey, typeof(T));
-            else
-                f = (T)fromkey;
-
-            T t = default(T);
-            if (typeof(T).Equals(tokey.GetType()) == false)
-                t = (T)Convert.ChangeType(tokey, typeof(T));
-            else
-                t = (T)tokey;
-
-            return base.Query(f, t, maxsize);
+            return base.GetKeys();
         }
+        //public WAHBitArray Query(object fromkey, object tokey, int maxsize)
+        //{
+        //    T f = default(T);
+        //    if (typeof(T).Equals(fromkey.GetType()) == false)
+        //        f = (T)Convert.ChangeType(fromkey, typeof(T));
+        //    else
+        //        f = (T)fromkey;
+
+        //    T t = default(T);
+        //    if (typeof(T).Equals(tokey.GetType()) == false)
+        //        t = (T)Convert.ChangeType(tokey, typeof(T));
+        //    else
+        //        t = (T)tokey;
+
+        //    return base.Query(f, t, maxsize);
+        //}
     }
     #endregion
 
@@ -187,6 +191,11 @@ namespace RaptorDB
         {
             _bits.Length = size;
         }
+
+        public object[] GetKeys()
+        {
+            return new object[] { true, false };
+        }
     }
     #endregion
 
@@ -218,6 +227,11 @@ namespace RaptorDB
         public WAHBitArray Query(object fromkey, object tokey, int maxsize)
         {
             return base.Query("" + fromkey, maxsize); 
+        }
+
+        public object[] GetKeys()
+        {
+            return new object[]{}; // FIX : ? support get keys 
         }
     }
     #endregion
@@ -286,6 +300,11 @@ namespace RaptorDB
                 t = (T)tokey;
 
             return base.Query(f.ToString(), t.ToString(), maxsize);
+        }
+
+        object[] IIndex.GetKeys()
+        {
+            return base.GetKeys();
         }
     #endregion
     }

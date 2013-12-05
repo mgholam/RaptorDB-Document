@@ -66,52 +66,52 @@ namespace RaptorDB
         /// <param name="message"></param>
         void Log(string message);
 
-        /// <summary>
-        /// Query a view by it's name with a LINQ filter
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="ViewName"></param>
-        /// <param name="Filter"></param>
-        /// <returns></returns>
-        Result<object> Query<T>(string ViewName, Expression<Predicate<T>> Filter); // Query primary list
+        ///// <summary>
+        ///// Query a view by it's name with a LINQ filter
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="ViewName"></param>
+        ///// <param name="Filter"></param>
+        ///// <returns></returns>
+        //Result<object> Query<T>(string ViewName, Expression<Predicate<T>> Filter); // Query primary list
 
-        /// <summary>
-        /// Query a View with a LINQ filter with paging
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="ViewName"></param>
-        /// <param name="Filter"></param>
-        /// <param name="start"></param>
-        /// <param name="count"></param>
-        /// <returns></returns>
-        Result<object> Query<T>(string ViewName, Expression<Predicate<T>> Filter, int start, int count); // Query primary list
+        ///// <summary>
+        ///// Query a View with a LINQ filter with paging
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="ViewName"></param>
+        ///// <param name="Filter"></param>
+        ///// <param name="start"></param>
+        ///// <param name="count"></param>
+        ///// <returns></returns>
+        //Result<object> Query<T>(string ViewName, Expression<Predicate<T>> Filter, int start, int count); // Query primary list
 
-        /// <summary>
-        /// Query a view by it's type with a LINQ filter
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="View"></param>
-        /// <param name="Filter"></param>
-        /// <returns></returns>
-        Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter); //Query other views
+        ///// <summary>
+        ///// Query a view by it's type with a LINQ filter
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="View"></param>
+        ///// <param name="Filter"></param>
+        ///// <returns></returns>
+        //Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter); //Query other views
 
-        /// <summary>
-        /// Query a View Type with a LINQ filter with paging
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="View"></param>
-        /// <param name="Filter"></param>
-        /// <param name="start"></param>
-        /// <param name="count"></param>
-        /// <returns></returns>
-        Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter, int start, int count); //Query other views
+        ///// <summary>
+        ///// Query a View Type with a LINQ filter with paging
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="View"></param>
+        ///// <param name="Filter"></param>
+        ///// <param name="start"></param>
+        ///// <param name="count"></param>
+        ///// <returns></returns>
+        //Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter, int start, int count); //Query other views
 
-        /// <summary>
-        /// Count all data associated with the Documnet Type or the View Type
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        int Count(Type type);
+        ///// <summary>
+        ///// Count all data associated with the Documnet Type or the View Type
+        ///// </summary>
+        ///// <param name="type"></param>
+        ///// <returns></returns>
+        //int Count(Type type);
 
         /// <summary>
         /// Count all data associated with the Documnet Type or the View Type with a string filter
@@ -120,23 +120,23 @@ namespace RaptorDB
         /// <returns></returns>
         int Count(string viewname);
 
-        /// <summary>
-        /// Count all data associated with the Documnet Type or the View Type with a LINQ filter
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="type"></param>
-        /// <param name="Filter"></param>
-        /// <returns></returns>
-        int Count<T>(Type type, Expression<Predicate<T>> Filter);
+        ///// <summary>
+        ///// Count all data associated with the Documnet Type or the View Type with a LINQ filter
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="type"></param>
+        ///// <param name="Filter"></param>
+        ///// <returns></returns>
+        //int Count<T>(Type type, Expression<Predicate<T>> Filter);
 
-        /// <summary>
-        /// Count all data associated with View name and LINQ filter
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="ViewName"></param>
-        /// <param name="Filter"></param>
-        /// <returns></returns>
-        int Count<T>(string ViewName, Expression<Predicate<T>> Filter);
+        ///// <summary>
+        ///// Count all data associated with View name and LINQ filter
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="ViewName"></param>
+        ///// <param name="Filter"></param>
+        ///// <returns></returns>
+        //int Count<T>(string ViewName, Expression<Predicate<T>> Filter);
 
         /// <summary>
         /// Count all data associated with View name and string filter
@@ -146,14 +146,14 @@ namespace RaptorDB
         /// <returns></returns>
         int Count(string ViewName, string Filter);
 
-        /// <summary>
-        /// Count all data associated with the Documnet Type or the View Type with a string filter
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="type"></param>
-        /// <param name="Filter"></param>
-        /// <returns></returns>
-        int Count<T>(Type type, string Filter);
+        ///// <summary>
+        ///// Count all data associated with the Documnet Type or the View Type with a string filter
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="type"></param>
+        ///// <param name="Filter"></param>
+        ///// <returns></returns>
+        //int Count<T>(Type type, string Filter);
 
         /// <summary>
         /// Fetch a document by it's Guid

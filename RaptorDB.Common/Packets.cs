@@ -7,6 +7,10 @@ namespace RaptorDB.Common
 {
     public class Packet
     {
+        public Packet()
+        {
+            OrderBy = "";
+        }
         public string Username { get; set; }
         public string PasswordHash { get; set; }
         //public int Token { get; set; }
@@ -17,6 +21,7 @@ namespace RaptorDB.Common
         public string Viewname { get; set; }
         public int Start { get; set; }
         public int Count { get; set; }
+        public string OrderBy { get; set; }
     }
 
     public class ReturnPacket

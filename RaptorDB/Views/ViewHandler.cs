@@ -17,14 +17,14 @@ using fastJSON;
 
 namespace RaptorDB.Views
 {
-    internal class ViewRowDefinition
+    public class ViewRowDefinition
     {
         public ViewRowDefinition()
         {
             Columns = new List<KeyValuePair<string, Type>>();
         }
         public string Name { get; set; }
-        internal List<KeyValuePair<string, Type>> Columns { get; set; }
+        public List<KeyValuePair<string, Type>> Columns { get; set; }
 
         public void Add(string name, Type type)
         {
@@ -209,14 +209,21 @@ namespace RaptorDB.Views
         SafeDictionary<string, LambdaExpression> _lambdacache = new SafeDictionary<string, LambdaExpression>();
         internal Result<object> Query(string filter, int start, int count)
         {
+            return Query(filter, start, count, "");
+        }
+
+        internal Result<object> Query(string filter, int start, int count, string orderby)
+        {
+            filter = filter.Trim();
             if (filter == "")
-                return Query(start, count);
+                return Query(start, count, orderby);
 
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
             _log.Debug("query : " + filter);
+            _log.Debug("orderby : " + orderby);
 
-            WAHBitArray ba = new WAHBitArray();    
+            WAHBitArray ba = new WAHBitArray();
             var delbits = _deletedRows.GetBits();
             if (filter != "")
             {
@@ -234,14 +241,21 @@ namespace RaptorDB.Views
             else
                 ba = ba.Fill(_viewData.Count()).AndNot(delbits);
 
+            var order = SortBy(orderby);
+
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return ReturnRows<object>(ba, null, start, count);
+            return ReturnRows<object>(ba, null, start, count, order);
+        }
+
+        internal Result<object> Query<T>(Expression<Predicate<T>> filter, int start, int count)
+        {
+            return Query<T>(filter, start, count, "");
         }
 
         // FEATURE : add query caching here
-        internal Result<object> Query<T>(Expression<Predicate<T>> filter, int start, int count)
+        internal Result<object> Query<T>(Expression<Predicate<T>> filter, int start, int count, string orderby)
         {
             if (filter == null)
                 return Query(start, count);
@@ -275,13 +289,19 @@ namespace RaptorDB.Views
                 }
             }
 
+            var order = SortBy(orderby);
+
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return (Result<object>)ReturnRows<T>(ba, trows, start, count);
+            return ReturnRows<T>(ba, trows, start, count, order);
+        }
+        internal Result<object> Query(int start, int count)
+        {
+            return Query(start, count, "");
         }
 
-        internal Result<object> Query(int start, int count)
+        internal Result<object> Query(int start, int count, string orderby)
         {
             // no filter query -> just show all the data
             DateTime dt = FastDateTime.Now;
@@ -292,26 +312,30 @@ namespace RaptorDB.Views
             int skip = start;
             int cc = 0;
             WAHBitArray del = _deletedRows.GetBits();
-            ret.TotalCount = c;
-            for (int i = 0; i < c; i++)
+            ret.TotalCount = c - (int)del.CountOnes();
+            
+            var order = SortBy(orderby);
+
+            if (order.Count == 0)
+                for (int i = 0; i < c; i++)
+                    order.Add(i);
+
+            if (count == -1)
+                count = c;
+
+            foreach (int i in order)
             {
                 if (del.Get(i) == true)
                     continue;
                 if (skip > 0)
-                {
                     skip--;
-                    continue;
-                }
-                byte[] b = _viewData.ReadRawData(i);
-                if (b == null) continue;
-                object o = FastCreateObject(_view.Schema);
-                object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
-                rows.Add(_rowfiller(o, data));
-                if (count > 0)
+                else
                 {
-                    cc++;
-                    if (cc == count) break;
+                    bool b = OutputRow<object>(rows, i);
+                    if (b && count > 0)
+                        cc++;
                 }
+                if (cc == count) break;
             }
 
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
@@ -402,7 +426,7 @@ namespace RaptorDB.Views
             return (RowFill)dynMethod.CreateDelegate(typeof(RowFill));
         }
 
-        private Result<object> ReturnRows<T>(WAHBitArray ba, List<T> trows, int start, int count)
+        private Result<object> ReturnRows<T>(WAHBitArray ba, List<T> trows, int start, int count, List<int> orderby)
         {
             DateTime dt = FastDateTime.Now;
             List<object> rows = new List<object>();
@@ -410,38 +434,66 @@ namespace RaptorDB.Views
             int skip = start;
             int c = 0;
             ret.TotalCount = (int)ba.CountOnes();
-            foreach (int i in ba.GetBitIndexes())
+            if (count == -1) count = ret.TotalCount;
+            if (count > 0)
             {
-                if (skip > 0)
+                foreach (int i in orderby)
                 {
-                    skip--;
-                    continue;
+                    if (ba.Get(i))
+                    {
+                        if (skip > 0)
+                            skip--;
+                        else
+                        {
+                            bool b = OutputRow<object>(rows, i);
+                            if (b && count > 0)
+                                c++;
+                        }
+                        ba.Set(i, false);
+                        if (c == count) break;
+                    }
                 }
-                byte[] b = _viewData.ReadRawData(i);
-                if (b == null)
-                    continue;
-                object o = FastCreateObject(_view.Schema);
-                object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
-                rows.Add((T)_rowfiller(o, data));
-                if (count > 0)
+                foreach (int i in ba.GetBitIndexes())
                 {
-                    c++;
-                    if (c == count) break;
+                    if (c < count)
+                    {
+                        if (skip > 0)
+                            skip--;
+                        else
+                        {
+                            bool b = OutputRow<object>(rows, i);
+                            if (b && count > 0)
+                                c++;
+                        }
+                        if (c == count) break;
+                    }
                 }
             }
-            if (trows != null)
+            if (trows != null) // FIX : move to start and decrement in count
                 foreach (var o in trows)
                     rows.Add(o);
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             _log.Debug("query rows count : " + rows.Count.ToString("#,0"));
             ret.OK = true;
             ret.Count = rows.Count;
-            //ret.TotalCount = rows.Count;
             ret.Rows = rows;
             return ret;
         }
 
-        private Result<T> ReturnRows2<T>(WAHBitArray ba, List<T> trows, int start, int count)
+        private bool OutputRow<T>(List<T> rows, int i)
+        {
+            byte[] b = _viewData.ReadRawData(i);
+            if (b != null)
+            {
+                object o = FastCreateObject(_view.Schema);
+                object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
+                rows.Add((T)_rowfiller(o, data));
+                return true;
+            }
+            return false;
+        }
+
+        private Result<T> ReturnRows2<T>(WAHBitArray ba, List<T> trows, int start, int count, List<int> orderby)
         {
             DateTime dt = FastDateTime.Now;
             List<T> rows = new List<T>();
@@ -449,33 +501,48 @@ namespace RaptorDB.Views
             int skip = start;
             int c = 0;
             ret.TotalCount = (int)ba.CountOnes();
-            foreach (int i in ba.GetBitIndexes())
+            if (count == -1) count = ret.TotalCount;
+            if (count > 0)
             {
-                if (skip > 0)
+                foreach (int i in orderby)
                 {
-                    skip--;
-                    continue;
+                    if (ba.Get(i))
+                    {
+                        if (skip > 0)
+                            skip--;
+                        else
+                        {
+                            bool b = OutputRow<T>(rows, i);
+                            if (b && count > 0)
+                                c++;
+                        }
+                        ba.Set(i, false);
+                        if (c == count) break;
+                    }
                 }
-                byte[] b = _viewData.ReadRawData(i);
-                if (b == null)
-                    continue;
-                object o = FastCreateObject(_view.Schema);
-                object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
-                rows.Add((T)_rowfiller(o, data));
-                if (count > 0)
+                foreach (int i in ba.GetBitIndexes())
                 {
-                    c++;
-                    if (c == count) break;
+                    if (c < count)
+                    {
+                        if (skip > 0)
+                            skip--;
+                        else
+                        {
+                            bool b = OutputRow<T>(rows, i);
+                            if (b && count > 0)
+                                c++;
+                        }
+                        if (c == count) break;
+                    }
                 }
             }
-            if (trows != null)
+            if (trows != null)// FIX : move to start and decrement in count
                 foreach (var o in trows)
                     rows.Add(o);
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             _log.Debug("query rows count : " + rows.Count.ToString("#,0"));
             ret.OK = true;
             ret.Count = rows.Count;
-            //ret.TotalCount = rows.Count;
             ret.Rows = rows;
             return ret;
         }
@@ -747,6 +814,7 @@ namespace RaptorDB.Views
         {
             int totcount = 0;
             DateTime dt = FastDateTime.Now;
+            filter = filter.Trim();
             if (filter == null || filter == "")
                 totcount = internalCount();
             else
@@ -781,6 +849,11 @@ namespace RaptorDB.Views
 
         internal Result<T> Query2<T>(Expression<Predicate<T>> filter, int start, int count)
         {
+            return Query2<T>(filter, start, count, "");
+        }
+
+        internal Result<T> Query2<T>(Expression<Predicate<T>> filter, int start, int count, string orderby)
+        {
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
 
@@ -809,18 +882,25 @@ namespace RaptorDB.Views
                     trows = rrows.FindAll(filter.Compile());
                 }
             }
+            var order = SortBy(orderby);
 
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return ReturnRows2<T>(ba, trows, start, count);
+            return ReturnRows2<T>(ba, trows, start, count, order);
         }
 
         internal Result<T> Query2<T>(string filter, int start, int count)
         {
+            return Query2<T>(filter, start, count, "");
+        }
+
+        internal Result<T> Query2<T>(string filter, int start, int count, string orderby)
+        {
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
             _log.Debug("query : " + filter);
+            _log.Debug("order by : " + orderby);
 
             WAHBitArray ba = new WAHBitArray();
             var delbits = _deletedRows.GetBits();
@@ -841,16 +921,57 @@ namespace RaptorDB.Views
             else
                 ba = ba.Fill(_viewData.Count()).AndNot(delbits);
 
+            var order = SortBy(orderby);
+
             _log.Debug("query bitmap done (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             dt = FastDateTime.Now;
             // exec query return rows
-            return ReturnRows2<T>(ba, null, start, count);
+            return ReturnRows2<T>(ba, null, start, count, order);
+        }
+
+        internal List<int> SortBy(string sort)
+        {
+            List<int> sortlist = new List<int>();
+            if (sort == "")
+                return sortlist;
+            string col = "";
+            foreach (var c in _schema.Columns)
+                if (sort.ToLower().Contains(c.Key.ToLower()))
+                    col = c.Key;
+            if (col == "")
+            {
+                _log.Debug("sort column not recognized : " + sort);
+                return sortlist;
+            }
+
+            DateTime dt = FastDateTime.Now;
+            bool desc = false;
+            if (sort.ToLower().Contains(" desc"))
+                desc = true;
+            int count = _viewData.Count();
+            IIndex idx = _indexes[col];
+            object[] keys = idx.GetKeys();
+            Array.Sort(keys);
+
+            foreach (var k in keys)
+                foreach (var i in idx.Query(RDBExpression.Equal, k, count).GetBitIndexes())
+                    sortlist.Add(i);
+
+            if (desc)
+                sortlist.Reverse();
+            _log.Debug("Sort column = " + col + ", time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            return sortlist;
         }
 
         internal object GetAssembly(out string typename)
         {
             typename = _view.Schema.AssemblyQualifiedName;
             return File.ReadAllBytes(_view.Schema.Assembly.Location);
+        }
+
+        public ViewRowDefinition GetSchema()
+        {
+            return _schema;
         }
     }
 }
