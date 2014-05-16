@@ -38,7 +38,7 @@ namespace RaptorDB.Replication
             _InboxPath = _Path + "Replication" + _S + "Inbox";
             _OutboxPath = _Path + "Replication" + _S + "Outbox";
 
-            _config = fastJSON.JSON.Instance.ToObject<ServerConfiguration>(config);
+            _config = fastJSON.JSON.ToObject<ServerConfiguration>(config);
             if (_config == null)
             {
                 _log.Error("unable to read the configuration for replication, check the config file");

@@ -174,9 +174,9 @@ namespace RaptorDB
             meta.typename = fastJSON.Reflection.Instance.GetTypeAssemblyName(obj.GetType());
             byte[] data;
             if (_saveFormat == SF_FORMAT.BSON)
-                data = fastBinaryJSON.BJSON.Instance.ToBJSON(obj);
+                data = fastBinaryJSON.BJSON.ToBJSON(obj);
             else
-                data = Helper.GetBytes(fastJSON.JSON.Instance.ToJSON(obj));
+                data = Helper.GetBytes(fastJSON.JSON.ToJSON(obj));
 
             return internalWriteData(meta, data, false);
         }
@@ -189,9 +189,9 @@ namespace RaptorDB
             meta.typename = fastJSON.Reflection.Instance.GetTypeAssemblyName(obj.GetType());
             byte[] data;
             if (_saveFormat == SF_FORMAT.BSON)
-                data = fastBinaryJSON.BJSON.Instance.ToBJSON(obj);
+                data = fastBinaryJSON.BJSON.ToBJSON(obj);
             else
-                data = Helper.GetBytes(fastJSON.JSON.Instance.ToJSON(obj));
+                data = Helper.GetBytes(fastJSON.JSON.ToJSON(obj));
 
             return internalWriteData(meta, data, false);
         }
@@ -222,9 +222,9 @@ namespace RaptorDB
             if (b == null)
                 return null;
             if (b[0] < 32)
-                return fastBinaryJSON.BJSON.Instance.ToObject(b);
+                return fastBinaryJSON.BJSON.ToObject(b);
             else
-                return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
+                return fastJSON.JSON.ToObject(Encoding.ASCII.GetString(b));
         }
 
         /// <summary>
@@ -305,7 +305,7 @@ namespace RaptorDB
                 {
                     if (data != null)
                         meta.dataLength = data.Length;
-                    byte[] metabytes = fastBinaryJSON.BJSON.Instance.ToBJSON(meta, new fastBinaryJSON.BJSONParameters { UseExtensions = false });
+                    byte[] metabytes = fastBinaryJSON.BJSON.ToBJSON(meta, new fastBinaryJSON.BJSONParameters { UseExtensions = false });
 
                     // write header info
                     _datawrite.Write(new byte[] { 1 }, 0, 1); // TODO : add json here, write bson for now
@@ -412,11 +412,11 @@ namespace RaptorDB
                 _dataread.Read(hdr, 0, len);
                 StorageItem<T> meta;
                 if (type == 1)
-                    meta = fastBinaryJSON.BJSON.Instance.ToObject<StorageItem<T>>(hdr);
+                    meta = fastBinaryJSON.BJSON.ToObject<StorageItem<T>>(hdr);
                 else
                 {
                     string str = Helper.GetString(hdr, 0, (short)hdr.Length);
-                    meta = fastJSON.JSON.Instance.ToObject<StorageItem<T>>(str);
+                    meta = fastJSON.JSON.ToObject<StorageItem<T>>(str);
                 }
                 return meta;
             }

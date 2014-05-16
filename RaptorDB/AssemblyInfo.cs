@@ -1,18 +1,8 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-[assembly: AssemblyTitle("")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("")]
-[assembly: AssemblyCopyright("")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]		
+[assembly: AssemblyTitle("RaptorDB Document Store")]
+[assembly: AssemblyDescription("NoSql, JSON based, Document store database with compiled .net map functions and automatic hybrid bitmap indexing and LINQ query filters (now with standalone Server mode, Backup and Active Restore, Transactions, Server side queries, MonoDroid support, HQ-Branch Replication)")]
+[assembly: AssemblyProduct("RaptorDB Document Store")]
 
 
-[assembly: AssemblyVersion("1.0.0.0")]
-
-[assembly: AssemblyDelaySign(false)]
-[assembly: AssemblyKeyFile("")]
-[assembly: AssemblyKeyName("")]

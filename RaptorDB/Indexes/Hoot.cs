@@ -81,7 +81,7 @@ namespace RaptorDB
                 doc.DocNumber = _lastDocNum++;
 
             // save doc to disk
-            string dstr = fastJSON.JSON.Instance.ToJSON(doc, new fastJSON.JSONParameters { UseExtensions = false });
+            string dstr = fastJSON.JSON.ToJSON(doc, new fastJSON.JSONParameters { UseExtensions = false });
             _docs.Set(doc.FileName.ToLower(), Encoding.Unicode.GetBytes(dstr));
 
             _log.Debug("writing doc to disk (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
@@ -110,7 +110,7 @@ namespace RaptorDB
                 if (i > _lastDocNum - 1)
                     break;
                 string b = _docs.ReadData(i);
-                Document d = fastJSON.JSON.Instance.ToObject<Document>(b);
+                Document d = fastJSON.JSON.ToObject<Document>(b);
 
                 yield return d;
             }
@@ -125,7 +125,7 @@ namespace RaptorDB
                 if (i > _lastDocNum - 1)
                     break;
                 string b = _docs.ReadData(i);
-                var d = (Dictionary<string, object>)fastJSON.JSON.Instance.Parse(b);
+                var d = (Dictionary<string, object>)fastJSON.JSON.Parse(b);
 
                 yield return d["FileName"].ToString();
             }
@@ -143,7 +143,7 @@ namespace RaptorDB
             byte[] b;
             if (_docs.Get(filename.ToLower(), out b))
             {
-                Document d = fastJSON.JSON.Instance.ToObject<Document>(Encoding.Unicode.GetString(b));
+                Document d = fastJSON.JSON.ToObject<Document>(Encoding.Unicode.GetString(b));
                 RemoveDocument(d.DocNumber);
                 return true;
             }

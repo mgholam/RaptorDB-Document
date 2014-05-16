@@ -20,23 +20,28 @@ namespace RaptorDB
     {
         private RaptorDB(string FolderPath)
         {
+            // speed settings
+            fastJSON.JSON.Parameters.ParametricConstructorOverride = true;
+            fastBinaryJSON.BJSON.Parameters.ParametricConstructorOverride = true;
+            fastJSON.JSON.Parameters.UseEscapedUnicode = false;
+            
             // if configs !exists create template config files
             CreateTemplateConfigFiles();
 
             // TODO : read/write global or another object?
             // read raptordb.config here (running parameters)
             if (File.Exists("RaptorDB.config"))
-                fastJSON.JSON.Instance.FillObject(new Global(), File.ReadAllText("RaptorDB.config"));
+                fastJSON.JSON.FillObject(new Global(), File.ReadAllText("RaptorDB.config"));
             Initialize(FolderPath);
         }
 
         private void CreateTemplateConfigFiles()
         {
             if (File.Exists("RaptorDB.config") == false)
-                File.WriteAllText("-RaptorDB.config", fastJSON.JSON.Instance.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
+                File.WriteAllText("-RaptorDB.config", fastJSON.JSON.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
 
             if (File.Exists("RaptorDB-Branch.config") == false)
-                File.WriteAllText("-RaptorDB-Branch.config", fastJSON.JSON.Instance.ToNiceJSON(new Replication.ClientConfiguration(), new fastJSON.JSONParameters { UseExtensions = false }));
+                File.WriteAllText("-RaptorDB-Branch.config", fastJSON.JSON.ToNiceJSON(new Replication.ClientConfiguration(), new fastJSON.JSONParameters { UseExtensions = false }));
 
             if (File.Exists("RaptorDB-Replication.config") == false)
             {
@@ -45,7 +50,7 @@ namespace RaptorDB
                 s.What.Add(new Replication.WhatItem { Name = "b2", PackageItemLimit = 10000, Version = 1, B2HQtypes = new List<string> { "*" }, HQ2Btypes = new List<string> { "config.*" } });
                 s.Where.Add(new Replication.WhereItem { BranchName = "b1", Password = "123", When = "*/5 * * * *", What = "default" });
                 s.Where.Add(new Replication.WhereItem { BranchName = "b2", Password = "321", When = "*/20 * * * *", What = "b2" });
-                File.WriteAllText("-RaptorDB-Replication.config", fastJSON.JSON.Instance.ToNiceJSON(s, new fastJSON.JSONParameters { UseExtensions = false }));
+                File.WriteAllText("-RaptorDB-Replication.config", fastJSON.JSON.ToNiceJSON(s, new fastJSON.JSONParameters { UseExtensions = false }));
             }
         }
 
@@ -314,7 +319,7 @@ namespace RaptorDB
 
             // TODO : write global or something else?
             if (File.Exists("RaptorDB.config") == false)
-                File.WriteAllText("RaptorDB.config", fastJSON.JSON.Instance.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
+                File.WriteAllText("RaptorDB.config", fastJSON.JSON.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
             if (_cron != null)
                 _cron.Stop();
             _fulltextindex.Shutdown();
@@ -459,7 +464,7 @@ namespace RaptorDB
                         {
                             _log.Error(ex);
                             sf.Shutdown();
-                            string err = Properties.Resources.msg.Replace("%js%", fastJSON.JSON.Instance.Beautify(Helper.GetString(i.data, 0, (short)i.data.Length)))
+                            string err = Properties.Resources.msg.Replace("%js%", fastJSON.JSON.Beautify(Helper.GetString(i.data, 0, (short)i.data.Length)))
                                 .Replace("%ex%", "" + ex)
                                 .Replace("%c%", path + _S + fn + ".counter");
 
@@ -950,9 +955,9 @@ namespace RaptorDB
         private object CreateObject(byte[] b)
         {
             if (b[0] < 32)
-                return fastBinaryJSON.BJSON.Instance.ToObject(b);
+                return fastBinaryJSON.BJSON.ToObject(b);
             else
-                return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
+                return fastJSON.JSON.ToObject(Encoding.ASCII.GetString(b));
         }
 
         private void SaveInOtherViews<T>(Guid docid, T data)
@@ -1157,7 +1162,9 @@ namespace RaptorDB
                 foreach (Match m in regex.Matches(File.ReadAllText(file)))
                 {
                     string str = m.Groups["refs"].Value.Trim();
+#pragma warning disable 618
                     Assembly a = Assembly.LoadWithPartialName(Path.GetFileNameWithoutExtension(str));//load from GAC if possible
+#pragma warning restore 618
                     if (a != null)
                         compilerparams.ReferencedAssemblies.Add(a.Location);
                     else
@@ -1302,7 +1309,7 @@ namespace RaptorDB
                         if (obj != null)
                         {
                             // normal string and normal guid 
-                            string json = fastJSON.JSON.Instance.ToJSON(obj, new fastJSON.JSONParameters { UseEscapedUnicode = false, UseFastGuid = false });
+                            string json = fastJSON.JSON.ToJSON(obj, new fastJSON.JSONParameters { UseEscapedUnicode = false, UseFastGuid = false });
                             _fulltextindex.Set(json, _LastFulltextIndexed);
                         }
                     }

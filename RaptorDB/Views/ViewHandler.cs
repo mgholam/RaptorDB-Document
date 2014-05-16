@@ -62,6 +62,8 @@ namespace RaptorDB.Views
         private SafeDictionary<int, Dictionary<Guid, List<object[]>>> _transactions = new SafeDictionary<int, Dictionary<Guid, List<object[]>>>();
         private SafeDictionary<string, int> _nocase = new SafeDictionary<string, int>();
         private System.Timers.Timer _saveTimer;
+        Type basetype; // used for mapper
+        dynamic mapper;
 
         void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
@@ -69,6 +71,11 @@ namespace RaptorDB.Views
                 i.Value.SaveIndex();
 
             _deletedRows.SaveIndex();
+        }
+
+        public Type GetFireOnType()
+        {
+            return basetype;
         }
 
         internal void SetView<T>(View<T> view, IDocStorage<Guid> docs)
@@ -112,6 +119,16 @@ namespace RaptorDB.Views
 
             CreateResultRowFiller();
 
+            mapper = view.Mapper;
+            // looking for the T in View<T>
+            if (view.GetType().GetGenericArguments().Length == 1) // FIX : kludge 
+                basetype = view.GetType().GetGenericArguments()[0];
+            else
+            {
+                // or recurse until found
+                basetype = view.GetType().BaseType.GetGenericArguments()[0];
+            }
+
             if (rebuild)
                 Task.Factory.StartNew(() => RebuildFromScratch(docs));
         }
@@ -145,10 +162,15 @@ namespace RaptorDB.Views
         internal void Insert<T>(Guid guid, T doc)
         {
             apimapper api = new apimapper(_viewmanager);
-            View<T> view = (View<T>)_view;
 
-            if (view.Mapper != null)
-                view.Mapper(api, guid, doc);
+            if (basetype == doc.GetType())
+            {
+                View<T> view = _view as View<T>;
+                if (view.Mapper != null)
+                    view.Mapper(api, guid, doc);
+            }
+            else if (mapper != null)
+                mapper(api, guid, doc);
 
             // map objects to rows
             foreach (var d in api.emitobj)
@@ -172,18 +194,23 @@ namespace RaptorDB.Views
         internal bool InsertTransaction<T>(Guid docid, T doc)
         {
             apimapper api = new apimapper(_viewmanager);
-            View<T> view = (View<T>)_view;
+            if (basetype == doc.GetType())
+            {
+                View<T> view = (View<T>)_view;
 
-            try
-            {
-                if (view.Mapper != null)
-                    view.Mapper(api, docid, doc);
+                try
+                {
+                    if (view.Mapper != null)
+                        view.Mapper(api, docid, doc);
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex);
+                    return false;
+                }
             }
-            catch (Exception ex)
-            {
-                _log.Error(ex);
-                return false;
-            }
+            else if (mapper != null)
+                mapper(api, docid, doc);
 
             if (api._RollBack == true)
                 return false;
@@ -313,7 +340,7 @@ namespace RaptorDB.Views
             int cc = 0;
             WAHBitArray del = _deletedRows.GetBits();
             ret.TotalCount = c - (int)del.CountOnes();
-            
+
             var order = SortBy(orderby);
 
             if (order.Count == 0)
@@ -486,7 +513,7 @@ namespace RaptorDB.Views
             if (b != null)
             {
                 object o = FastCreateObject(_view.Schema);
-                object[] data = (object[])fastBinaryJSON.BJSON.Instance.ToObject(b);
+                object[] data = (object[])fastBinaryJSON.BJSON.ToObject(b);
                 rows.Add((T)_rowfiller(o, data));
                 return true;
             }
@@ -573,10 +600,10 @@ namespace RaptorDB.Views
             }
         }
 
-        MethodInfo view = null;
+        MethodInfo insertmethod = null;
         private void RebuildFromScratch(IDocStorage<Guid> docs)
         {
-            view = this.GetType().GetMethod("Insert", BindingFlags.Instance | BindingFlags.NonPublic);
+            insertmethod = this.GetType().GetMethod("Insert", BindingFlags.Instance | BindingFlags.NonPublic);
             _log.Debug("Rebuilding view from scratch...");
             _log.Debug("View = " + _view.Name);
             DateTime dt = FastDateTime.Now;
@@ -595,9 +622,9 @@ namespace RaptorDB.Views
                         // FEATURE : optimize this by not creating the object if not in FireOnTypes
                         object obj = b;
                         Type t = obj.GetType();
-                        if (_view.FireOnTypes.Contains(t))//.AssemblyQualifiedName))
+                        if (t.IsSubclassOf(basetype) || t == basetype) //_view.FireOnTypes.Contains(t))//.AssemblyQualifiedName))
                         {
-                            var m = view.MakeGenericMethod(new Type[] { obj.GetType() });
+                            var m = insertmethod.MakeGenericMethod(new Type[] { obj.GetType() });
                             m.Invoke(this, new object[] { meta.key, obj });
                         }
                     }
@@ -614,9 +641,9 @@ namespace RaptorDB.Views
         private object CreateObject(byte[] b)
         {
             if (b[0] < 32)
-                return fastBinaryJSON.BJSON.Instance.ToObject(b);
+                return fastBinaryJSON.BJSON.ToObject(b);
             else
-                return fastJSON.JSON.Instance.ToObject(Encoding.ASCII.GetString(b));
+                return fastJSON.JSON.ToObject(Encoding.ASCII.GetString(b));
         }
 
         private void CreateLoadIndexes(ViewRowDefinition viewRowDefinition)
@@ -695,7 +722,7 @@ namespace RaptorDB.Views
                 object[] r = new object[row.Length + 1];
                 r[0] = guid;
                 Array.Copy(row, 0, r, 1, row.Length);
-                byte[] b = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
+                byte[] b = fastBinaryJSON.BJSON.ToBJSON(r);
 
                 int rownum = _viewData.WriteRawData(b);
 
@@ -718,7 +745,7 @@ namespace RaptorDB.Views
             {
                 object[] r = new object[colcount];
                 int i = 0;
-                Getters[] getters = Reflection.Instance.GetGetters(obj.GetType(), false);
+                Getters[] getters = Reflection.Instance.GetGetters(obj.GetType(), false, null);
 
                 foreach (var c in _schema.Columns)
                 {
@@ -739,14 +766,15 @@ namespace RaptorDB.Views
             return output;
         }
 
-
         private void IndexRow(Guid docid, object[] row, int rownum)
         {
             int i = 0;
+            int c = _colnames.Count-1;
             _indexes[_docid].Set(docid, rownum);
             // index the row
             foreach (var d in row)
-                _indexes[_colnames[i++]].Set(d, rownum);
+                if (i < c)
+                    _indexes[_colnames[i++]].Set(d, rownum);
         }
 
         private IIndex CreateIndex(string name, Type type)
@@ -862,7 +890,11 @@ namespace RaptorDB.Views
             QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
             qv.Visit(filter);
             var delbits = _deletedRows.GetBits();
-            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+            if (qv._bitmap.Count > 0)
+            {
+                WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
+                ba = qbits.AndNot(delbits);
+            }
             List<T> trows = null;
             if (_viewmanager.inTransaction())
             {

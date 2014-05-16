@@ -655,15 +655,19 @@ namespace RaptorDB
 
         internal WAHBitArray Fill(int count)
         {
-            int c = count >> 5;
-            int r = count % 32;
-            if (r > 0)
-                c++;
-            uint[] ints = new uint[c];
-            for (int i = 0; i < c - 1; i++)
-                ints[i] = 0xffffffff;
-            ints[c-1] = 0xffffffff << (32 - r);
-            return new WAHBitArray(TYPE.Bitarray, ints);
+            if (count > 0)
+            {
+                int c = count >> 5;
+                int r = count % 32;
+                if (r > 0)
+                    c++;
+                uint[] ints = new uint[c];
+                for (int i = 0; i < c - 1; i++)
+                    ints[i] = 0xffffffff;
+                ints[c - 1] = 0xffffffff << (32 - r);
+                return new WAHBitArray(TYPE.Bitarray, ints);
+            }
+            return new WAHBitArray();
         }
     }
 }

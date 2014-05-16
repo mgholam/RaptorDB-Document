@@ -386,12 +386,14 @@ namespace RaptorDB
             return bc;
         }
 
+#pragma warning disable 642
         private void CheckInternalOP()
         {
             if (_optimizing)
                 lock (_oplock) ; // yes! this is good
             _que.Enqueue(1);
         }
+#pragma warning restore 642
 
         private void Done()
         {

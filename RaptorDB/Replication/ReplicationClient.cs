@@ -38,7 +38,7 @@ namespace RaptorDB.Replication
             _docs = docs;
             _path = dataFolder;
             // read client config file
-            _config = fastJSON.JSON.Instance.ToObject<ClientConfiguration>(config);
+            _config = fastJSON.JSON.ToObject<ClientConfiguration>(config);
             Initialize();
         }
 
@@ -55,7 +55,7 @@ namespace RaptorDB.Replication
             _clientConfig = new ClientRepConfig();
             //  read what config
             if (File.Exists(_path + "Replication" + _S + "branch.dat"))
-                _clientConfig = fastBinaryJSON.BJSON.Instance.ToObject<ClientRepConfig>(File.ReadAllBytes(_path + "Replication" + _S + "branch.dat"));
+                _clientConfig = fastBinaryJSON.BJSON.ToObject<ClientRepConfig>(File.ReadAllBytes(_path + "Replication" + _S + "branch.dat"));
             // starting jobs
             _cron.AddJob(_clientConfig.whencron, Replicate);
         }
@@ -88,7 +88,7 @@ namespace RaptorDB.Replication
             if (_clientConfig.isConfigured == false)
                 return;
             // write config to disk
-            byte[] b = fastBinaryJSON.BJSON.Instance.ToBJSON(_clientConfig);
+            byte[] b = fastBinaryJSON.BJSON.ToBJSON(_clientConfig);
             File.WriteAllBytes(_path + "Replication" + _S + "branch.dat", b);
         }
 

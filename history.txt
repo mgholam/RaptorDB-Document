@@ -1,187 +1,42 @@
-v1.0
-----
-- initial release
-
-v1.1
-----
-- fulltext indexing via attribute
-- string query parser 
-- fix shutdown flusing indexes to disk
-- rudimentary console application
-- lowercase viewnames for string queries
-- fulltext search defaults to AND if + - characters not present in query
-- Query now works when suppling the view type
-- save pauses indexer for better insert performance ~30% faster
-
-v1.2
-----
-- View versioning and rebuild
-- code cleanup
-- removed indent logic from fastJSON
-- added schema of the query to the Result 
-
-v1.3
-----
-- Results.Rows are now row schema objects and bindable (even when fields)
-- View.Schema must now derive from RaptorDB.RDBSchema
-- removed columns from Result (not needed anymore)
-- RegisterView throws exceptions instead of returning a Result
-- added a rudimentary query viewer project
-- null values are ignored when indexing
-- bool index filename will end in ".idx"
-- sample apps will create data files in the main soultion folder for easy sharing
-- you can now do aggregate queries on the results on the client side
-- added api.EmitObject for easier mapping (less code to write)
-- upgrade to fastJSON v1.9.8
-- bug fix datetime in fastBinaryJSON
-- added ConsistentView 
-
-v1.4
-----
-- break up the source into projects
-- created client, server dlls
-- upgrade to fastBinaryJSON v1.1
-- changed to SafeSortedList for thread safe indexes
-- add auto installer RaptorDBServer service
-- performance optimized tcp network layer
-- added dual mode usage to the windows application (embedded, server)
-- code cleanup
-- added IRaptorDB interface to allow you to switch between embedded and client seamlessly
-- load views from the Extensions folder in server mode
-
-v1.5
-----
-- compressing network traffic over Param.CompressDataOver limit with MiniLZO
-- added Delete(docid) and DeleteBytes(fileid)
-- added ability to query Guid and DateTime in string form
-- bug fix reading boolean indexes
-- rebuild view and background indexer handles deleted docs
-- added authentication via users.config file in server mode
-- Backup & Restore data
-- AddUser() method for user
-- handle isDeleted when restoring data and rebuilding View
-- Auto backup in server mode @ 00:00 time
-
-v1.6
-----
-- query lambda caching
-- transaction support
-- bug in datetime serialization
-
-v1.7
-----
-- server side aggregate queries
-- fixed the build script for views to copy the dll to the extensions folder
-- server side queries can have filters
-- login form default buttons fix
-
-v1.8
-----
-- upgrade to fastBinaryJSON v1.2 with struct support
-- upgrade to fastJSON v1.9.9 with struct support
-- bug fix hoot index loadwords when file size is zero
-- bug fix linq binding ServerSide -> c.val == stringvariable
-- bug fix linq binding -> c.val == stringvariable
-- bug fix reflection code in serializers
-
-v1.8.1
+v3.1.2
 ------
-- speed increase WAH bitmap Set() code 
-- bug fix concurrent save bitmap index to disk
-- upgrade to fastBinaryJSON v1.3
-- upgrade to fastJSON v2.0.1
+- Upgrade to fastJSON v2.1.1
+- Upgrade to fastBinaryJSON v1.4.1
+- bug fixes in WAH and Query2 from Richard Hauer
+- changed all singleton implementations
+- bug fix indexing String.Empty
+- *breaking change* removed FireOnType from view definitions
+- Views can now correctly work with subclass of the T defined (i.e. SpecialInvoice : Invoice)
 
-v1.8.2
+
+v3.1.1
 ------
-- bug fix linq binding -> c.val == obj.property (Thanks to Joe Dluzen) 
-- added lock to the bitmap index for concurrency
-- optimized $types output in JSON and BJSON
-- bug fix null check for SafeSortedList.Remove
-- bug fix server mode data transfer
+- added signed assemblies the assembly version will stay at 3.0.0.0 and the file version will increment
+- added nuget build 
 
-v1.8.3
+v3.1.0
 ------
-- upgrade to fastJSON v2.0.6
-- upgrade to fastBinaryJSON v1.3.4
-- bug fix linq2string with date,guid parameters
-- added double,float types to the indexer valid data types
-- added a lock to the IndexFile for concurrency issues (thanks to Antonello Oliveri)
-- fixed lock on _que in the logger for concurrency (thanks to Antonello Oliveri)
-- fixed the reflection binding to the insert method (thanks to Antonello Oliveri)
-- added Count() on views
-- added support for paging of results
-- the mapper can now see changes it has made in it's own thread in transaction mode while quering
+- added sort for queries 
+- removed extra query overloads in favour of the new model
 
-v1.9.0
+v3.0.6
 ------
-- speed increase writing bitmap indexes to disk
-- bug fix hoot search with wildcards
-- bug fix datetime indexing with UTC time (all times are localtime)
-- upgrade to fastJSON v2.0.9
-- upgrade to fastBinaryJSON v1.3.5
-- changed CodeDOM to Reflection.Emit for MonoDroid compatibility
-- more optimized bitmap storage format (save offsets if smaller than WAH)
-- fixed path seperator character for monodroid and windows compatibility changed to Path.DirectorySeparatorChar 
-- new generic Query interface with typed results (thanks to seer_tenedos2)
-- changed to Result<T>
-- WAH bitcount speed increase
-- bitmap index uses buffered stream for speed
-- added between query (work in progress)
-- bug fix storage file and deleted items
-- new query model for mapper api interface
-- you can now define your own schema for rows with caveats
-- bug fix NOT on bitmap indexes to resize to the total row count first
-- when defining your own schema you can define the fulltext columns in the view without attributes
+- Result.TotalCount reflects the original row count and differs from Result.Count when paging
+- internal changed FireOnType to handle Type instead of strings
+- Query() can now handle empty filter strings correctly
+- Upgrade to fastJSON v2.0.24
+- Upgrade to fastBinaryJSON v1.3.11
 
-
-v1.9.1
+v3.0.5
 ------
-- bug fix edge case WAHBitarray
-- sync code with changes in hOOt
-- bug fix missing server mode SaveBytes()
-- bug fix server side queries in server mode
-- bug fix embedded guid in query : v => v.docid == new Guid("...")
+- bug fix saving page list to disk for counts > 50 million items
 
-
-v1.9.2
+v3.0.1
 ------
-- SafeDictionary.Add() will update if item exists
-- BitmapIndex using new lock mechanism
-- CaseInsensitive attribute
-- bug fix lowercase hoot indexing
-- case insensitive string indexing and searching
-- nocase samples
-- fixed handling != (not equal) in linq query
-
-
-v2.0.0
-------
-- added more method documentations
-- * breaking change in doc storage file from hashed guid to guid keys *
-- added FetchHistory() and FetchVersion() for docs and files to get revisions  
-- upgrade to fastJSON v2.0.14
-- upgrade to fastBinaryJSON v1.3.7
-- full text indexing and search for the entire original document
-- bug fix linq query with boolean parameter
-
-
-v2.0.5
-------
-- added FreeMemory to classes
-- memory limiting and free memory timer added
-- views background save indexes to disk on timer
-- fixed RaptorDBServer.csproj to AnyCPU build
-
-v2.0.6
-------
-- bug fix WAHBitArray
-- upgrade to fastJSON v2.0.15
-- bug fix hoot fulltext index on last word 
-- save deleted items bitmap on save timer
-
-v2.0.6.1
---------
-- bug fix WAHBitArray
+- upgrade to fastJSON v2.0.22
+- upgrade to fastBinaryJSON v1.3.10
+- detect process exit and shutdown cleanly so you can omit the explicit Shutdown()
+- bug fix WAH bitarray 
 
 v3.0.0
 ------
@@ -204,26 +59,183 @@ v3.0.0
 - automatic generate config files if they don't exist with a '-' prefix
 - 'output' in the root of the solution folder is the new build destination of projects for easy access
 
-v3.0.1
-------
-- upgrade to fastJSON v2.0.22
-- upgrade to fastBinaryJSON v1.3.10
-- detect process exit and shutdown cleanly so you can omit the explicit Shutdown()
-- bug fix WAH bitarray 
+v2.0.6.1
+--------
+- bug fix WAHBitArray
 
-v3.0.5
+v2.0.6
 ------
-- bug fix saving page list to disk for counts > 50 million items
+- bug fix WAHBitArray
+- upgrade to fastJSON v2.0.15
+- bug fix hoot fulltext index on last word 
+- save deleted items bitmap on save timer
 
-v3.0.6
+v2.0.5
 ------
-- Result.TotalCount reflects the original row count and differs from Result.Count when paging
-- internal changed FireOnType to handle Type instead of strings
-- Query() can now handle empty filter strings correctly
-- Upgrade to fastJSON v2.0.24
-- Upgrade to fastBinaryJSON v1.3.11
+- added FreeMemory to classes
+- memory limiting and free memory timer added
+- views background save indexes to disk on timer
+- fixed RaptorDBServer.csproj to AnyCPU build
 
-v3.1.0
+v2.0.0
 ------
-- added sort for queries 
-- removed extra query overloads in favour of the new model
+- added more method documentations
+- * breaking change in doc storage file from hashed guid to guid keys *
+- added FetchHistory() and FetchVersion() for docs and files to get revisions  
+- upgrade to fastJSON v2.0.14
+- upgrade to fastBinaryJSON v1.3.7
+- full text indexing and search for the entire original document
+- bug fix linq query with boolean parameter
+
+v1.9.2
+------
+- SafeDictionary.Add() will update if item exists
+- BitmapIndex using new lock mechanism
+- CaseInsensitive attribute
+- bug fix lowercase hoot indexing
+- case insensitive string indexing and searching
+- nocase samples
+- fixed handling != (not equal) in linq query
+
+v1.9.1
+------
+- bug fix edge case WAHBitarray
+- sync code with changes in hOOt
+- bug fix missing server mode SaveBytes()
+- bug fix server side queries in server mode
+- bug fix embedded guid in query : v => v.docid == new Guid("...")
+
+v1.9.0
+------
+- speed increase writing bitmap indexes to disk
+- bug fix hoot search with wildcards
+- bug fix datetime indexing with UTC time (all times are localtime)
+- upgrade to fastJSON v2.0.9
+- upgrade to fastBinaryJSON v1.3.5
+- changed CodeDOM to Reflection.Emit for MonoDroid compatibility
+- more optimized bitmap storage format (save offsets if smaller than WAH)
+- fixed path seperator character for monodroid and windows compatibility changed to Path.DirectorySeparatorChar 
+- new generic Query interface with typed results (thanks to seer_tenedos2)
+- changed to Result<T>
+- WAH bitcount speed increase
+- bitmap index uses buffered stream for speed
+- added between query (work in progress)
+- bug fix storage file and deleted items
+- new query model for mapper api interface
+- you can now define your own schema for rows with caveats
+- bug fix NOT on bitmap indexes to resize to the total row count first
+- when defining your own schema you can define the fulltext columns in the view without attributes
+
+v1.8.3
+------
+- upgrade to fastJSON v2.0.6
+- upgrade to fastBinaryJSON v1.3.4
+- bug fix linq2string with date,guid parameters
+- added double,float types to the indexer valid data types
+- added a lock to the IndexFile for concurrency issues (thanks to Antonello Oliveri)
+- fixed lock on _que in the logger for concurrency (thanks to Antonello Oliveri)
+- fixed the reflection binding to the insert method (thanks to Antonello Oliveri)
+- added Count() on views
+- added support for paging of results
+- the mapper can now see changes it has made in it's own thread in transaction mode while quering
+
+v1.8.2
+------
+- bug fix linq binding -> c.val == obj.property (Thanks to Joe Dluzen) 
+- added lock to the bitmap index for concurrency
+- optimized $types output in JSON and BJSON
+- bug fix null check for SafeSortedList.Remove
+- bug fix server mode data transfer
+
+v1.8.1
+------
+- speed increase WAH bitmap Set() code 
+- bug fix concurrent save bitmap index to disk
+- upgrade to fastBinaryJSON v1.3
+- upgrade to fastJSON v2.0.1
+
+v1.8
+----
+- upgrade to fastBinaryJSON v1.2 with struct support
+- upgrade to fastJSON v1.9.9 with struct support
+- bug fix hoot index loadwords when file size is zero
+- bug fix linq binding ServerSide -> c.val == stringvariable
+- bug fix linq binding -> c.val == stringvariable
+- bug fix reflection code in serializers
+
+v1.7
+----
+- server side aggregate queries
+- fixed the build script for views to copy the dll to the extensions folder
+- server side queries can have filters
+- login form default buttons fix
+
+v1.6
+----
+- query lambda caching
+- transaction support
+- bug in datetime serialization
+
+v1.5
+----
+- compressing network traffic over Param.CompressDataOver limit with MiniLZO
+- added Delete(docid) and DeleteBytes(fileid)
+- added ability to query Guid and DateTime in string form
+- bug fix reading boolean indexes
+- rebuild view and background indexer handles deleted docs
+- added authentication via users.config file in server mode
+- Backup & Restore data
+- AddUser() method for user
+- handle isDeleted when restoring data and rebuilding View
+- Auto backup in server mode @ 00:00 time
+
+v1.4
+----
+- break up the source into projects
+- created client, server dlls
+- upgrade to fastBinaryJSON v1.1
+- changed to SafeSortedList for thread safe indexes
+- add auto installer RaptorDBServer service
+- performance optimized tcp network layer
+- added dual mode usage to the windows application (embedded, server)
+- code cleanup
+- added IRaptorDB interface to allow you to switch between embedded and client seamlessly
+- load views from the Extensions folder in server mode
+
+v1.3
+----
+- Results.Rows are now row schema objects and bindable (even when fields)
+- View.Schema must now derive from RaptorDB.RDBSchema
+- removed columns from Result (not needed anymore)
+- RegisterView throws exceptions instead of returning a Result
+- added a rudimentary query viewer project
+- null values are ignored when indexing
+- bool index filename will end in ".idx"
+- sample apps will create data files in the main soultion folder for easy sharing
+- you can now do aggregate queries on the results on the client side
+- added api.EmitObject for easier mapping (less code to write)
+- upgrade to fastJSON v1.9.8
+- bug fix datetime in fastBinaryJSON
+- added ConsistentView 
+
+v1.2
+----
+- View versioning and rebuild
+- code cleanup
+- removed indent logic from fastJSON
+- added schema of the query to the Result 
+
+v1.1
+----
+- fulltext indexing via attribute
+- string query parser 
+- fix shutdown flusing indexes to disk
+- rudimentary console application
+- lowercase viewnames for string queries
+- fulltext search defaults to AND if + - characters not present in query
+- Query now works when suppling the view type
+- save pauses indexer for better insert performance ~30% faster
+
+v1.0
+----
+- initial release

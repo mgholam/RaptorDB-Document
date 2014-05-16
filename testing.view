@@ -1,0 +1,41 @@
+// ref: views.dll
+using System;
+using System.Collections.Generic;
+using RaptorDB;
+
+namespace SampleViews
+{
+    [RegisterView]
+    public class testing : View<SalesInvoice>
+    {
+	    // row schema defined in the script file 
+	    // and will be transferred to the client when needed 
+		public class RowSchema : RDBSchema
+		{
+			public string Product;
+			public decimal QTY;
+			public decimal Price;
+			public decimal Discount;
+		}
+		
+        public testing()
+        {
+            this.Name = "testing";
+            this.Description = "";
+            this.isPrimaryList = false;
+            this.isActive = true;
+            this.BackgroundIndexing = true;
+            this.Version = 3;
+
+            this.Schema = typeof(RowSchema);
+
+            this.AddFireOnTypes(typeof(SalesInvoice));
+
+            this.Mapper = (api, docid, doc) =>
+            {
+				foreach (var i in doc.Items)
+					api.EmitObject(docid, i);
+            };
+        }
+    }
+}

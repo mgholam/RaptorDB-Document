@@ -28,11 +28,11 @@ namespace RaptorDB
         /// </summary>
         public Type Schema { get; set; }
 
-        /// <summary>
-        /// A list of Types that this view responds to (inheiratance is supported)
-        /// Use AddFireOnTypes() to add to this list
-        /// </summary>
-        public List<Type> FireOnTypes { get; set; }
+        ///// <summary>
+        ///// A list of Types that this view responds to (inheiratance is supported)
+        ///// Use AddFireOnTypes() to add to this list
+        ///// </summary>
+        //public List<Type> FireOnTypes { get; set; }
         
         /// <summary>
         /// Is this the primary list and will be populated synchronously
@@ -65,14 +65,14 @@ namespace RaptorDB
         /// </summary>
         public bool TransactionMode { get; set; }
         
-        /// <summary>
-        /// Fire the mapper on these types
-        /// </summary>
-        /// <param name="type"></param>
-        public void AddFireOnTypes(Type type)
-        {
-            FireOnTypes.Add(type);
-        }
+        // <summary>
+        // Fire the mapper on these types
+        // </summary>
+        // <param name="type"></param>
+        //public void AddFireOnTypes(Type type)
+        //{
+        //    FireOnTypes.Add(type);
+        //}
 
         /// <summary>
         /// When defining your own schema and you don't want dependancies to RaptorDB to propogate through your code
@@ -94,7 +94,7 @@ namespace RaptorDB
         public View()
         {
             isActive = true;
-            FireOnTypes = new List<Type>();
+            //FireOnTypes = new List<Type>();
             DeleteBeforeInsert = true;
             BackgroundIndexing = true;
             FullTextColumns = new List<string>();
@@ -126,8 +126,8 @@ namespace RaptorDB
             }
             if (Mapper == null) 
                 throw new Exception("A map function must be defined");
-            if (FireOnTypes.Count == 0) 
-                throw new Exception("No types have been defined to fire on");
+            //if (FireOnTypes.Count == 0) 
+            //    throw new Exception("No types have been defined to fire on");
             if (TransactionMode == true && isPrimaryList == false)
                 throw new Exception("Transaction mode can only be enabled on Primary Views");
             // FEATURE : add more verifications

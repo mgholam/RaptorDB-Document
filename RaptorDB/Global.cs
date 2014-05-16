@@ -4,7 +4,7 @@ using System.Text;
 
 namespace RaptorDB
 {
-    internal class Global
+    public class Global
     {
         /// <summary>
         /// Store bitmap as int offsets then switch over to bitarray

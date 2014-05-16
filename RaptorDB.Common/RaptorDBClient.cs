@@ -16,6 +16,9 @@ namespace RaptorDB
             _username = username;
             _password = password;
             _client = new NetworkClient(server, port);
+            // speed settings
+            fastJSON.JSON.Parameters.ParametricConstructorOverride = true;
+            fastBinaryJSON.BJSON.Parameters.ParametricConstructorOverride = true;
         }
 
         private NetworkClient _client;

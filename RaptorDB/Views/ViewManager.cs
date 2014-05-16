@@ -33,47 +33,6 @@ namespace RaptorDB.Views
         private TaskQueue _que = new TaskQueue();
         private SafeDictionary<int, bool> _transactions = new SafeDictionary<int, bool>();
 
-        //internal int Count<T>(Type objtype, Expression<Predicate<T>> filter)
-        //{
-        //    string viewname = null;
-        //    // find view from name
-        //    if (_primaryView.TryGetValue(objtype, out viewname))
-        //        return Count(viewname, filter);
-
-        //    // search for viewtype here
-        //    if (_otherViewTypes.TryGetValue(objtype, out viewname))
-        //        return Count(viewname, filter);
-
-        //    _log.Error("view not found", viewname);
-        //    return 0;
-        //}
-
-        //internal int Count(Type objtype, string filter)
-        //{
-        //    string viewname = null;
-        //    // find view from name
-        //    if (_primaryView.TryGetValue(objtype, out viewname))
-        //        return Count(viewname, filter);
-
-        //    // search for viewtype here
-        //    if (_otherViewTypes.TryGetValue(objtype, out viewname))
-        //        return Count(viewname, filter);
-
-        //    _log.Error("view not found", viewname);
-        //    return 0;
-        //}
-
-        //internal int Count<T>(string viewname, Expression<Predicate<T>> filter)
-        //{
-        //    ViewHandler view = null;
-        //    // find view from name
-        //    if (_views.TryGetValue(viewname.ToLower(), out view))
-        //        return view.Count(filter);
-
-        //    _log.Error("view not found", viewname);
-        //    return 0;
-        //}
-
         internal int Count(string viewname, string filter)
         {
             ViewHandler view = null;
@@ -85,63 +44,10 @@ namespace RaptorDB.Views
             return 0;
         }
 
-        //internal Result<object> Query<T>(Type objtype, Expression<Predicate<T>> filter, int start, int count)
-        //{
-        //    string viewname = null;
-        //    // find view from name
-        //    if (_primaryView.TryGetValue(objtype, out viewname))
-        //        return Query(viewname, filter, start, count);
-
-        //    // search for viewtype here
-        //    if (_otherViewTypes.TryGetValue(objtype, out viewname))
-        //        return Query(viewname, filter, start, count);
-
-        //    _log.Error("view not found", viewname);
-        //    return new Result<object>(false, new Exception("view not found : " + viewname));
-        //}
-
-        //internal Result<object> Query(Type objtype, string filter, int start, int count)
-        //{
-        //    string viewname = GetViewName(objtype);
-
-        //    // find view from name
-        //    if (viewname != "") //_primaryView.TryGetValue(objtype, out viewname))
-        //        return Query(viewname, filter, start, count);
-
-        //    //// search for viewtype here
-        //    //if (_otherViewTypes.TryGetValue(objtype, out viewname))
-        //    //    return Query(viewname, filter, start, count);
-
-        //    //if(_viewAQFNmapping.TryGetValue(objtype.AssemblyQualifiedName, out viewname))
-        //    //    return Query(viewname, filter, start, count);
-
-        //    _log.Error("view not found for : ", objtype.AssemblyQualifiedName);
-        //    return new Result<object>(false, new Exception("view not found : " + objtype.AssemblyQualifiedName));
-        //}
-
         internal Result<object> Query(string viewname, string filter, int start, int count)
         {
-            //ViewHandler view = null;
-            //// find view from name
-            //if (_views.TryGetValue(viewname.ToLower(), out view))
-            //    return view.Query(filter, start, count);
-
-            //_log.Error("view not found", viewname);
-            //return new Result<object>(false, new Exception("view not found : " + viewname));
             return Query(viewname, filter, start, count, "");
         }
-
-        //internal Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
-        //{
-        //    //ViewHandler view = null;
-        //    //// find view from name
-        //    //if (_views.TryGetValue(viewname.ToLower(), out view))
-        //    //    return view.Query(filter, start, count);
-
-        //    //_log.Error("view not found", viewname);
-        //    //return new Result<object>(false, new Exception("view not found : " + viewname));
-        //    return Query<T>(viewname, filter, start, count, "");
-        //}
 
         internal Result<object> Query(string viewname, int start, int count)
         {
@@ -153,27 +59,6 @@ namespace RaptorDB.Views
             _log.Error("view not found", viewname);
             return new Result<object>(false, new Exception("view not found : " + viewname));
         }
-
-        //internal Result<object> Query(Type view, int start, int count)
-        //{
-        //    string viewname = GetViewName(view);
-
-        //    // find view from name
-        //    if (viewname != "") //_primaryView.TryGetValue(objtype, out viewname))
-        //        return Query(viewname, start, count);
-
-        //    //string viewname = null;
-        //    //// find view from name
-        //    //if (_primaryView.TryGetValue(view, out viewname))
-        //    //    return Query(viewname, start, count);
-
-        //    //// search for viewtype here
-        //    //if (_otherViewTypes.TryGetValue(view, out viewname))
-        //    //    return Query(viewname, start, count);
-
-        //    _log.Error("view not found", viewname);
-        //    return new Result<object>(false, new Exception("view not found : " + viewname));
-        //}
 
         internal void Insert<T>(string viewname, Guid docid, T data)
         {
@@ -225,7 +110,7 @@ namespace RaptorDB.Views
         internal string GetPrimaryViewForType(Type type)
         {
             string vn = "";
-            if (type == null)
+            if (type == null || type == typeof(object)) // reached the end
                 return vn;
             // find direct
             if (_primaryView.TryGetValue(type, out vn))
@@ -239,6 +124,26 @@ namespace RaptorDB.Views
             List<string> list = new List<string>();
             _otherViews.TryGetValue(type, out list);
             return list;
+        }
+
+        internal string GetViewName(Type type) // used for queries
+        {
+            string viewname = null;
+            // find view from name
+            //if (_primaryView.TryGetValue(type, out viewname))
+            //    return viewname;
+            viewname = GetPrimaryViewForType(type);
+            if (viewname != "")
+                return viewname;
+
+            // search for viewtype here
+            if (_otherViewTypes.TryGetValue(type, out viewname))
+                return viewname;
+
+            //if (_viewAQFNmapping.TryGetValue(type.AssemblyQualifiedName, out viewname))
+            //    return viewname;
+
+            return "";
         }
 
         internal void RegisterView<T>(View<T> view)
@@ -260,17 +165,19 @@ namespace RaptorDB.Views
                 // add view schema mapping 
                 _otherViewTypes.Add(view.Schema, view.Name.ToLower());
 
+                Type basetype = vh.GetFireOnType();
                 if (view.isPrimaryList)
                 {
-                    foreach (var tn in view.FireOnTypes)
-                        _primaryView.Add(tn, view.Name.ToLower());
+                    //foreach (var tn in view.FireOnTypes)
+                    //    _primaryView.Add(tn, view.Name.ToLower());
+                    _primaryView.Add(basetype, view.Name.ToLower());
                 }
                 else
                 {
                     if (view.ConsistentSaveToThisView)
-                        AddToViewList(_consistentViews, view);
+                        AddToViewList(_consistentViews, basetype, view.Name);
                     else
-                        AddToViewList(_otherViews, view);
+                        AddToViewList(_otherViews, basetype, view.Name);
                 }
             }
         }
@@ -294,47 +201,21 @@ namespace RaptorDB.Views
             return list;
         }
 
-        private void AddToViewList<T>(SafeDictionary<Type, List<string>> diclist, View<T> view)
+        private void AddToViewList(SafeDictionary<Type, List<string>> diclist, Type fireontype, string viewname)
         {
-            foreach (var tn in view.FireOnTypes)
+            //foreach (var tn in view.FireOnTypes)
             {
                 List<string> list = null;
-                Type t = tn;// Type.GetType(tn);
+                Type t = fireontype;// Type.GetType(tn);
                 if (diclist.TryGetValue(t, out list))
-                    list.Add(view.Name);
+                    list.Add(viewname);
                 else
                 {
                     list = new List<string>();
-                    list.Add(view.Name);
+                    list.Add(viewname);
                     diclist.Add(t, list);
                 }
             }
-        }
-
-        //// for when the type full name is not found in server mode
-        //internal string GetViewName(string typefullname)
-        //{
-        //    string viewname = "";
-        //    //if (_viewAQFNmapping.TryGetValue(typefullname, out viewname))
-        //    //    return viewname;
-        //    return "";
-        //}
-
-        internal string GetViewName(Type type)
-        {
-            string viewname = null;
-            // find view from name
-            if (_primaryView.TryGetValue(type, out viewname))
-                return viewname;
-
-            // search for viewtype here
-            if (_otherViewTypes.TryGetValue(type, out viewname))
-                return viewname;
-
-            //if (_viewAQFNmapping.TryGetValue(type.AssemblyQualifiedName, out viewname))
-            //    return viewname;
-
-            return "";
         }
 
         internal void Delete(Guid docid)
@@ -379,7 +260,7 @@ namespace RaptorDB.Views
         {
             _transactions.Add(Thread.CurrentThread.ManagedThreadId, false);
         }
-        
+
         internal Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count)
         {
             return Query<T>(filter, start, count, "");
@@ -393,11 +274,11 @@ namespace RaptorDB.Views
             // find view from name
             if (_views.TryGetValue(view.ToLower(), out vman))
             {
-                return vman.Query2<T>(filter, start, count,orderby);
+                return vman.Query2<T>(filter, start, count, orderby);
             }
             return new Result<T>(false, new Exception("View not found"));
         }
-        
+
         internal Result<T> Query<T>(string filter, int start, int count)
         {
             return Query<T>(filter, start, count, "");
@@ -458,7 +339,7 @@ namespace RaptorDB.Views
         internal ViewRowDefinition GetSchema(string view)
         {
             ViewHandler v = null;
-            if(_views.TryGetValue(view.ToLower(), out v))
+            if (_views.TryGetValue(view.ToLower(), out v))
             {
                 return v.GetSchema();
             }
@@ -475,16 +356,5 @@ namespace RaptorDB.Views
             _log.Error("view not found", viewname);
             return new Result<object>(false, new Exception("view not found : " + viewname));
         }
-
-        //internal Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count, string orderby)
-        //{
-        //    ViewHandler view = null;
-        //    // find view from name
-        //    if (_views.TryGetValue(viewname.ToLower(), out view))
-        //        return view.Query(filter, start, count, orderby);
-
-        //    _log.Error("view not found", viewname);
-        //    return new Result<object>(false, new Exception("view not found : " + viewname));
-        //}
     }
 }

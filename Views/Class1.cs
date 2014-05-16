@@ -77,7 +77,7 @@ namespace SampleViews
 
             this.CaseInsensitiveColumns.Add("nocase"); // this or the attribute
 
-            this.AddFireOnTypes(typeof(SalesInvoice));
+            //this.AddFireOnTypes(typeof(SalesInvoice));
 
             this.Mapper = (api, docid, doc) =>
             {
@@ -110,7 +110,7 @@ namespace SampleViews
 
             this.Schema = typeof(SalesItemRowsViewRowSchema);
 
-            this.AddFireOnTypes(typeof(SalesInvoice));
+            //this.AddFireOnTypes(typeof(SalesInvoice));
 
             this.Mapper = (api, docid, doc) =>
             {
@@ -143,7 +143,7 @@ namespace SampleViews
 
             this.Schema = typeof(NewViewRowSchema);
 
-            this.AddFireOnTypes(typeof(SalesInvoice));
+            //this.AddFireOnTypes(typeof(SalesInvoice));
 
             this.Mapper = (api, docid, doc) =>
             {

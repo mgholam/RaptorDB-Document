@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>RaptorDB_doc</id>
+        <version>3.1.2</version>
+        <title>RaptorDB Document Database</title>
+        <authors>mgholam</authors>
+        <owners />
+        <projectUrl>http://raptordb.codeplex.com/</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>NoSql, JSON based, Document store database with compiled .net map functions and automatic hybrid bitmap indexing and LINQ query filters (now with standalone Server mode, Backup and Active Restore, Transactions, Server side queries, MonoDroid support, HQ-Branch Replication)</description>
+    </metadata>
+    <files>
+        <file src="nuget\net40\RaptorDB.dll" target="lib\net40\RaptorDB.dll" />
+        <file src="nuget\net40\RaptorDB.Common.dll" target="lib\net40\RaptorDB.Common.dll" />
+	    <file src="nuget\RaptorDBServer.exe" target="lib\RaptorDBServer.exe" />
+    </files>
+</package>

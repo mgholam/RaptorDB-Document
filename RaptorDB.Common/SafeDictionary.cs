@@ -154,7 +154,7 @@ namespace RaptorDB.Common
         [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int memcmp(byte[] arr1, byte[] arr2, int cnt);
 
-        public static unsafe int ToInt32(byte[] value, int startIndex, bool reverse)
+        public static int ToInt32(byte[] value, int startIndex, bool reverse)
         {
             if (reverse)
             {
@@ -175,7 +175,7 @@ namespace RaptorDB.Common
             }
         }
 
-        public static unsafe long ToInt64(byte[] value, int startIndex, bool reverse)
+        public static long ToInt64(byte[] value, int startIndex, bool reverse)
         {
             if (reverse)
             {
@@ -195,7 +195,7 @@ namespace RaptorDB.Common
             }
         }
 
-        public static unsafe short ToInt16(byte[] value, int startIndex, bool reverse)
+        public static short ToInt16(byte[] value, int startIndex, bool reverse)
         {
             if (reverse)
             {

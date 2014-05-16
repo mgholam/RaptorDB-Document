@@ -48,7 +48,7 @@ namespace RaptorDB.Common
 
             byte[] hdr = new byte[5];
             hdr[0] = (UseBJSON ? (byte)3 : (byte)0);
-            byte[] dat = fastBinaryJSON.BJSON.Instance.ToBJSON(data);
+            byte[] dat = fastBinaryJSON.BJSON.ToBJSON(data);
             byte[] len = Helper.GetBytes(dat.Length, false);
             Array.Copy(len, 0, hdr, 1, 4);
             _client.Client.Send(hdr);
@@ -69,7 +69,7 @@ namespace RaptorDB.Common
                 if ((rechdr[0] & (byte)4) == (byte)4)
                     recd = MiniLZO.Decompress(recd);
                 if ((rechdr[0] & (byte)3) == (byte)3)
-                    return fastBinaryJSON.BJSON.Instance.ToObject(recd);
+                    return fastBinaryJSON.BJSON.ToObject(recd);
             }
             return null;
         }
@@ -160,11 +160,11 @@ namespace RaptorDB.Common
                           chunksize = n.Read
                             (data, bytesRead, count - bytesRead);
 
-                    object o = fastBinaryJSON.BJSON.Instance.ToObject(data);
+                    object o = fastBinaryJSON.BJSON.ToObject(data);
 
                     object r = _handler(o);
                     bool compressed = false;
-                    data = fastBinaryJSON.BJSON.Instance.ToBJSON(r);
+                    data = fastBinaryJSON.BJSON.ToBJSON(r);
                     if (data.Length > RaptorDB.Common.NetworkClient.Config.CompressDataOver)
                     {
                         log.Debug("compressing data over limit : " + data.Length.ToString("#,#"));

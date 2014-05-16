@@ -18,10 +18,17 @@ namespace RaptorDB
 
     internal class FileLogger
     {
-        public static readonly FileLogger Instance = new FileLogger();
+        // Sinlgeton pattern 4 from : http://csharpindepth.com/articles/general/singleton.aspx
+        private static readonly FileLogger instance = new FileLogger();
+        // Explicit static constructor to tell C# compiler
+        // not to mark type as beforefieldinit
+        static FileLogger()
+        {
+        }
         private FileLogger()
         {
         }
+        public static FileLogger Instance { get { return instance; } }
 
         private Queue _que = new Queue();
         private StreamWriter _output;

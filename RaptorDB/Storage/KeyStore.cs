@@ -363,7 +363,12 @@ namespace RaptorDB
             val = "";
             bool ret = GetBytes(key, out b);
             if (ret)
-                val = Encoding.Unicode.GetString(b);
+            {
+                if (b != null)
+                    val = Encoding.Unicode.GetString(b);
+                else
+                    val = "";
+            }
             return ret;
         }
 
