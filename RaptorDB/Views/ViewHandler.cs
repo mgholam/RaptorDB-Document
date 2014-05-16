@@ -769,12 +769,16 @@ namespace RaptorDB.Views
         private void IndexRow(Guid docid, object[] row, int rownum)
         {
             int i = 0;
-            int c = _colnames.Count-1;
+            int c = _colnames.Count - 1;
             _indexes[_docid].Set(docid, rownum);
             // index the row
             foreach (var d in row)
                 if (i < c)
-                    _indexes[_colnames[i++]].Set(d, rownum);
+                {
+                    var idx = _indexes[_colnames[i++]];
+                    if (idx != null)
+                        idx.Set(d, rownum);
+                }
         }
 
         private IIndex CreateIndex(string name, Type type)
