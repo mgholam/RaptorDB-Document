@@ -201,6 +201,7 @@ namespace RaptorDB
                 uint[] left = this.GetBitArray();
                 int c = left.Length;
                 int ms = size >> 5;
+                ms++; // include remainder
                 if (ms > c)
                 {
                     var a = new uint[ms];

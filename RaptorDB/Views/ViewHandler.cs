@@ -758,7 +758,6 @@ namespace RaptorDB.Views
                             break;
                         }
                     }
-                    i++;
                 }
                 output.Add(r);
             }
@@ -768,17 +767,24 @@ namespace RaptorDB.Views
 
         private void IndexRow(Guid docid, object[] row, int rownum)
         {
-            int i = 0;
-            int c = _colnames.Count - 1;
+            //int i = 0;
+            int c = _colnames.Count - 1; // skip last docid 
             _indexes[_docid].Set(docid, rownum);
-            // index the row
-            foreach (var d in row)
-                if (i < c)
-                {
-                    var idx = _indexes[_colnames[i++]];
-                    if (idx != null)
-                        idx.Set(d, rownum);
-                }
+            //// index the row
+            //foreach (var d in row)
+            //    if (i < c)
+            //    {
+            //        var idx = _indexes[_colnames[i++]];
+            //        if (idx != null)
+            //            idx.Set(d, rownum);
+            //    }
+            for (int i = 0; i < c; i++)
+            {
+                object d = row[i];
+                var idx = _indexes[_colnames[i]];
+                if (idx != null)
+                    idx.Set(d, rownum);
+            }
         }
 
         private IIndex CreateIndex(string name, Type type)

@@ -7,7 +7,7 @@ v3.1.2
 - bug fix indexing String.Empty
 - *breaking change* removed FireOnType from view definitions
 - Views can now correctly work with subclass of the T defined (i.e. SpecialInvoice : Invoice)
-
+- bug fix index bitmap.Not(size)
 
 v3.1.1
 ------
