@@ -8,12 +8,14 @@ namespace RaptorDB.Views
 {
     internal class apimapper : IMapAPI
     {
-        public apimapper(ViewManager man)
+        public apimapper(ViewManager man, ViewHandler vhandler)
         {
             _viewmanager = man;
+            _viewhandler = vhandler;
         }
 
         ViewManager _viewmanager;
+        ViewHandler _viewhandler;
         private ILog _log = LogManager.GetLogger(typeof(apimapper));
         internal Dictionary<Guid, List<object[]>> emit = new Dictionary<Guid, List<object[]>>();
         internal Dictionary<Guid, List<object>> emitobj = new Dictionary<Guid, List<object>>();
@@ -23,16 +25,6 @@ namespace RaptorDB.Views
         {
             _log.Debug(message);
         }
-
-        //public Result<object> Query<T>(string ViewName, Expression<Predicate<T>> Filter)
-        //{
-        //    return _viewmanager.Query<T>(ViewName, Filter, 0, -1);
-        //}
-
-        //public Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter)
-        //{
-        //    return _viewmanager.Query(View, Filter, 0, -1);
-        //}
 
         public object Fetch(Guid guid)
         {
@@ -96,46 +88,15 @@ namespace RaptorDB.Views
             _RollBack = true;
         }
 
-
-        //public Result<object> Query<T>(string ViewName, Expression<Predicate<T>> Filter, int start, int count)
-        //{
-        //    return _viewmanager.Query<T>(ViewName, Filter, start, count);
-        //}
-
-        //public Result<object> Query<T>(Type View, Expression<Predicate<T>> Filter, int start, int count)
-        //{
-        //    return _viewmanager.Query<T>(View, Filter, start, count);
-        //}
-
-        //public int Count(Type type)
-        //{
-        //    return _viewmanager.Count(type, "");
-        //}
-
         public int Count(string viewname)
         {
             return _viewmanager.Count(viewname, "");
         }
 
-        //public int Count<T>(Type type, Expression<Predicate<T>> Filter)
-        //{
-        //    return _viewmanager.Count(type, Filter);
-        //}
-
-        //public int Count<T>(string ViewName, Expression<Predicate<T>> Filter)
-        //{
-        //    return _viewmanager.Count(ViewName, Filter);
-        //}
-
         public int Count(string ViewName, string Filter)
         {
             return _viewmanager.Count(ViewName, Filter);
         }
-
-        //public int Count<T>(Type type, string Filter)
-        //{
-        //    return _viewmanager.Count(type, Filter);
-        //}
 
         public Result<T> Query<T>(Expression<Predicate<T>> Filter)
         {
@@ -162,9 +123,9 @@ namespace RaptorDB.Views
             return _viewmanager.Count<T>(Filter);
         }
 
-        //public int Count<T>(string Filter)
-        //{
-        //    return _viewmanager.Count<T>(Filter);
-        //}
+        public int NextRowNumber()
+        {
+            return _viewhandler.NextRowNumber();
+        }
     }
 }

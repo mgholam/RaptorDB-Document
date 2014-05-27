@@ -692,5 +692,33 @@ namespace RaptorDB
         {
             return Query<T>(filter, start, count, "");
         }
+
+        /// <summary>
+        /// Fetch a change history for a document with dates
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
+        public HistoryInfo[] FetchHistoryInfo(Guid docid)
+        {
+            Packet p = CreatePacket();
+            p.Command = "fetchhistoryinfo";
+            p.Docid = docid;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (HistoryInfo[])ret.Data;
+        }
+
+        /// <summary>
+        /// Fetch a change history for a file with dates
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
+        public HistoryInfo[] FetchBytesHistoryInfo(Guid docid)
+        {
+            Packet p = CreatePacket();
+            p.Command = "fetchbytehistoryinfo";
+            p.Docid = docid;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (HistoryInfo[])ret.Data;            
+        }
     }
 }

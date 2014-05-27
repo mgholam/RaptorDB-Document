@@ -32,6 +32,12 @@ namespace RaptorDB.Views
         }
     }
 
+    internal class tran_data
+    {
+        public Guid docid;
+        public Dictionary<Guid, List<object[]>> rows;
+    }
+
     internal class ViewHandler
     {
         private ILog _log = LogManager.GetLogger(typeof(ViewHandler));
@@ -47,7 +53,6 @@ namespace RaptorDB.Views
             _saveTimer.Start();
         }
 
-
         private string _S = Path.DirectorySeparatorChar.ToString();
         private string _Path = "";
         private ViewManager _viewmanager;
@@ -59,7 +64,7 @@ namespace RaptorDB.Views
         private List<string> _colnames = new List<string>();
         private RowFill _rowfiller;
         private ViewRowDefinition _schema;
-        private SafeDictionary<int, Dictionary<Guid, List<object[]>>> _transactions = new SafeDictionary<int, Dictionary<Guid, List<object[]>>>();
+        private SafeDictionary<int, tran_data> _transactions = new SafeDictionary<int, tran_data>();
         private SafeDictionary<string, int> _nocase = new SafeDictionary<string, int>();
         private System.Timers.Timer _saveTimer;
         Type basetype; // used for mapper
@@ -144,11 +149,15 @@ namespace RaptorDB.Views
 
         internal void Commit(int ID)
         {
-            Dictionary<Guid, List<object[]>> rows = null;
+            tran_data data = null;
             // save data to indexes
-            if (_transactions.TryGetValue(ID, out rows))
-                SaveAndIndex(rows);
-
+            if (_transactions.TryGetValue(ID, out data))
+            {
+                // delete any items with docid in view
+                if (_view.DeleteBeforeInsert)
+                    DeleteRowsWith(data.docid);
+                SaveAndIndex(data.rows);
+            }
             // remove in memory data
             _transactions.Remove(ID);
         }
@@ -161,7 +170,7 @@ namespace RaptorDB.Views
 
         internal void Insert<T>(Guid guid, T doc)
         {
-            apimapper api = new apimapper(_viewmanager);
+            apimapper api = new apimapper(_viewmanager, this);
 
             if (basetype == doc.GetType())
             {
@@ -176,6 +185,9 @@ namespace RaptorDB.Views
             foreach (var d in api.emitobj)
                 api.emit.Add(d.Key, ExtractRows(d.Value));
 
+            // delete any items with docid in view
+            if (_view.DeleteBeforeInsert)
+                DeleteRowsWith(guid);
             SaveAndIndex(api.emit);
         }
 
@@ -183,9 +195,6 @@ namespace RaptorDB.Views
         {
             foreach (var d in rows)
             {
-                // delete any items with docid in view
-                if (_view.DeleteBeforeInsert)
-                    DeleteRowsWith(d.Key);
                 // insert new items into view
                 InsertRowsWithIndexUpdate(d.Key, d.Value);
             }
@@ -193,7 +202,7 @@ namespace RaptorDB.Views
 
         internal bool InsertTransaction<T>(Guid docid, T doc)
         {
-            apimapper api = new apimapper(_viewmanager);
+            apimapper api = new apimapper(_viewmanager, this);
             if (basetype == doc.GetType())
             {
                 View<T> view = (View<T>)_view;
@@ -219,14 +228,18 @@ namespace RaptorDB.Views
             foreach (var d in api.emitobj)
                 api.emit.Add(d.Key, ExtractRows(d.Value));
 
-            Dictionary<Guid, List<object[]>> rows = new Dictionary<Guid, List<object[]>>();
-            if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
+            //Dictionary<Guid, List<object[]>> rows = new Dictionary<Guid, List<object[]>>();
+            tran_data data = new tran_data();
+            if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out data))
             {
                 // TODO : exists -> merge data??
             }
             else
             {
-                _transactions.Add(Thread.CurrentThread.ManagedThreadId, api.emit);
+                data = new tran_data();
+                data.docid = docid;
+                data.rows = api.emit;
+                _transactions.Add(Thread.CurrentThread.ManagedThreadId, data);
             }
 
             return true;
@@ -300,11 +313,11 @@ namespace RaptorDB.Views
             if (_viewmanager.inTransaction())
             {
                 // query from transaction own data
-                Dictionary<Guid, List<object[]>> rows = null;
-                if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
+                tran_data data = null;
+                if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out data))
                 {
                     List<T> rrows = new List<T>();
-                    foreach (var kv in rows)
+                    foreach (var kv in data.rows)
                     {
                         foreach (var r in kv.Value)
                         {
@@ -754,7 +767,7 @@ namespace RaptorDB.Views
                         //var g = getters[ii];
                         if (g.Name == c.Key)
                         {
-                            r[i] = g.Getter(obj);
+                            r[i++] = g.Getter(obj);
                             break;
                         }
                     }
@@ -909,11 +922,11 @@ namespace RaptorDB.Views
             if (_viewmanager.inTransaction())
             {
                 // query from transactions own data
-                Dictionary<Guid, List<object[]>> rows = null;
-                if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out rows))
+                tran_data data = null;
+                if (_transactions.TryGetValue(Thread.CurrentThread.ManagedThreadId, out data))
                 {
                     List<T> rrows = new List<T>();
-                    foreach (var kv in rows)
+                    foreach (var kv in data.rows)
                     {
                         foreach (var r in kv.Value)
                         {
@@ -1014,6 +1027,18 @@ namespace RaptorDB.Views
         public ViewRowDefinition GetSchema()
         {
             return _schema;
+        }
+
+        int _lastrownumber = -1;
+        object _rowlock = new object();
+        internal int NextRowNumber()
+        {
+            lock (_rowlock)
+            {
+                if (_lastrownumber == -1)
+                    _lastrownumber = internalCount();
+                return ++_lastrownumber;
+            }
         }
     }
 }

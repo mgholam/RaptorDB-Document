@@ -24,33 +24,36 @@ namespace RaptorDB
             fastJSON.JSON.Parameters.ParametricConstructorOverride = true;
             fastBinaryJSON.BJSON.Parameters.ParametricConstructorOverride = true;
             fastJSON.JSON.Parameters.UseEscapedUnicode = false;
-            
+
+            // create folders 
+            Directory.CreateDirectory(FolderPath);
+            string foldername = Path.GetFullPath(FolderPath);
+            if (foldername.EndsWith(_S) == false)
+                foldername += _S;
+            _Path = foldername;
+
             // if configs !exists create template config files
             CreateTemplateConfigFiles();
 
-            // TODO : read/write global or another object?
-            // read raptordb.config here (running parameters)
-            if (File.Exists("RaptorDB.config"))
-                fastJSON.JSON.FillObject(new Global(), File.ReadAllText("RaptorDB.config"));
-            Initialize(FolderPath);
+            Initialize();
         }
 
         private void CreateTemplateConfigFiles()
         {
-            if (File.Exists("RaptorDB.config") == false)
-                File.WriteAllText("-RaptorDB.config", fastJSON.JSON.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
+            if (File.Exists(_Path + "RaptorDB.config") == false)
+                File.WriteAllText(_Path + "-RaptorDB.config", fastJSON.JSON.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
 
-            if (File.Exists("RaptorDB-Branch.config") == false)
-                File.WriteAllText("-RaptorDB-Branch.config", fastJSON.JSON.ToNiceJSON(new Replication.ClientConfiguration(), new fastJSON.JSONParameters { UseExtensions = false }));
+            if (File.Exists(_Path + "RaptorDB-Branch.config") == false)
+                File.WriteAllText(_Path + "-RaptorDB-Branch.config", fastJSON.JSON.ToNiceJSON(new Replication.ClientConfiguration(), new fastJSON.JSONParameters { UseExtensions = false }));
 
-            if (File.Exists("RaptorDB-Replication.config") == false)
+            if (File.Exists(_Path + "RaptorDB-Replication.config") == false)
             {
                 Replication.ServerConfiguration s = new Replication.ServerConfiguration();
                 s.What.Add(new Replication.WhatItem { Name = "default", PackageItemLimit = 10000, Version = 1, B2HQtypes = new List<string> { "*" }, HQ2Btypes = new List<string> { "*" } });
                 s.What.Add(new Replication.WhatItem { Name = "b2", PackageItemLimit = 10000, Version = 1, B2HQtypes = new List<string> { "*" }, HQ2Btypes = new List<string> { "config.*" } });
                 s.Where.Add(new Replication.WhereItem { BranchName = "b1", Password = "123", When = "*/5 * * * *", What = "default" });
                 s.Where.Add(new Replication.WhereItem { BranchName = "b2", Password = "321", When = "*/20 * * * *", What = "b2" });
-                File.WriteAllText("-RaptorDB-Replication.config", fastJSON.JSON.ToNiceJSON(s, new fastJSON.JSONParameters { UseExtensions = false }));
+                File.WriteAllText(_Path + "-RaptorDB-Replication.config", fastJSON.JSON.ToNiceJSON(s, new fastJSON.JSONParameters { UseExtensions = false }));
             }
         }
 
@@ -159,7 +162,7 @@ namespace RaptorDB
                         if (b == true)
                         {
                             _viewManager.Commit(Thread.CurrentThread.ManagedThreadId);
-                            int recnum = _objStore.SetObject(docid, data); 
+                            int recnum = _objStore.SetObject(docid, data);
                             _CurrentRecordNumber = recnum;
                             _pauseindexer = false;
                             return true;
@@ -172,7 +175,7 @@ namespace RaptorDB
             }
             else
             {
-                int recnum = _objStore.SetObject(docid, data); 
+                int recnum = _objStore.SetObject(docid, data);
                 _CurrentRecordNumber = recnum;
 
                 if (viewname != "")
@@ -318,8 +321,8 @@ namespace RaptorDB
                 _repclient.Shutdown();
 
             // TODO : write global or something else?
-            if (File.Exists("RaptorDB.config") == false)
-                File.WriteAllText("RaptorDB.config", fastJSON.JSON.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
+            if (File.Exists(_Path + "RaptorDB.config") == false)
+                File.WriteAllText(_Path + "RaptorDB.config", fastJSON.JSON.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
             if (_cron != null)
                 _cron.Stop();
             _fulltextindex.Shutdown();
@@ -973,16 +976,14 @@ namespace RaptorDB
             _viewManager.Insert(viewname, docid, data);
         }
 
-        private void Initialize(string foldername)
+        private void Initialize()
         {
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
 
-            // create folders 
-            Directory.CreateDirectory(foldername);
-            foldername = Path.GetFullPath(foldername);
-            if (foldername.EndsWith(_S) == false)
-                foldername += _S;
-            _Path = foldername;
+            // TODO : read/write global or another object?
+            // read raptordb.config here (running parameters)
+            if (File.Exists(_Path + "RaptorDB.config"))
+                fastJSON.JSON.FillObject(new Global(), File.ReadAllText(_Path + "RaptorDB.config"));
 
             Directory.CreateDirectory(_Path + "Data");
             Directory.CreateDirectory(_Path + "Data" + _S + "Fulltext");
@@ -1074,15 +1075,15 @@ namespace RaptorDB
             CompileAndRegisterScriptViews(_Path + "Views");
 
 
-            if (File.Exists("RaptorDB-Replication.config"))
+            if (File.Exists(_Path + "RaptorDB-Replication.config"))
             {
                 // if replication.config exists -> start replication server
-                _repserver = new Replication.ReplicationServer(_Path, File.ReadAllText("RaptorDB-Replication.config"), _objStore);
+                _repserver = new Replication.ReplicationServer(_Path, File.ReadAllText(_Path + "RaptorDB-Replication.config"), _objStore);
             }
-            else if (File.Exists("RaptorDB-Branch.config"))
+            else if (File.Exists(_Path + "RaptorDB-Branch.config"))
             {
                 // if branch.config exists -> start replication client
-                _repclient = new Replication.ReplicationClient(_Path, File.ReadAllText("RaptorDB-Branch.config"), _objStore);
+                _repclient = new Replication.ReplicationClient(_Path, File.ReadAllText(_Path + "RaptorDB-Branch.config"), _objStore);
             }
         }
 
@@ -1371,6 +1372,38 @@ namespace RaptorDB
         public Result<T> Query<T>(string filter, int start, int count, string orderby)
         {
             return _viewManager.Query<T>(filter, start, count, orderby);
+        }
+
+        public HistoryInfo[] FetchHistoryInfo(Guid docid)
+        {
+            List<HistoryInfo> h = new List<HistoryInfo>();
+
+            foreach (int i in FetchHistory(docid))
+            {
+                HistoryInfo hi = new HistoryInfo();
+                hi.Version = i;
+                var o = _objStore.GetMeta(i);
+                hi.ChangeDate = o.date;
+                if (o.isDeleted == false)
+                    h.Add(hi);
+            }
+            return h.ToArray();
+        }
+
+        public HistoryInfo[] FetchBytesHistoryInfo(Guid docid)
+        {
+            List<HistoryInfo> h = new List<HistoryInfo>();
+
+            foreach (int i in FetchBytesHistory(docid))
+            {
+                HistoryInfo hi = new HistoryInfo();
+                hi.Version = i;
+                var o = _fileStore.GetMeta(i);
+                hi.ChangeDate = o.date;
+                if (o.isDeleted == false)
+                    h.Add(hi);
+            }
+            return h.ToArray();
         }
     }
 }

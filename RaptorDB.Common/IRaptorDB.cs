@@ -8,6 +8,12 @@ namespace RaptorDB.Common
 {
     public delegate List<object> ServerSideFunc(IRaptorDB rap, string filter);
 
+    public class HistoryInfo
+    {
+        public int Version;
+        public DateTime ChangeDate;
+    }
+
     public interface IRaptorDB
     {
         /// <summary>
@@ -202,10 +208,10 @@ namespace RaptorDB.Common
         /// <param name="fileID"></param>
         /// <returns></returns>
         byte[] FetchBytes(Guid fileID);
-        /// <summary>
-        /// Shutdown RaptorDB and flush all data to disk
-        /// </summary>
-        void Shutdown();
+        ///// <summary>
+        ///// Shutdown RaptorDB and flush all data to disk
+        ///// </summary>
+        //void Shutdown();
         /// <summary>
         /// Backup the document storage file incrementally to "Backup" folder
         /// </summary>
@@ -326,11 +332,23 @@ namespace RaptorDB.Common
         /// <returns></returns>
         int[] FetchHistory(Guid docid);
         /// <summary>
+        /// Fetch the change history for a document with dates
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
+        HistoryInfo[] FetchHistoryInfo(Guid docid);
+        /// <summary>
         /// Fetch a change history for a file
         /// </summary>
         /// <param name="fileid"></param>
         /// <returns></returns>
         int[] FetchBytesHistory(Guid fileid);
+        /// <summary>
+        /// Fetch a change history for a file with dates
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
+        HistoryInfo[] FetchBytesHistoryInfo(Guid docid);
         /// <summary>
         /// Fetch the specific document version 
         /// </summary>

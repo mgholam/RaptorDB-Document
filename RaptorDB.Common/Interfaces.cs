@@ -191,6 +191,12 @@ namespace RaptorDB
         /// Roll back the transaction if the primary view is in transaction mode
         /// </summary>
         void RollBack();
+
+        /// <summary>
+        /// Get the next row number for this view
+        /// </summary>
+        /// <returns></returns>
+        int NextRowNumber();
     }
 
     public interface IClientHandler

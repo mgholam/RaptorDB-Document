@@ -8,6 +8,7 @@ namespace RaptorDB
 {
     public abstract class ViewBase
     {
+        public delegate void MapFunctionDelgate<V>(IMapAPI api, Guid docid, V doc);
         /// <summary>
         /// Increment this when you change view definitions so the engine can rebuild the contents
         /// </summary>
@@ -90,7 +91,6 @@ namespace RaptorDB
 
     public class View<T> : ViewBase
     {
-        public delegate void MapFunctionDelgate<V>(IMapAPI api, Guid docid, V doc);
         public View()
         {
             isActive = true;
@@ -130,6 +130,7 @@ namespace RaptorDB
             //    throw new Exception("No types have been defined to fire on");
             if (TransactionMode == true && isPrimaryList == false)
                 throw new Exception("Transaction mode can only be enabled on Primary Views");
+           
             // FEATURE : add more verifications
             return new Result<object>(true);
         }

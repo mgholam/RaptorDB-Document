@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace RaptorDB
 {
-    public class RaptorDBServer 
+    public class RaptorDBServer
     {
         public RaptorDBServer(int port, string DataPath)
         {
@@ -19,6 +19,9 @@ namespace RaptorDB
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
             _server = new NetworkServer();
 
+            _datapath = DataPath;
+            if (_datapath.EndsWith(_S) == false)
+                _datapath += _S;
             _raptor = RaptorDB.Open(DataPath);
             register = _raptor.GetType().GetMethod("RegisterView", BindingFlags.Instance | BindingFlags.Public);
             save = _raptor.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
@@ -30,12 +33,13 @@ namespace RaptorDB
         {
             //perform cleanup here
             log.Debug("process exited");
-            Shutdown();   
+            Shutdown();
         }
 
         private string _S = Path.DirectorySeparatorChar.ToString();
         private Dictionary<string, uint> _users = new Dictionary<string, uint>();
         private string _path = "";
+        private string _datapath = "";
         private ILog log = LogManager.GetLogger(typeof(RaptorDBServer));
         private NetworkServer _server;
         private RaptorDB _raptor;
@@ -86,7 +90,7 @@ namespace RaptorDB
                 sb.AppendLine(kv.Key + " , " + kv.Value);
             }
 
-            File.WriteAllText(_path + _S + "RaptorDB-Users.config", sb.ToString());
+            File.WriteAllText(_datapath + "RaptorDB-Users.config", sb.ToString()); 
         }
 
         private object processpayload(object data)
@@ -201,6 +205,14 @@ namespace RaptorDB
                         ret.Data = _raptor.GetAssemblyForView(p.Viewname, out typ);
                         ret.Error = typ;
                         break;
+                    case "fetchhistoryinfo":
+                        ret.OK = true;
+                        ret.Data = _raptor.FetchHistoryInfo(p.Docid);
+                        break;
+                    case "fetchbytehistoryinfo":
+                        ret.OK = true;
+                        ret.Data = _raptor.FetchBytesHistoryInfo(p.Docid);
+                        break;
                 }
             }
             catch (Exception ex)
@@ -261,9 +273,9 @@ namespace RaptorDB
         private void Initialize()
         {
             // load users here
-            if (File.Exists(_path + _S + "RaptorDB-Users.config"))
+            if (File.Exists(_datapath + "RaptorDB-Users.config")) 
             {
-                foreach (string line in File.ReadAllLines(_path + _S + "RaptorDB-Users.config"))
+                foreach (string line in File.ReadAllLines(_datapath + "RaptorDB-Users.config"))
                 {
                     if (line.Contains("#") == false)
                     {
