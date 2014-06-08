@@ -5,7 +5,24 @@ using System.Text;
 using RaptorDB.Common;
 
 namespace RaptorDB
-{    
+{
+    /// <summary>
+    /// Used to track ViewDelete usage for view rebuilds
+    /// </summary>
+    internal class View_delete
+    {
+        public Guid ID = Guid.NewGuid();
+        public string Viewname;
+        public string Filter;
+    }
+
+    internal class View_insert
+    {
+        public Guid ID = Guid.NewGuid();
+        public string Viewname;
+        public object RowObject;
+    }
+
     internal class FullTextString 
     {
 

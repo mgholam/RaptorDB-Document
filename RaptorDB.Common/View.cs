@@ -86,6 +86,8 @@ namespace RaptorDB
         /// define your case insensitive columns here
         /// </summary>
         public List<string> CaseInsensitiveColumns;
+
+        public Dictionary<string, byte> StringIndexLength;
     }
 
 
@@ -99,6 +101,7 @@ namespace RaptorDB
             BackgroundIndexing = true;
             FullTextColumns = new List<string>();
             CaseInsensitiveColumns = new List<string>();
+            StringIndexLength = new Dictionary<string, byte>();
             //AllowTransactions = false;
         }
 

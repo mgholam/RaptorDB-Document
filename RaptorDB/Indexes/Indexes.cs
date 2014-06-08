@@ -48,6 +48,7 @@ namespace RaptorDB
         void IIndex.FreeMemory()
         {
             base.FreeMemory();
+            base.SaveIndex();
         }
 
         void IIndex.Shutdown()
@@ -88,7 +89,7 @@ namespace RaptorDB
             _filename = filename;
             if (_filename.Contains(".") == false) _filename += ".idx";
             _path = path;
-            if (_path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false) 
+            if (_path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false)
                 _path += Path.DirectorySeparatorChar.ToString();
 
             if (File.Exists(_path + _filename))
@@ -108,7 +109,8 @@ namespace RaptorDB
 
         public void Set(object key, int recnum)
         {
-            _bits.Set(recnum, (bool)key);
+            if (key != null)
+                _bits.Set(recnum, (bool)key);
         }
 
         public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
@@ -124,6 +126,8 @@ namespace RaptorDB
         {
             // free memory
             _bits.FreeMemory();
+            // save to disk
+            SaveIndex();
         }
 
         public void Shutdown()
@@ -171,7 +175,7 @@ namespace RaptorDB
             List<uint> ints = new List<uint>();
             for (int i = 0; i < b.Length / 4; i++)
             {
-                ints.Add((uint)Helper.ToInt32(b, (i * 4)+j));
+                ints.Add((uint)Helper.ToInt32(b, (i * 4) + j));
             }
             _bits = new WAHBitArray(t, ints.ToArray());
         }
@@ -226,12 +230,12 @@ namespace RaptorDB
 
         public WAHBitArray Query(object fromkey, object tokey, int maxsize)
         {
-            return base.Query("" + fromkey, maxsize); 
+            return base.Query("" + fromkey, maxsize);
         }
 
         public object[] GetKeys()
         {
-            return new object[]{}; // FIX : ? support get keys 
+            return new object[] { }; // FIX : ? support get keys 
         }
     }
     #endregion
@@ -277,6 +281,7 @@ namespace RaptorDB
         void IIndex.FreeMemory()
         {
             base.FreeMemory();
+            base.SaveIndex();
         }
 
         void IIndex.Shutdown()

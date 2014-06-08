@@ -130,8 +130,7 @@ namespace RaptorDB.Views
         {
             string viewname = null;
             // find view from name
-            //if (_primaryView.TryGetValue(type, out viewname))
-            //    return viewname;
+
             viewname = GetPrimaryViewForType(type);
             if (viewname != "")
                 return viewname;
@@ -139,9 +138,6 @@ namespace RaptorDB.Views
             // search for viewtype here
             if (_otherViewTypes.TryGetValue(type, out viewname))
                 return viewname;
-
-            //if (_viewAQFNmapping.TryGetValue(type.AssemblyQualifiedName, out viewname))
-            //    return viewname;
 
             return "";
         }
@@ -168,8 +164,6 @@ namespace RaptorDB.Views
                 Type basetype = vh.GetFireOnType();
                 if (view.isPrimaryList)
                 {
-                    //foreach (var tn in view.FireOnTypes)
-                    //    _primaryView.Add(tn, view.Name.ToLower());
                     _primaryView.Add(basetype, view.Name.ToLower());
                 }
                 else
@@ -355,6 +349,52 @@ namespace RaptorDB.Views
 
             _log.Error("view not found", viewname);
             return new Result<object>(false, new Exception("view not found : " + viewname));
+        }
+
+        internal int ViewDelete<T>(Expression<Predicate<T>> filter)
+        {
+            string view = GetViewName(typeof(T));
+
+            ViewHandler vman = null;
+            // find view from name
+            if (_views.TryGetValue(view.ToLower(), out vman))
+            {
+                return vman.ViewDelete<T>(filter);
+            }
+            return -1;
+        }
+
+        internal int ViewDelete(string viewname, string filter)
+        {
+            ViewHandler view = null;
+            // find view from name
+            if (_views.TryGetValue(viewname.ToLower(), out view))
+                return view.ViewDelete(filter);
+            return -1;
+        }
+
+        internal bool ViewInsert<T>(Guid id, T row)
+        {
+            string view = GetViewName(typeof(T));
+
+            ViewHandler vman = null;
+            // find view from name
+            if (_views.TryGetValue(view.ToLower(), out vman))
+            {
+                return vman.ViewInsert(id, row);
+            }
+            return false;
+        }
+
+        internal bool ViewInsert(string viewname, Guid id, object row)
+        {
+            ViewHandler vman = null;
+            // find view from name
+            if (_views.TryGetValue(viewname.ToLower(), out vman))
+            {
+                return vman.ViewInsert(id, row);
+            }
+            return false;
         }
     }
 }

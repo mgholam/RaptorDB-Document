@@ -1,3 +1,12 @@
+v3.1.4
+------
+- added StringIndexLength attribute for view schema to control string index size for the index file
+- added ViewDelete() to delete directly from views 
+- added ViewInsert() to insert directly into views
+- added Faker.dll (http://faker.codeplex.com) to generate nicer data
+- FreeMemory() will save indexes to disk also
+- moved server mode files to output\server so you don't get conflicts loading views.dll
+
 v3.1.3
 ------
 - added FetchHistoryInfo() and FetchBytesHistoryInfo() with date change information

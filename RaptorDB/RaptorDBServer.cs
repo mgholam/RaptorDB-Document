@@ -90,7 +90,7 @@ namespace RaptorDB
                 sb.AppendLine(kv.Key + " , " + kv.Value);
             }
 
-            File.WriteAllText(_datapath + "RaptorDB-Users.config", sb.ToString()); 
+            File.WriteAllText(_datapath + "RaptorDB-Users.config", sb.ToString());
         }
 
         private object processpayload(object data)
@@ -118,7 +118,6 @@ namespace RaptorDB
                         param = (object[])p.Data;
                         Type t = Type.GetType((string)param[0]);
                         string viewname = _raptor.GetViewName(t);
-                        // if (viewname == "") viewname = _raptor.GetView((string)param[0]);
                         ret.OK = true;
                         ret.Data = _raptor.Query(viewname, (string)param[1], p.Start, p.Count, p.OrderBy);
                         break;
@@ -164,9 +163,8 @@ namespace RaptorDB
                     case "counttype":
                         // count type
                         param = (object[])p.Data;
-                        Type tt = Type.GetType((string)param[0]);
-                        string viewname2 = _raptor.GetViewName(tt);
-                        //if (viewname2 == "") viewname2 = _raptor.GetView((string)param[0]);
+                        Type t2 = Type.GetType((string)param[0]);
+                        string viewname2 = _raptor.GetViewName(t2);
                         ret.OK = true;
                         ret.Data = _raptor.Count(viewname2, (string)param[1]);
                         break;
@@ -176,10 +174,8 @@ namespace RaptorDB
                         ret.Data = _raptor.Count(p.Viewname, (string)p.Data);
                         break;
                     case "gcount":
-                        //param = (object[])p.Data;
-                        Type ttt = Type.GetType(p.Viewname);
-                        string viewname3 = _raptor.GetViewName(ttt);
-                        //if (viewname3 == "") viewname3 = _raptor.GetView(p.Viewname);
+                        Type t3 = Type.GetType(p.Viewname);
+                        string viewname3 = _raptor.GetViewName(t3);
                         ret.OK = true;
                         ret.Data = _raptor.Count(viewname3, (string)p.Data);
                         break;
@@ -212,6 +208,30 @@ namespace RaptorDB
                     case "fetchbytehistoryinfo":
                         ret.OK = true;
                         ret.Data = _raptor.FetchBytesHistoryInfo(p.Docid);
+                        break;
+                    case "viewdelete":
+                        ret.OK = true;
+                        param = (object[])p.Data;
+                        ret.Data = _raptor.ViewDelete((string)param[0], (string)param[1]);
+                        break;
+                    case "viewdelete-t":
+                        ret.OK = true;
+                        param = (object[])p.Data;
+                        Type t4 = Type.GetType((string)param[0]);
+                        string viewname4 = _raptor.GetViewName(t4);
+                        ret.Data = _raptor.ViewDelete(viewname4, (string)param[1]);
+                        break;
+                    case "viewinsert":
+                        ret.OK = true;
+                        param = (object[])p.Data;
+                        ret.Data = _raptor.ViewInsert((string)param[0], p.Docid, param[1]);
+                        break;
+                    case "viewinsert-t":
+                        ret.OK = true;
+                        param = (object[])p.Data;
+                        Type t5 = Type.GetType((string)param[0]);
+                        string viewname5 = _raptor.GetViewName(t5);
+                        ret.Data = _raptor.ViewInsert(viewname5, p.Docid, param[1]);
                         break;
                 }
             }
@@ -273,7 +293,7 @@ namespace RaptorDB
         private void Initialize()
         {
             // load users here
-            if (File.Exists(_datapath + "RaptorDB-Users.config")) 
+            if (File.Exists(_datapath + "RaptorDB-Users.config"))
             {
                 foreach (string line in File.ReadAllLines(_datapath + "RaptorDB-Users.config"))
                 {

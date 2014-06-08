@@ -48,12 +48,13 @@ namespace SampleViews
         //[FullText]
         public string CustomerName;
         [CaseInsensitive]
+        [StringIndexLength(255)]
         public string NoCase;
         public DateTime Date;
         public string Address;
         public int Serial;
         public byte Status;
-        public bool Approved;
+        public bool? Approved;
         //public State InvoiceState;
     }
 
@@ -67,13 +68,14 @@ namespace SampleViews
             this.isPrimaryList = true;
             this.isActive = true;
             this.BackgroundIndexing = true;
-            this.Version = 3;
+            this.Version = 6;
             //// uncomment the following for transaction mode
             //this.TransactionMode = true;
 
             this.Schema = typeof(SalesInvoiceViewRowSchema);
 
             this.FullTextColumns.Add("customername"); // this or the attribute
+            this.FullTextColumns.Add("address");
 
             this.CaseInsensitiveColumns.Add("nocase"); // this or the attribute
 

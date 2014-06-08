@@ -720,5 +720,71 @@ namespace RaptorDB
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (HistoryInfo[])ret.Data;            
         }
+
+        /// <summary>
+        /// Delete directly from a view using a filter
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public int ViewDelete<T>(Expression<Predicate<T>> filter)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+            Packet p = CreatePacket();
+            p.Command = "viewdelete-t";
+            p.Data = new object[] { typeof(T).AssemblyQualifiedName, ls.sb.ToString() };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (int)ret.Data;       
+        }
+
+        /// <summary>
+        /// Delete directly from a view using a filter
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public int ViewDelete(string viewname, string filter)
+        {
+            Packet p = CreatePacket();
+            p.Command = "viewdelete";
+            p.Data = new object[] { viewname , filter };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (int)ret.Data;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="id"></param>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public bool ViewInsert<T>(Guid id, T row)
+        {
+            Packet p = CreatePacket();
+            p.Command = "viewinsert-t";
+            p.Docid = id;
+            p.Data = new object[] { typeof(T).AssemblyQualifiedName, row };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (bool)ret.Data;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="id"></param>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        public bool ViewInsert(string viewname, Guid id, object row)
+        {
+            Packet p = CreatePacket();
+            p.Command = "viewinsert";
+            p.Docid = id;
+            p.Data = new object[] { viewname, row };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (bool)ret.Data;
+        }
     }
 }

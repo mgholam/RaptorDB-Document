@@ -111,12 +111,12 @@ namespace datagridbinding
                 {
                     var inv = new SalesInvoice()
                     {
-                        Date = FastDateTime.Now.AddMinutes(r.Next(60)),
+                        Date = Faker.DateTimeFaker.BirthDay(),// FastDateTime.Now.AddMinutes(r.Next(60)),
                         Serial = i % 10000,
-                        CustomerName = "Me " + i % 10,
+                        CustomerName = Faker.NameFaker.Name(),// "Me " + i % 10,
                         NoCase = "Me " + i % 10,
                         Status = (byte)(i % 4),
-                        Address = "df asd sdf asdf asdf",
+                        Address = Faker.LocationFaker.Street(), //"df asd sdf asdf asdf",
                         Approved = i % 100 == 0 ? true : false
                     };
                     inv.Items = new List<LineItem>();
@@ -209,8 +209,36 @@ namespace datagridbinding
             //Guid g = new Guid("82997e60-f8f4-4b37-ae35-02d033512673");
             var qq = rap.Query<SalesInvoiceViewRowSchema>(x => x.docid == new Guid("82997e60-f8f4-4b37-ae35-02d033512673"));
             dataGridView1.DataSource = q.Rows;
+
+            //int i = rap.ViewDelete<SalesInvoiceViewRowSchema>(x => x.Serial == 0);
+
+            //var qqq= rap.Query<SalesInvoiceViewRowSchema>(x => );
+            //SalesInvoiceViewRowSchema s = new SalesInvoiceViewRowSchema();
+            //s.docid = Guid.NewGuid();
+            //s.CustomerName = "hello";
+            //rap.ViewInsert<SalesInvoiceViewRowSchema>(s.docid, s);
             //q= rap.Query<SalesInvoiceView.RowSchema>("serial <100");
             //string s = q.Rows[0].CustomerName;
+
+            //perftest();
+        }
+
+        private void perftest()
+        {
+            DateTime dt = DateTime.Now;
+
+            for(int i =0; i<100000;i++)
+            {
+                var s = new SalesInvoiceViewRowSchema();
+                s.docid = Guid.NewGuid();
+                s.Address = Faker.LocationFaker.Street();
+                s.CustomerName = Faker.NameFaker.Name();
+                s.Date = Faker.DateTimeFaker.BirthDay();
+                s.Serial = i % 1000;
+                s.Status = (byte)(i % 5);
+                rap.ViewInsert(s.docid, s);
+            }
+            MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
         }
     }
 }

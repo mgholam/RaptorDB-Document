@@ -57,7 +57,7 @@ namespace RaptorDB.Views
         private string _Path = "";
         private ViewManager _viewmanager;
         internal ViewBase _view;
-        private SafeDictionary<string, IIndex> _indexes = new SafeDictionary<string, IIndex>();
+        private Dictionary<string, IIndex> _indexes = new Dictionary<string, IIndex>();
         private StorageFile<Guid> _viewData;
         private BoolIndex _deletedRows;
         private string _docid = "docid";
@@ -66,6 +66,8 @@ namespace RaptorDB.Views
         private ViewRowDefinition _schema;
         private SafeDictionary<int, tran_data> _transactions = new SafeDictionary<int, tran_data>();
         private SafeDictionary<string, int> _nocase = new SafeDictionary<string, int>();
+        private Dictionary<string, byte> _idxlen = new Dictionary<string, byte>();
+
         private System.Timers.Timer _saveTimer;
         Type basetype; // used for mapper
         dynamic mapper;
@@ -635,7 +637,19 @@ namespace RaptorDB.Views
                         // FEATURE : optimize this by not creating the object if not in FireOnTypes
                         object obj = b;
                         Type t = obj.GetType();
-                        if (t.IsSubclassOf(basetype) || t == basetype) //_view.FireOnTypes.Contains(t))//.AssemblyQualifiedName))
+                        if (t == typeof(View_delete))
+                        {
+                            View_delete vd = (View_delete)obj;
+                            if (vd.Viewname.ToLower() == this._view.Name.ToLower())
+                                ViewDelete(vd.Filter);
+                        }
+                        else if (t == typeof(View_insert))
+                        {
+                            View_insert vi = (View_insert)obj;
+                            if (vi.Viewname.ToLower() == this._view.Name.ToLower())
+                                ViewInsert(vi.ID, vi.RowObject);
+                        }
+                        else if (t.IsSubclassOf(basetype) || t == basetype) //_view.FireOnTypes.Contains(t))//.AssemblyQualifiedName))
                         {
                             var m = insertmethod.MakeGenericMethod(new Type[] { obj.GetType() });
                             m.Invoke(this, new object[] { meta.key, obj });
@@ -694,6 +708,21 @@ namespace RaptorDB.Views
                     _nocase.Add(p.Name, 0);
                 if (_view.CaseInsensitiveColumns.Contains(p.Name) || _view.CaseInsensitiveColumns.Contains(p.Name.ToLower()))
                     _nocase.Add(p.Name, 0);
+
+                var a = p.GetCustomAttributes(typeof(StringIndexLength), false);
+                if (a.Length > 0)
+                {
+                    byte l = (a[0] as StringIndexLength).Length;
+                    _idxlen.Add(p.Name, l);
+                }
+                if (_view.StringIndexLength.ContainsKey(p.Name) || _view.StringIndexLength.ContainsKey(p.Name.ToLower()))
+                {
+                    byte b = 0;
+                    if (_view.StringIndexLength.TryGetValue(p.Name, out b))
+                        _idxlen.Add(p.Name, b);
+                    if (_view.StringIndexLength.TryGetValue(p.Name.ToLower(), out b))
+                        _idxlen.Add(p.Name, b);
+                }
             }
 
             foreach (var f in _view.Schema.GetFields())
@@ -709,6 +738,21 @@ namespace RaptorDB.Views
                     _nocase.Add(f.Name, 0);
                 if (_view.CaseInsensitiveColumns.Contains(f.Name) || _view.CaseInsensitiveColumns.Contains(f.Name.ToLower()))
                     _nocase.Add(f.Name, 0);
+
+                var a = f.GetCustomAttributes(typeof(StringIndexLength), false);
+                if (a.Length > 0)
+                {
+                    byte l = (a[0] as StringIndexLength).Length;
+                    _idxlen.Add(f.Name, l);
+                }
+                if (_view.StringIndexLength.ContainsKey(f.Name) || _view.StringIndexLength.ContainsKey(f.Name.ToLower()))
+                {
+                    byte b = 0;
+                    if (_view.StringIndexLength.TryGetValue(f.Name, out b))
+                        _idxlen.Add(f.Name, b);
+                    if (_view.StringIndexLength.TryGetValue(f.Name.ToLower(), out b))
+                        _idxlen.Add(f.Name, b);
+                }
             }
 
             foreach (var s in _schema.Columns)
@@ -757,17 +801,17 @@ namespace RaptorDB.Views
             foreach (var obj in rows)
             {
                 object[] r = new object[colcount];
-                int i = 0;
-                Getters[] getters = Reflection.Instance.GetGetters(obj.GetType(), false, null);
+                Getters[] getters = Reflection.Instance.GetGetters(obj.GetType(), true, null);
 
-                foreach (var c in _schema.Columns)
+                for (int i = 0; i < colcount; i++)
                 {
+                    var c = _schema.Columns[i];
                     foreach (var g in getters)
                     {
                         //var g = getters[ii];
                         if (g.Name == c.Key)
                         {
-                            r[i++] = g.Getter(obj);
+                            r[i] = g.Getter(obj);
                             break;
                         }
                     }
@@ -780,17 +824,9 @@ namespace RaptorDB.Views
 
         private void IndexRow(Guid docid, object[] row, int rownum)
         {
-            //int i = 0;
             int c = _colnames.Count - 1; // skip last docid 
             _indexes[_docid].Set(docid, rownum);
-            //// index the row
-            //foreach (var d in row)
-            //    if (i < c)
-            //    {
-            //        var idx = _indexes[_colnames[i++]];
-            //        if (idx != null)
-            //            idx.Set(d, rownum);
-            //    }
+
             for (int i = 0; i < c; i++)
             {
                 object d = row[i];
@@ -806,9 +842,14 @@ namespace RaptorDB.Views
                 return new FullTextIndex(_Path, name, false);
 
             else if (type == typeof(string))
-                return new TypeIndexes<string>(_Path, name, Global.DefaultStringKeySize);
+            {
+                byte len = Global.DefaultStringKeySize;
+                if (_idxlen.TryGetValue(name, out len) == false)
+                    len = Global.DefaultStringKeySize;
+                return new TypeIndexes<string>(_Path, name, len);
+            }
 
-            else if (type == typeof(bool))
+            else if (type == typeof(bool) || type == typeof(bool?))
                 return new BoolIndex(_Path, name);
 
             else if (type.IsEnum)
@@ -1039,6 +1080,59 @@ namespace RaptorDB.Views
                     _lastrownumber = internalCount();
                 return ++_lastrownumber;
             }
+        }
+
+        internal int ViewDelete<T>(Expression<Predicate<T>> filter)
+        {
+            _log.Debug("delete : " + _view.Name);
+
+            QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
+            qv.Visit(filter);
+            var delbits = _deletedRows.GetBits();
+            int count = qv._bitmap.Count;
+            if (count > 0)
+            {
+                WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
+                _deletedRows.InPlaceOR(qbits);
+                count = (int)qbits.CountOnes();
+            }
+            _log.Debug("Deleted rows = " + count);
+            return count;
+        }
+
+        internal int ViewDelete(string filter)
+        {
+            _log.Debug("delete : " + _view.Name);
+            int count = 0;
+            if (filter != "")
+            {
+                LambdaExpression le = null;
+                if (_lambdacache.TryGetValue(filter, out le) == false)
+                {
+                    le = System.Linq.Dynamic.DynamicExpression.ParseLambda(_view.Schema, typeof(bool), filter, null);
+                    _lambdacache.Add(filter, le);
+                }
+                QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
+                qv.Visit(le.Body);
+                count = qv._bitmap.Count;
+                if (count > 0)
+                {
+                    WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
+                    _deletedRows.InPlaceOR(qbits);
+                    count = (int)qbits.CountOnes();
+                }
+            }
+            return count;
+        }
+
+        internal bool ViewInsert(Guid id, object row)
+        {
+            List<object> l = new List<object>();
+            l.Add(row);
+
+            var r = ExtractRows(l);
+            InsertRowsWithIndexUpdate(id, r);
+            return true;
         }
     }
 }

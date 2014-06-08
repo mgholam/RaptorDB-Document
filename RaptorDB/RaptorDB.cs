@@ -1405,5 +1405,67 @@ namespace RaptorDB
             }
             return h.ToArray();
         }
+
+        public int ViewDelete<T>(Expression<Predicate<T>> filter)
+        {           
+            // do the delete
+            int c = _viewManager.ViewDelete(filter);
+            if (c > 0)
+            {
+                // save this filter to docs
+                View_delete vd = new View_delete();
+                LINQString lq = new LINQString();
+                lq.Visit(filter);
+                vd.Filter = lq.sb.ToString();
+                vd.Viewname = _viewManager.GetViewName(typeof(T));
+                _objStore.SetObject(vd.ID, vd);
+            }
+            return c;
+        }
+
+        public int ViewDelete(string viewname, string filter)
+        {          
+            // do the delete
+            int c = _viewManager.ViewDelete(viewname, filter);
+            if (c > 0)
+            {
+                // save this filter to docs
+                View_delete vd = new View_delete();
+                vd.Filter = filter;
+                vd.Viewname = viewname;
+                _objStore.SetObject(vd.ID, vd);
+            }
+            return c;
+        }
+
+        public bool ViewInsert<T>(Guid id, T row)
+        {
+            string vn = _viewManager.GetViewName(typeof(T));
+            if (vn != "")
+            {
+                if (_viewManager.ViewInsert(id, row))
+                {
+                    View_insert vi = new View_insert();
+                    vi.Viewname = vn;
+                    vi.RowObject = row;
+                    _objStore.SetObject(vi.ID, vi);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool ViewInsert(string viewname, Guid id, object row)
+        {
+            if (_viewManager.ViewInsert(viewname, id, row))
+            {
+                View_insert vi = new View_insert();
+                vi.Viewname = viewname;
+                vi.RowObject = row;
+                _objStore.SetObject(vi.ID, vi);
+                return true;
+            }
+            return false;
+        }
     }
 }
