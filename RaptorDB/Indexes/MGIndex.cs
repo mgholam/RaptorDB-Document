@@ -237,6 +237,7 @@ namespace RaptorDB
                     p.isDirty = false;
                 }
             }
+            _index.SavePageList(_pageList, _pageListDiskPages);
             _index.BitmapFlush();
         }
 
