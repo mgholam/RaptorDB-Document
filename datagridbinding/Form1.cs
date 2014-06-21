@@ -54,10 +54,10 @@ namespace datagridbinding
                 toolStripStatusLabel1.Text = "Count = " + q.Count.ToString("#,0");
                 stsError.Text = "";
             }
-            catch (Exception ex) 
-            { 
-                stsError.Text = ex.Message; 
-                dataGridView1.DataSource = null; 
+            catch (Exception ex)
+            {
+                stsError.Text = ex.Message;
+                dataGridView1.DataSource = null;
                 toolStripStatusLabel1.Text = "Count = 0";
                 toolStripStatusLabel2.Text = "Query time (sec) = 0";
             }
@@ -195,7 +195,7 @@ namespace datagridbinding
 
             //int[] revs = rap.FetchHistory(g);
             //object oo = rap.FetchVersion(revs[0]);
-            
+
             int c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < 100);
             c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial != 100);
             c = rap.Count("SalesInvoice", "serial != 100");
@@ -227,7 +227,7 @@ namespace datagridbinding
         {
             DateTime dt = DateTime.Now;
 
-            for(int i =0; i<100000;i++)
+            for (int i = 0; i < 100000; i++)
             {
                 var s = new SalesInvoiceViewRowSchema();
                 s.docid = Guid.NewGuid();

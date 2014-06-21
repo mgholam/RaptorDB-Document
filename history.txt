@@ -7,6 +7,8 @@ v3.1.4
 - FreeMemory() will save indexes to disk also
 - moved server mode files to output\server so you don't get conflicts loading views.dll
 - page list is also saved to disk on SaveIndex()
+- bug fix view schema when not inheriting from RDBSchema
+- replaced T with more meaningful TRowSchema in code intellisense 
 
 v3.1.3
 ------

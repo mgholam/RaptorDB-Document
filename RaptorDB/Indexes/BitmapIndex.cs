@@ -152,7 +152,7 @@ namespace RaptorDB
                                 throw new Exception("bitmap index file is corrupted");
                             }
 
-                            _newrec.Write(Helper.GetBytes(newoffset, false), 0, 8); 
+                            _newrec.Write(Helper.GetBytes(newoffset, false), 0, 8);
                             newoffset += b.Length;
                             _newbmp.Write(b, 0, b.Length);
 
@@ -226,7 +226,7 @@ namespace RaptorDB
             bool d2 = false;
 
             if (_shutdownDone == false)
-            {          
+            {
                 Flush();
                 if (_recordFileWrite.Length == 0) d1 = true;
                 if (_bitmapFileWrite.Length == 0) d2 = true;
@@ -391,14 +391,16 @@ namespace RaptorDB
         {
             if (_optimizing)
                 lock (_oplock) ; // yes! this is good
-            _que.Enqueue(1);
+            lock (_que)
+                _que.Enqueue(1);
         }
 #pragma warning restore 642
 
         private void Done()
         {
-            if (_que.Count > 0)
-                _que.Dequeue();
+            lock (_que)
+                if (_que.Count > 0)
+                    _que.Dequeue();
         }
         #endregion
 

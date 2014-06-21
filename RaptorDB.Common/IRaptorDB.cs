@@ -158,7 +158,7 @@ namespace RaptorDB.Common
         /// </summary>
         /// <param name="func"></param>
         /// <returns></returns>
-        object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter);
+        object[] ServerSide<TRowSchema>(ServerSideFunc func, Expression<Predicate<TRowSchema>> filter);
 
         /// <summary>
         /// Full text search the entire original document
@@ -172,68 +172,68 @@ namespace RaptorDB.Common
         /// <summary>
         /// Query a view with linq filter
         /// </summary>
-        /// <typeparam name="T">Use the Row Schema type for your view</typeparam>
+        /// <typeparam name="TRowSchema">Use the Row Schema type for your view</typeparam>
         /// <param name="filter"></param>
         /// <returns></returns>
-        Result<T> Query<T>(Expression<Predicate<T>> filter);
+        Result<TRowSchema> Query<TRowSchema>(Expression<Predicate<TRowSchema>> filter);
 
         /// <summary>
         /// Query a view with paging
         /// </summary>
-        /// <typeparam name="T">Use the Row Schema type for your view</typeparam>
+        /// <typeparam name="TRowSchema">Use the Row Schema type for your view</typeparam>
         /// <param name="filter"></param>
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count);
+        Result<TRowSchema> Query<TRowSchema>(Expression<Predicate<TRowSchema>> filter, int start, int count);
 
         /// <summary>
         /// Query a view with linq filter, paging and sorting
         /// </summary>
-        /// <typeparam name="T">Use the Row Schema type for your view</typeparam>
+        /// <typeparam name="TRowSchema">Use the Row Schema type for your view</typeparam>
         /// <param name="filter"></param>
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <param name="orderby"></param>
         /// <returns></returns>
-        Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count, string orderby);
+        Result<TRowSchema> Query<TRowSchema>(Expression<Predicate<TRowSchema>> filter, int start, int count, string orderby);
 
         /// <summary>
         /// Query a view with a string filter
         /// </summary>
-        /// <typeparam name="T">Use the Row Schema type for your view</typeparam>
+        /// <typeparam name="TRowSchema">Use the Row Schema type for your view</typeparam>
         /// <param name="filter"></param>
         /// <returns></returns>
-        Result<T> Query<T>(string filter);
+        Result<TRowSchema> Query<TRowSchema>(string filter);
 
         /// <summary>
         /// Query a view with string filter and paging
         /// </summary>
-        /// <typeparam name="T">Use the Row Schema type for your view</typeparam>
+        /// <typeparam name="TRowSchema">Use the Row Schema type for your view</typeparam>
         /// <param name="filter"></param>
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        Result<T> Query<T>(string filter, int start, int count);
+        Result<TRowSchema> Query<TRowSchema>(string filter, int start, int count);
 
         /// <summary>
         /// Query a view with string filter, paging and sorting
         /// </summary>
-        /// <typeparam name="T">Use the Row Schema type for your view</typeparam>
+        /// <typeparam name="TRowSchema">Use the Row Schema type for your view</typeparam>
         /// <param name="filter"></param>
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <param name="orderby"></param>
         /// <returns></returns>
-        Result<T> Query<T>(string filter, int start, int count, string orderby);
+        Result<TRowSchema> Query<TRowSchema>(string filter, int start, int count, string orderby);
 
         /// <summary>
         /// Count rows with a linq filter
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="filter"></param>
         /// <returns></returns>
-        int Count<T>(Expression<Predicate<T>> filter);
+        int Count<TRowSchema>(Expression<Predicate<TRowSchema>> filter);
 
         /// <summary>
         /// Fetch the change history for a document
@@ -280,10 +280,10 @@ namespace RaptorDB.Common
         /// <summary>
         /// Delete rows from a view
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="filter"></param>
         /// <returns>Number of rows deleted</returns>
-        int ViewDelete<T>(Expression<Predicate<T>> filter);
+        int ViewDelete<TRowSchema>(Expression<Predicate<TRowSchema>> filter);
 
         /// <summary>
         /// Delete rows from a view
@@ -296,11 +296,11 @@ namespace RaptorDB.Common
         /// <summary>
         /// Insert directly into a view
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="id"></param>
         /// <param name="row"></param>
         /// <returns></returns>
-        bool ViewInsert<T>(Guid id, T row);
+        bool ViewInsert<TRowSchema>(Guid id, TRowSchema row);
 
         /// <summary>
         /// Insert directly into a view

@@ -255,11 +255,11 @@ namespace RaptorDB
         /// <summary>
         /// Execute server side queries
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="func"></param>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public object[] ServerSide<T>(ServerSideFunc func, Expression<Predicate<T>> filter)
+        public object[] ServerSide<TRowSchema>(ServerSideFunc func, Expression<Predicate<TRowSchema>> filter)
         {
             LINQString ls = new LINQString();
             ls.Visit(filter);
@@ -369,13 +369,13 @@ namespace RaptorDB
         /// <summary>
         /// Query a View with a LINQ filter with paging
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="viewname"></param>
         /// <param name="filter"></param>
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count, string orderby)
+        public Result<object> Query<TRowSchema>(string viewname, Expression<Predicate<TRowSchema>> filter, int start, int count, string orderby)
         {
             LINQString ls = new LINQString();
             ls.Visit(filter);
@@ -522,23 +522,23 @@ namespace RaptorDB
         /// <summary>
         /// Query with LINQ filter
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result<T> Query<T>(Expression<Predicate<T>> filter)
+        public Result<TRowSchema> Query<TRowSchema>(Expression<Predicate<TRowSchema>> filter)
         {
-            return Query<T>(filter, 0, -1, "");
+            return Query<TRowSchema>(filter, 0, -1, "");
         }
 
         /// <summary>
         /// Query with LINQ filter and paging
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="filter"></param>
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count, string orderby)
+        public Result<TRowSchema> Query<TRowSchema>(Expression<Predicate<TRowSchema>> filter, int start, int count, string orderby)
         {
             LINQString ls = new LINQString();
             ls.Visit(filter);
@@ -547,69 +547,69 @@ namespace RaptorDB
             p.Start = start;
             p.Count = count;
             p.OrderBy = orderby;
-            p.Data = new object[] { typeof(T).AssemblyQualifiedName, ls.sb.ToString() };
+            p.Data = new object[] { typeof(TRowSchema).AssemblyQualifiedName, ls.sb.ToString() };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             Result<object> res = (Result<object>)ret.Data;
-            return GenericResult<T>(res);
+            return GenericResult<TRowSchema>(res);
         }
 
-        private static Result<T> GenericResult<T>(Result<object> res)
+        private static Result<TRowSchema> GenericResult<TRowSchema>(Result<object> res)
         {
             // FEATURE : dirty hack here to cleanup
-            Result<T> result = new Result<T>();
+            Result<TRowSchema> result = new Result<TRowSchema>();
             result.Count = res.Count;
             result.EX = res.EX;
             result.OK = res.OK;
             result.TotalCount = res.TotalCount;
-            result.Rows = res.Rows.Cast<T>().ToList<T>();
+            result.Rows = res.Rows.Cast<TRowSchema>().ToList<TRowSchema>();
             return result;
         }
 
         /// <summary>
         /// Query with string filter
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public Result<T> Query<T>(string filter)
+        public Result<TRowSchema> Query<TRowSchema>(string filter)
         {
-            return Query<T>(filter, 0, -1,"");
+            return Query<TRowSchema>(filter, 0, -1, "");
         }
 
         /// <summary>
         /// Query with string filter and paging
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="filter"></param>
         /// <param name="start"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public Result<T> Query<T>(string filter, int start, int count, string orderby)
+        public Result<TRowSchema> Query<TRowSchema>(string filter, int start, int count, string orderby)
         {
             Packet p = CreatePacket();
             p.Command = "querytype";
             p.Start = start;
             p.Count = count;
             p.OrderBy = orderby;
-            p.Data = new object[] { typeof(T).AssemblyQualifiedName, filter };
+            p.Data = new object[] { typeof(TRowSchema).AssemblyQualifiedName, filter };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             Result<object> res = (Result<object>)ret.Data;
-            return GenericResult<T>(res);
+            return GenericResult<TRowSchema>(res);
         }
 
         /// <summary>
         /// Count with LINQ filter
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public int Count<T>(Expression<Predicate<T>> filter)
+        public int Count<TRowSchema>(Expression<Predicate<TRowSchema>> filter)
         {
             LINQString ls = new LINQString();
             ls.Visit(filter);
             Packet p = CreatePacket();
             p.Command = "gcount";
-            p.Viewname = typeof(T).AssemblyQualifiedName;
+            p.Viewname = typeof(TRowSchema).AssemblyQualifiedName;
             p.Data = ls.sb.ToString();
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (int)ret.Data;
@@ -677,20 +677,20 @@ namespace RaptorDB
             return this.Query(viewname, filter, start, count, "");
         }
 
-        public Result<object> Query<T>(string viewname, Expression<Predicate<T>> filter, int start, int count)
+        public Result<object> Query<TRowSchema>(string viewname, Expression<Predicate<TRowSchema>> filter, int start, int count)
         {
             return this.Query(viewname, filter, start, count, "");
         }
 
 
-        public Result<T> Query<T>(Expression<Predicate<T>> filter, int start, int count)
+        public Result<TRowSchema> Query<TRowSchema>(Expression<Predicate<TRowSchema>> filter, int start, int count)
         {
-            return Query<T>(filter, start, count, "");
+            return Query<TRowSchema>(filter, start, count, "");
         }
 
-        public Result<T> Query<T>(string filter, int start, int count)
+        public Result<TRowSchema> Query<TRowSchema>(string filter, int start, int count)
         {
-            return Query<T>(filter, start, count, "");
+            return Query<TRowSchema>(filter, start, count, "");
         }
 
         /// <summary>
@@ -724,16 +724,16 @@ namespace RaptorDB
         /// <summary>
         /// Delete directly from a view using a filter
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="filter"></param>
         /// <returns></returns>
-        public int ViewDelete<T>(Expression<Predicate<T>> filter)
+        public int ViewDelete<TRowSchema>(Expression<Predicate<TRowSchema>> filter)
         {
             LINQString ls = new LINQString();
             ls.Visit(filter);
             Packet p = CreatePacket();
             p.Command = "viewdelete-t";
-            p.Data = new object[] { typeof(T).AssemblyQualifiedName, ls.sb.ToString() };
+            p.Data = new object[] { typeof(TRowSchema).AssemblyQualifiedName, ls.sb.ToString() };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (int)ret.Data;       
         }
@@ -754,24 +754,24 @@ namespace RaptorDB
         }
 
         /// <summary>
-        /// 
+        /// Insert directly into a view
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="TRowSchema"></typeparam>
         /// <param name="id"></param>
         /// <param name="row"></param>
         /// <returns></returns>
-        public bool ViewInsert<T>(Guid id, T row)
+        public bool ViewInsert<TRowSchema>(Guid id, TRowSchema row)
         {
             Packet p = CreatePacket();
             p.Command = "viewinsert-t";
             p.Docid = id;
-            p.Data = new object[] { typeof(T).AssemblyQualifiedName, row };
+            p.Data = new object[] { typeof(TRowSchema).AssemblyQualifiedName, row };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (bool)ret.Data;
         }
 
         /// <summary>
-        /// 
+        /// Insert directly into a view
         /// </summary>
         /// <param name="viewname"></param>
         /// <param name="id"></param>

@@ -702,7 +702,8 @@ namespace RaptorDB.Views
                     t = typeof(FullTextString);
                 if (_view.FullTextColumns.Contains(p.Name) || _view.FullTextColumns.Contains(p.Name.ToLower()))
                     t = typeof(FullTextString);
-                _schema.Add(p.Name, t);
+                if (p.Name != "docid")
+                    _schema.Add(p.Name, t);
 
                 if (p.GetCustomAttributes(typeof(CaseInsensitiveAttribute), true).Length > 0)
                     _nocase.Add(p.Name, 0);
@@ -732,7 +733,8 @@ namespace RaptorDB.Views
                     t = typeof(FullTextString);
                 if (_view.FullTextColumns.Contains(f.Name) || _view.FullTextColumns.Contains(f.Name.ToLower()))
                     t = typeof(FullTextString);
-                _schema.Add(f.Name, t);
+                if (f.Name != "docid")
+                    _schema.Add(f.Name, t);
 
                 if (f.GetCustomAttributes(typeof(CaseInsensitiveAttribute), true).Length > 0)
                     _nocase.Add(f.Name, 0);
@@ -754,6 +756,7 @@ namespace RaptorDB.Views
                         _idxlen.Add(f.Name, b);
                 }
             }
+            _schema.Add("docid", typeof(Guid));
 
             foreach (var s in _schema.Columns)
                 _colnames.Add(s.Key);
