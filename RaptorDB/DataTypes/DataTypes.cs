@@ -28,6 +28,11 @@ namespace RaptorDB
 
     }
 
+    internal class NoIndexing
+    {
+
+    }
+
     public interface IRowFiller
     {
         object FillRow(object row, object[] data);

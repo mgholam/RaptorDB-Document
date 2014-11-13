@@ -281,7 +281,7 @@ namespace RaptorDB.Views
                 ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
             }
             else
-                ba = ba.Fill(_viewData.Count()).AndNot(delbits);
+                ba = WAHBitArray.Fill(_viewData.Count()).AndNot(delbits);
 
             var order = SortBy(orderby);
 
@@ -698,62 +698,77 @@ namespace RaptorDB.Views
             foreach (var p in _view.Schema.GetProperties())
             {
                 Type t = p.PropertyType;
-                if (p.GetCustomAttributes(typeof(FullTextAttribute), true).Length > 0)
-                    t = typeof(FullTextString);
-                if (_view.FullTextColumns.Contains(p.Name) || _view.FullTextColumns.Contains(p.Name.ToLower()))
-                    t = typeof(FullTextString);
-                if (p.Name != "docid")
-                    _schema.Add(p.Name, t);
 
-                if (p.GetCustomAttributes(typeof(CaseInsensitiveAttribute), true).Length > 0)
-                    _nocase.Add(p.Name, 0);
-                if (_view.CaseInsensitiveColumns.Contains(p.Name) || _view.CaseInsensitiveColumns.Contains(p.Name.ToLower()))
-                    _nocase.Add(p.Name, 0);
-
-                var a = p.GetCustomAttributes(typeof(StringIndexLength), false);
-                if (a.Length > 0)
+                if (_view.NoIndexingColumns.Contains(p.Name) || _view.NoIndexingColumns.Contains(p.Name.ToLower()))
                 {
-                    byte l = (a[0] as StringIndexLength).Length;
-                    _idxlen.Add(p.Name, l);
+                    _schema.Add(p.Name, typeof(NoIndexing));
                 }
-                if (_view.StringIndexLength.ContainsKey(p.Name) || _view.StringIndexLength.ContainsKey(p.Name.ToLower()))
+                else
                 {
-                    byte b = 0;
-                    if (_view.StringIndexLength.TryGetValue(p.Name, out b))
-                        _idxlen.Add(p.Name, b);
-                    if (_view.StringIndexLength.TryGetValue(p.Name.ToLower(), out b))
-                        _idxlen.Add(p.Name, b);
+                    if (p.GetCustomAttributes(typeof(FullTextAttribute), true).Length > 0)
+                        t = typeof(FullTextString);
+                    if (_view.FullTextColumns.Contains(p.Name) || _view.FullTextColumns.Contains(p.Name.ToLower()))
+                        t = typeof(FullTextString);
+                    if (p.Name != "docid")
+                        _schema.Add(p.Name, t);
+
+                    if (p.GetCustomAttributes(typeof(CaseInsensitiveAttribute), true).Length > 0)
+                        _nocase.Add(p.Name, 0);
+                    if (_view.CaseInsensitiveColumns.Contains(p.Name) || _view.CaseInsensitiveColumns.Contains(p.Name.ToLower()))
+                        _nocase.Add(p.Name, 0);
+
+                    var a = p.GetCustomAttributes(typeof(StringIndexLength), false);
+                    if (a.Length > 0)
+                    {
+                        byte l = (a[0] as StringIndexLength).Length;
+                        _idxlen.Add(p.Name, l);
+                    }
+                    if (_view.StringIndexLength.ContainsKey(p.Name) || _view.StringIndexLength.ContainsKey(p.Name.ToLower()))
+                    {
+                        byte b = 0;
+                        if (_view.StringIndexLength.TryGetValue(p.Name, out b))
+                            _idxlen.Add(p.Name, b);
+                        if (_view.StringIndexLength.TryGetValue(p.Name.ToLower(), out b))
+                            _idxlen.Add(p.Name, b);
+                    }
                 }
             }
 
             foreach (var f in _view.Schema.GetFields())
             {
                 Type t = f.FieldType;
-                if (f.GetCustomAttributes(typeof(FullTextAttribute), true).Length > 0)
-                    t = typeof(FullTextString);
-                if (_view.FullTextColumns.Contains(f.Name) || _view.FullTextColumns.Contains(f.Name.ToLower()))
-                    t = typeof(FullTextString);
-                if (f.Name != "docid")
-                    _schema.Add(f.Name, t);
-
-                if (f.GetCustomAttributes(typeof(CaseInsensitiveAttribute), true).Length > 0)
-                    _nocase.Add(f.Name, 0);
-                if (_view.CaseInsensitiveColumns.Contains(f.Name) || _view.CaseInsensitiveColumns.Contains(f.Name.ToLower()))
-                    _nocase.Add(f.Name, 0);
-
-                var a = f.GetCustomAttributes(typeof(StringIndexLength), false);
-                if (a.Length > 0)
+                if (_view.NoIndexingColumns.Contains(f.Name) || _view.NoIndexingColumns.Contains(f.Name.ToLower()))
                 {
-                    byte l = (a[0] as StringIndexLength).Length;
-                    _idxlen.Add(f.Name, l);
+                    _schema.Add(f.Name, typeof(NoIndexing));
                 }
-                if (_view.StringIndexLength.ContainsKey(f.Name) || _view.StringIndexLength.ContainsKey(f.Name.ToLower()))
+                else
                 {
-                    byte b = 0;
-                    if (_view.StringIndexLength.TryGetValue(f.Name, out b))
-                        _idxlen.Add(f.Name, b);
-                    if (_view.StringIndexLength.TryGetValue(f.Name.ToLower(), out b))
-                        _idxlen.Add(f.Name, b);
+                    if (f.GetCustomAttributes(typeof(FullTextAttribute), true).Length > 0)
+                        t = typeof(FullTextString);
+                    if (_view.FullTextColumns.Contains(f.Name) || _view.FullTextColumns.Contains(f.Name.ToLower()))
+                        t = typeof(FullTextString);
+                    if (f.Name != "docid")
+                        _schema.Add(f.Name, t);
+
+                    if (f.GetCustomAttributes(typeof(CaseInsensitiveAttribute), true).Length > 0)
+                        _nocase.Add(f.Name, 0);
+                    if (_view.CaseInsensitiveColumns.Contains(f.Name) || _view.CaseInsensitiveColumns.Contains(f.Name.ToLower()))
+                        _nocase.Add(f.Name, 0);
+
+                    var a = f.GetCustomAttributes(typeof(StringIndexLength), false);
+                    if (a.Length > 0)
+                    {
+                        byte l = (a[0] as StringIndexLength).Length;
+                        _idxlen.Add(f.Name, l);
+                    }
+                    if (_view.StringIndexLength.ContainsKey(f.Name) || _view.StringIndexLength.ContainsKey(f.Name.ToLower()))
+                    {
+                        byte b = 0;
+                        if (_view.StringIndexLength.TryGetValue(f.Name, out b))
+                            _idxlen.Add(f.Name, b);
+                        if (_view.StringIndexLength.TryGetValue(f.Name.ToLower(), out b))
+                            _idxlen.Add(f.Name, b);
+                    }
                 }
             }
             _schema.Add("docid", typeof(Guid));
@@ -841,6 +856,9 @@ namespace RaptorDB.Views
 
         private IIndex CreateIndex(string name, Type type)
         {
+            if (type == typeof(NoIndexing))
+                return new NoIndex();
+
             if (type == typeof(FullTextString))
                 return new FullTextIndex(_Path, name, false);
 
@@ -1018,7 +1036,7 @@ namespace RaptorDB.Views
                 ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
             }
             else
-                ba = ba.Fill(_viewData.Count()).AndNot(delbits);
+                ba = WAHBitArray.Fill(_viewData.Count()).AndNot(delbits);
 
             var order = SortBy(orderby);
 

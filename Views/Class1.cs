@@ -78,7 +78,7 @@ namespace SampleViews
             this.FullTextColumns.Add("address");
 
             this.CaseInsensitiveColumns.Add("nocase"); // this or the attribute
-
+            //this.StringIndexLength.Add("nocase", 255);
             //this.AddFireOnTypes(typeof(SalesInvoice));
 
             this.Mapper = (api, docid, doc) =>

@@ -1,3 +1,7 @@
+v3.1.5
+------
+- added View.NoIndexingColumns definition to override indexing of selected columns
+
 v3.1.4
 ------
 - added StringIndexLength attribute for view schema to control string index size for the index file

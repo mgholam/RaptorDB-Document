@@ -311,6 +311,42 @@ namespace RaptorDB
         {
             return base.GetKeys();
         }
-    #endregion
     }
+    #endregion
+
+    #region [  NoIndex  ]
+    internal class NoIndex : IIndex
+    {
+        public void Set(object key, int recnum)
+        {
+            // ignore set
+        }
+
+        public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
+        {
+            // always return everything
+            return WAHBitArray.Fill(maxsize);
+        }
+
+        public void FreeMemory()
+        {
+
+        }
+
+        public void Shutdown()
+        {
+
+        }
+
+        public void SaveIndex()
+        {
+
+        }
+
+        public object[] GetKeys()
+        {
+            return new object[] { };
+        }
+    }
+    #endregion
 }

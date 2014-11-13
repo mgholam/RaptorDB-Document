@@ -654,7 +654,7 @@ namespace RaptorDB
 
         #endregion
 
-        internal WAHBitArray Fill(int count)
+        internal static WAHBitArray Fill(int count)
         {
             if (count > 0)
             {
