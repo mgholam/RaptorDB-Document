@@ -14,8 +14,8 @@ namespace fastJSON
     public struct Getters
     {
         public string Name;
+        public string lcName;
         public Reflection.GenericGetter Getter;
-        //public Type propertyType;
     }
 
     public enum myPropInfoType
@@ -43,13 +43,6 @@ namespace fastJSON
         Unknown,
     }
 
-    [Flags]
-    public enum myPropInfoFlags
-    {
-        Filled = 1 << 0,
-        CanWrite = 1 << 1
-    }
-
     public struct myPropInfo
     {
         public Type pt;
@@ -60,11 +53,12 @@ namespace fastJSON
         public Type[] GenericTypes;
         public string Name;
         public myPropInfoType Type;
-        public myPropInfoFlags Flags;
+        public bool CanWrite;
 
         public bool IsClass;
         public bool IsValueType;
         public bool IsGenericType;
+        public bool IsStruct;
     }
 
     public sealed class Reflection
@@ -155,7 +149,7 @@ namespace fastJSON
             }
         }
 
-        public Dictionary<string, myPropInfo> Getproperties(Type type, string typename, bool IgnoreCaseOnDeserialize, bool customType)
+        public Dictionary<string, myPropInfo> Getproperties(Type type, string typename, bool customType)
         {
             Dictionary<string, myPropInfo> sd = null;
             if (_propertycache.TryGetValue(typename, out sd))
@@ -169,24 +163,21 @@ namespace fastJSON
                 foreach (PropertyInfo p in pr)
                 {
                     myPropInfo d = CreateMyProp(p.PropertyType, p.Name, customType);
-                    d.Flags |= myPropInfoFlags.CanWrite;
+
                     d.setter = Reflection.CreateSetMethod(type, p);
+                    if (d.setter != null)
+                        d.CanWrite = true;
                     d.getter = Reflection.CreateGetMethod(type, p);
-                    if (IgnoreCaseOnDeserialize)
-                        sd.Add(p.Name.ToLower(), d);
-                    else
-                        sd.Add(p.Name, d);
+                    sd.Add(p.Name.ToLower(), d);
                 }
                 FieldInfo[] fi = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
                 foreach (FieldInfo f in fi)
                 {
                     myPropInfo d = CreateMyProp(f.FieldType, f.Name, customType);
+                    d.CanWrite = true;
                     d.setter = Reflection.CreateSetField(type, f);
                     d.getter = Reflection.CreateGetField(type, f);
-                    if (IgnoreCaseOnDeserialize)
-                        sd.Add(f.Name.ToLower(), d);
-                    else
-                        sd.Add(f.Name, d);
+                    sd.Add(f.Name.ToLower(), d);
                 }
 
                 _propertycache.Add(typename, sd);
@@ -198,7 +189,6 @@ namespace fastJSON
         {
             myPropInfo d = new myPropInfo();
             myPropInfoType d_type = myPropInfoType.Unknown;
-            myPropInfoFlags d_flags = myPropInfoFlags.Filled | myPropInfoFlags.CanWrite;
 
             if (t == typeof(int) || t == typeof(int?)) d_type = myPropInfoType.Int;
             else if (t == typeof(long) || t == typeof(long?)) d_type = myPropInfoType.Long;
@@ -230,9 +220,11 @@ namespace fastJSON
             else if (t == typeof(DataSet)) d_type = myPropInfoType.DataSet;
             else if (t == typeof(DataTable)) d_type = myPropInfoType.DataTable;
 #endif
-
             else if (customType)
                 d_type = myPropInfoType.Custom;
+
+            if (t.IsValueType && !t.IsPrimitive && !t.IsEnum && t != typeof(decimal))
+                d.IsStruct = true;
 
             d.IsClass = t.IsClass;
             d.IsValueType = t.IsValueType;
@@ -246,7 +238,6 @@ namespace fastJSON
             d.Name = name;
             d.changeType = GetChangeType(t);
             d.Type = d_type;
-            d.Flags = d_flags;
 
             return d;
         }
@@ -512,7 +503,7 @@ namespace fastJSON
                 }
                 GenericGetter g = CreateGetMethod(type, p);
                 if (g != null)
-                    getters.Add(new Getters { Getter = g, Name = p.Name });
+                    getters.Add(new Getters { Getter = g, Name = p.Name, lcName = p.Name.ToLower() });
             }
 
             FieldInfo[] fi = type.GetFields(BindingFlags.Instance | BindingFlags.Public);
@@ -535,7 +526,7 @@ namespace fastJSON
 
                 GenericGetter g = CreateGetField(type, f);
                 if (g != null)
-                    getters.Add(new Getters { Getter = g, Name = f.Name });
+                    getters.Add(new Getters { Getter = g, Name = f.Name, lcName = f.Name.ToLower() });
             }
             val = getters.ToArray();
             _getterscache.Add(type, val);

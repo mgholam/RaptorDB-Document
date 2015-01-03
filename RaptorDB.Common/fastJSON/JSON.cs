@@ -45,6 +45,7 @@ namespace fastJSON
         /// <summary>
         /// Ignore case when processing json and deserializing 
         /// </summary>
+        [Obsolete("Not needed anymore and will always match")]
         public bool IgnoreCaseOnDeserialize = false;
         /// <summary>
         /// Anonymous types have read only properties 
@@ -76,11 +77,30 @@ namespace fastJSON
         /// IMPORTANT NOTE : If True then all initial values within the class will be ignored and will be not set
         /// </summary>
         public bool ParametricConstructorOverride = false;
+        /// <summary>
+        /// Serialize DateTime milliseconds i.e. yyyy-MM-dd HH:mm:ss.nnn (default = false)
+        /// </summary>
+        public bool DateTimeMilliseconds = false;
+        /// <summary>
+        /// Maximum depth for circular references in inline mode (default = 20)
+        /// </summary>
+        public byte SerializerMaxDepth = 20;
+        /// <summary>
+        /// Inline circular or already seen objects instead of replacement with $i (default = False) 
+        /// </summary>
+        public bool InlineCircularReferences = false;
+        /// <summary>
+        /// Save property/field names as lowercase (default = false)
+        /// </summary>
+        public bool SerializeToLowerCaseNames = false;
 
         public void FixValues()
         {
             if (UseExtensions == false) // disable conflicting params
+            {
                 UsingGlobalTypes = false;
+                InlineCircularReferences = true;
+            }
             if (EnableAnonymousTypes)
                 ShowReadOnlyProperties = true;
         }
@@ -143,7 +163,7 @@ namespace fastJSON
         /// <returns></returns>
         public static object Parse(string json)
         {
-            return new JsonParser(json, JSON.Parameters.IgnoreCaseOnDeserialize).Decode();
+            return new JsonParser(json).Decode();
         }
 #if net4
         /// <summary>
@@ -214,7 +234,7 @@ namespace fastJSON
         /// <returns></returns>
         public static object FillObject(object input, string json)
         {
-            Dictionary<string, object> ht = new JsonParser(json, Parameters.IgnoreCaseOnDeserialize).Decode() as Dictionary<string, object>;
+            Dictionary<string, object> ht = new JsonParser(json).Decode() as Dictionary<string, object>;
             if (ht == null) return null;
             return new deserializer(Parameters).ParseDictionary(ht, null, input.GetType(), input);
         }
@@ -300,7 +320,6 @@ namespace fastJSON
         private bool _usingglobals = false;
         private Dictionary<object, int> _circobj = new Dictionary<object, int>();
         private Dictionary<int, object> _cirrev = new Dictionary<int, object>();
-        //private bool _circular = true;
 
         public T ToObject<T>(string json)
         {
@@ -338,7 +357,7 @@ namespace fastJSON
                 _params.UsingGlobalTypes = false;
             _usingglobals = _params.UsingGlobalTypes;
 
-            object o = new JsonParser(json, _params.IgnoreCaseOnDeserialize).Decode();
+            object o = new JsonParser(json).Decode();
             if (o == null)
                 return null;
 #if !SILVERLIGHT
@@ -408,16 +427,42 @@ namespace fastJSON
             else if (conversionType == typeof(string))
                 return (string)value;
 
-            else if (conversionType == typeof(Guid))
-                return CreateGuid((string)value);
-
             else if (conversionType.IsEnum)
                 return CreateEnum(conversionType, value);
+
+            else if (conversionType == typeof(DateTime))
+                return CreateDateTime((string)value);
 
             else if (Reflection.Instance.IsTypeRegistered(conversionType))
                 return Reflection.Instance.CreateCustom((string)value, conversionType);
 
+            // 8-30-2014 - James Brooks - Added code for nullable types.
+            if (IsNullable(conversionType))
+            {
+                if (value == null)
+                {
+                    return value;
+                }
+                conversionType = UnderlyingTypeOf(conversionType);
+            }
+
+            // 8-30-2014 - James Brooks - Nullable Guid is a special case so it was moved after the "IsNullable" check.
+            if (conversionType == typeof(Guid))
+                return CreateGuid((string)value);
+
             return Convert.ChangeType(value, conversionType, CultureInfo.InvariantCulture);
+        }
+
+        private bool IsNullable(Type t)
+        {
+            if (!t.IsGenericType) return false;
+            Type g = t.GetGenericTypeDefinition();
+            return (g.Equals(typeof(Nullable<>)));
+        }
+
+        private Type UnderlyingTypeOf(Type t)
+        {
+            return t.GetGenericArguments()[0];
         }
 
         private object RootList(object parse, Type type)
@@ -487,8 +532,6 @@ namespace fastJSON
                 return CreateNV(d);
             if (type == typeof(StringDictionary))
                 return CreateSD(d);
-            //if (_circular == false)
-            //    _circular = d.TryGetValue("$circular", out tn);
 
             if (d.TryGetValue("$i", out tn))
             {
@@ -537,22 +580,18 @@ namespace fastJSON
                 else
                     o = Reflection.Instance.FastCreateInstance(type);
             }
-            //if (_circular)
+            int circount = 0;
+            if (_circobj.TryGetValue(o, out circount) == false)
             {
-                int i = 0;
-                if (_circobj.TryGetValue(o, out i) == false)
-                {
-                    i = _circobj.Count + 1;
-                    _circobj.Add(o, i);
-                    _cirrev.Add(i, o);
-                }
+                circount = _circobj.Count + 1;
+                _circobj.Add(o, circount);
+                _cirrev.Add(circount, o);
             }
 
-            Dictionary<string, myPropInfo> props = Reflection.Instance.Getproperties(type, typename, _params.IgnoreCaseOnDeserialize, Reflection.Instance.IsTypeRegistered(type));
+            Dictionary<string, myPropInfo> props = Reflection.Instance.Getproperties(type, typename, Reflection.Instance.IsTypeRegistered(type));
             foreach (string n in d.Keys)
             {
-                string name = n;
-                if (_params.IgnoreCaseOnDeserialize) name = name.ToLower();
+                string name = n.ToLower();
                 if (name == "$map")
                 {
                     ProcessMap(o, props, (Dictionary<string, object>)d[name]);
@@ -561,9 +600,9 @@ namespace fastJSON
                 myPropInfo pi;
                 if (props.TryGetValue(name, out pi) == false)
                     continue;
-                if ((pi.Flags & (myPropInfoFlags.Filled | myPropInfoFlags.CanWrite)) != 0)
+                if (pi.CanWrite)
                 {
-                    object v = d[name];
+                    object v = d[n];
 
                     if (v != null)
                     {
@@ -600,7 +639,7 @@ namespace fastJSON
                                     if (pi.IsGenericType && pi.IsValueType == false && v is List<object>)
                                         oset = CreateGenericList((List<object>)v, pi.pt, pi.bt, globaltypes);
 
-                                    else if (pi.IsClass && v is Dictionary<string, object>)
+                                    else if ((pi.IsClass || pi.IsStruct) && v is Dictionary<string, object>)
                                         oset = ParseDictionary((Dictionary<string, object>)v, globaltypes, pi.pt, pi.getter(o));
 
                                     else if (v is List<object>)
@@ -654,9 +693,9 @@ namespace fastJSON
             }
         }
 
-        private int CreateInteger(out int num, string s, int index, int count)
+        private int CreateInteger(string s, int index, int count)
         {
-            num = 0;
+            int num = 0;
             bool neg = false;
             for (int x = 0; x < count; x++, index++)
             {
@@ -698,29 +737,32 @@ namespace fastJSON
         private DateTime CreateDateTime(string value)
         {
             bool utc = false;
-            //                   0123456789012345678
-            // datetime format = yyyy-MM-dd HH:mm:ss
+            //                   0123456789012345678 9012 9/3
+            // datetime format = yyyy-MM-ddTHH:mm:ss .nnn  Z
             int year;
             int month;
             int day;
             int hour;
             int min;
             int sec;
-            CreateInteger(out year, value, 0, 4);
-            CreateInteger(out month, value, 5, 2);
-            CreateInteger(out day, value, 8, 2);
-            CreateInteger(out hour, value, 11, 2);
-            CreateInteger(out min, value, 14, 2);
-            CreateInteger(out sec, value, 17, 2);
+            int ms = 0;
 
-            //if (value.EndsWith("Z"))
+            year = CreateInteger(value, 0, 4);
+            month = CreateInteger(value, 5, 2);
+            day = CreateInteger(value, 8, 2);
+            hour = CreateInteger(value, 11, 2);
+            min = CreateInteger(value, 14, 2);
+            sec = CreateInteger(value, 17, 2);
+            if (value.Length > 21 && value[19] == '.')
+                ms = CreateInteger(value, 20, 3);
+
             if (value[value.Length - 1] == 'Z')
                 utc = true;
 
             if (_params.UseUTCDateTime == false && utc == false)
-                return new DateTime(year, month, day, hour, min, sec);
+                return new DateTime(year, month, day, hour, min, sec, ms);
             else
-                return new DateTime(year, month, day, hour, min, sec, DateTimeKind.Utc).ToLocalTime();
+                return new DateTime(year, month, day, hour, min, sec, ms, DateTimeKind.Utc).ToLocalTime();
         }
 
         private object CreateArray(List<object> data, Type pt, Type bt, Dictionary<string, object> globalTypes)

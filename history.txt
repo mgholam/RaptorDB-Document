@@ -1,6 +1,12 @@
 v3.1.5
 ------
 - added View.NoIndexingColumns definition to override indexing of selected columns
+- Upgrade to fastJSON v2.1.7
+- Upgrade to fastBinaryJSON v1.4.5
+- added DocumentCount() to get how many items in the storage file
+- Shutdown() now waits for View rebuilds to finish
+- more intellisense help
+
 
 v3.1.4
 ------

@@ -15,18 +15,18 @@ namespace fastJSON
     {
         private StringBuilder _output = new StringBuilder();
         private StringBuilder _before = new StringBuilder();
-        readonly int _MAX_DEPTH = 20;
+        private int _MAX_DEPTH = 20;
         int _current_depth = 0;
         private Dictionary<string, int> _globalTypes = new Dictionary<string, int>();
         private Dictionary<object, int> _cirobj = new Dictionary<object, int>();
         private JSONParameters _params;
         private bool _useEscapedUnicode = false;
-        //private bool _circular = false;
 
         internal JSONSerializer(JSONParameters param)
         {
             _params = param;
             _useEscapedUnicode = _params.UseEscapedUnicode;
+            _MAX_DEPTH = _params.SerializerMaxDepth;
         }
 
         internal string ConvertToJSON(object obj)
@@ -37,8 +37,6 @@ namespace fastJSON
             if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count > 0)
             {
                 StringBuilder sb = _before;
-                //if (_circular)
-                //    sb.Append("\"$circular\":true,");
                 sb.Append("\"$types\":{");
                 bool pendingSeparator = false;
                 foreach (var kv in _globalTypes)
@@ -91,7 +89,10 @@ namespace fastJSON
                 obj.GetType().IsGenericType && obj.GetType().GetGenericArguments()[0] == typeof(string))
 
                 WriteStringDictionary((IDictionary)obj);
-
+#if net4
+            else if (_params.KVStyleStringDictionary == false && obj is System.Dynamic.ExpandoObject)
+                WriteStringDictionary((IDictionary<string, object>)obj);
+#endif
             else if (obj is IDictionary)
                 WriteDictionary((IDictionary)obj);
 #if !SILVERLIGHT
@@ -203,13 +204,17 @@ namespace fastJSON
             _output.Append(dt.Month.ToString("00", NumberFormatInfo.InvariantInfo));
             _output.Append('-');
             _output.Append(dt.Day.ToString("00", NumberFormatInfo.InvariantInfo));
-            _output.Append(' ');
+            _output.Append('T'); // strict ISO date compliance 
             _output.Append(dt.Hour.ToString("00", NumberFormatInfo.InvariantInfo));
             _output.Append(':');
             _output.Append(dt.Minute.ToString("00", NumberFormatInfo.InvariantInfo));
             _output.Append(':');
             _output.Append(dt.Second.ToString("00", NumberFormatInfo.InvariantInfo));
-
+            if (_params.DateTimeMilliseconds)
+            {
+                _output.Append('.');
+                _output.Append(dt.Millisecond.ToString("000", NumberFormatInfo.InvariantInfo));
+            }
             if (_params.UseUTCDateTime)
                 _output.Append('Z');
 
@@ -331,12 +336,12 @@ namespace fastJSON
         bool _TypesWritten = false;
         private void WriteObject(object obj)
         {
-            int i =0;
+            int i = 0;
             if (_cirobj.TryGetValue(obj, out i) == false)
                 _cirobj.Add(obj, _cirobj.Count + 1);
             else
             {
-                if (_current_depth > 0)
+                if (_current_depth > 0 && _params.InlineCircularReferences == false)
                 {
                     //_circular = true;
                     _output.Append("{\"$i\":" + i + "}");
@@ -383,7 +388,7 @@ namespace fastJSON
                 append = true;
             }
 
-            Getters[] g = Reflection.Instance.GetGetters(t, _params.ShowReadOnlyProperties , _params.IgnoreAttributes);
+            Getters[] g = Reflection.Instance.GetGetters(t, _params.ShowReadOnlyProperties, _params.IgnoreAttributes);
             int c = g.Length;
             for (int ii = 0; ii < c; ii++)
             {
@@ -397,8 +402,10 @@ namespace fastJSON
                 {
                     if (append)
                         _output.Append(',');
-
-                    WritePair(p.Name, o);
+                    if (_params.SerializeToLowerCaseNames)
+                        WritePair(p.lcName, o);
+                    else
+                        WritePair(p.Name, o);
                     if (o != null && _params.UseExtensions)
                     {
                         Type tt = o.GetType();
@@ -413,7 +420,6 @@ namespace fastJSON
                 _output.Append(",\"$map\":");
                 WriteStringDictionary(map);
             }
-            _current_depth--;
             _output.Append('}');
             _current_depth--;
         }
@@ -469,6 +475,19 @@ namespace fastJSON
 
                 WritePair((string)entry.Key, entry.Value);
 
+                pendingSeparator = true;
+            }
+            _output.Append('}');
+        }
+
+        private void WriteStringDictionary(IDictionary<string, object> dic)
+        {
+            _output.Append('{');
+            bool pendingSeparator = false;
+            foreach (KeyValuePair<string, object> entry in dic)
+            {
+                if (pendingSeparator) _output.Append(',');
+                WritePair(entry.Key, entry.Value);
                 pendingSeparator = true;
             }
             _output.Append('}');
@@ -560,7 +579,6 @@ namespace fastJSON
 
             if (runIndex != -1)
                 _output.Append(s, runIndex, s.Length - runIndex);
-
 
             _output.Append('\"');
         }

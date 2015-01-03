@@ -233,6 +233,10 @@ namespace RaptorDB
                         string viewname5 = _raptor.GetViewName(t5);
                         ret.Data = _raptor.ViewInsert(viewname5, p.Docid, param[1]);
                         break;
+                    case "doccount":
+                        ret.OK = true;
+                        ret.Data = _raptor.DocumentCount();
+                        break;
                 }
             }
             catch (Exception ex)

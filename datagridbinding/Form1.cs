@@ -209,7 +209,7 @@ namespace datagridbinding
             //Guid g = new Guid("82997e60-f8f4-4b37-ae35-02d033512673");
             var qq = rap.Query<SalesInvoiceViewRowSchema>(x => x.docid == new Guid("82997e60-f8f4-4b37-ae35-02d033512673"));
             dataGridView1.DataSource = q.Rows;
-
+            
             //int i = rap.ViewDelete<SalesInvoiceViewRowSchema>(x => x.Serial == 0);
 
             //var qqq= rap.Query<SalesInvoiceViewRowSchema>(x => );
@@ -223,22 +223,22 @@ namespace datagridbinding
             //perftest();
         }
 
-        private void perftest()
-        {
-            DateTime dt = DateTime.Now;
+        //private void perftest()
+        //{
+        //    DateTime dt = DateTime.Now;
 
-            for (int i = 0; i < 100000; i++)
-            {
-                var s = new SalesInvoiceViewRowSchema();
-                s.docid = Guid.NewGuid();
-                s.Address = Faker.LocationFaker.Street();
-                s.CustomerName = Faker.NameFaker.Name();
-                s.Date = Faker.DateTimeFaker.BirthDay();
-                s.Serial = i % 1000;
-                s.Status = (byte)(i % 5);
-                rap.ViewInsert(s.docid, s);
-            }
-            MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
-        }
+        //    for (int i = 0; i < 100000; i++)
+        //    {
+        //        var s = new SalesInvoiceViewRowSchema();
+        //        s.docid = Guid.NewGuid();
+        //        s.Address = Faker.LocationFaker.Street();
+        //        s.CustomerName = Faker.NameFaker.Name();
+        //        s.Date = Faker.DateTimeFaker.BirthDay();
+        //        s.Serial = i % 1000;
+        //        s.Status = (byte)(i % 5);
+        //        rap.ViewInsert(s.docid, s);
+        //    }
+        //    MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
+        //}
     }
 }

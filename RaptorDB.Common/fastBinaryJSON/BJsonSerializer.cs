@@ -24,7 +24,6 @@ namespace fastBinaryJSON
         private Dictionary<string, int> _globalTypes = new Dictionary<string, int>();
         private Dictionary<object, int> _cirobj = new Dictionary<object, int>();
         private BJSONParameters _params;
-        //private bool _circular = false;
 
         internal BJSONSerializer(BJSONParameters param)
         {
@@ -44,7 +43,7 @@ namespace fastBinaryJSON
             //    _before.WriteByte(TOKENS.TRUE);
             //}
             // add $types
-            if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count>0)
+            if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count > 0)
             {
                 byte[] after = _output.ToArray();
                 _output = _before;
@@ -498,7 +497,7 @@ namespace fastBinaryJSON
 
             Getters[] g = Reflection.Instance.GetGetters(t, _params.ShowReadOnlyProperties, _params.IgnoreAttributes);
             int c = g.Length;
-            for(int ii =0 ; ii<c;ii++)//foreach (var p in g)
+            for (int ii = 0; ii < c; ii++)
             {
                 var p = g[ii];
                 var o = p.Getter(obj);
@@ -514,7 +513,6 @@ namespace fastBinaryJSON
                     append = true;
                 }
             }
-            _current_depth--;
             _output.WriteByte(TOKENS.DOC_END);
             _current_depth--;
         }

@@ -257,8 +257,6 @@ namespace fastBinaryJSON
         private BJSONParameters _params;
         private Dictionary<object, int> _circobj = new Dictionary<object, int>();
         private Dictionary<int, object> _cirrev = new Dictionary<int, object>();
-        //private bool _circular = false;
-
 
         public T ToObject<T>(byte[] json)
         {
@@ -362,7 +360,7 @@ namespace fastBinaryJSON
 
         private object RootDictionary(object parse, Type type)
         {
-            Type[] gtypes = Reflection.Instance.GetGenericArguments(type);// type.GetGenericArguments();
+            Type[] gtypes = Reflection.Instance.GetGenericArguments(type);
             Type t1 = null;
             Type t2 = null;
             if (gtypes != null)
@@ -411,8 +409,6 @@ namespace fastBinaryJSON
                 return CreateNV(d);
             if (type == typeof(StringDictionary))
                 return CreateSD(d);
-            //if (_circular == false)
-            //    _circular = d.TryGetValue("$circular", out tn);
 
             if (d.TryGetValue("$i", out tn))
             {
@@ -444,7 +440,7 @@ namespace fastBinaryJSON
                 if (_globalTypes && globaltypes != null)
                 {
                     object tname = "";
-                    if (globaltypes!=null && globaltypes.TryGetValue((string)tn, out tname))
+                    if (globaltypes != null && globaltypes.TryGetValue((string)tn, out tname))
                         tn = tname;
                 }
                 type = Reflection.Instance.GetTypeFromCache((string)tn);
@@ -462,26 +458,25 @@ namespace fastBinaryJSON
                 else
                     o = Reflection.Instance.FastCreateInstance(type);
             }
-            //if (_circular)
+
+            int circount = 0;
+            if (_circobj.TryGetValue(o, out circount) == false)
             {
-                int i = 0;
-                if (_circobj.TryGetValue(o, out i) == false)
-                {
-                    i = _circobj.Count + 1;
-                    _circobj.Add(o, i);
-                    _cirrev.Add(i, o);
-                }
+                circount = _circobj.Count + 1;
+                _circobj.Add(o, circount);
+                _cirrev.Add(circount, o);
             }
 
-            Dictionary<string, myPropInfo> props = Reflection.Instance.Getproperties(type, typename, false, Reflection.Instance.IsTypeRegistered(type));
-            foreach (string name in d.Keys)
+            Dictionary<string, myPropInfo> props = Reflection.Instance.Getproperties(type, typename, Reflection.Instance.IsTypeRegistered(type));
+            foreach (string n in d.Keys)
             {
+                string name = n.ToLower();
                 myPropInfo pi;
                 if (props.TryGetValue(name, out pi) == false)
                     continue;
-                if ((pi.Flags & (myPropInfoFlags.Filled | myPropInfoFlags.CanWrite)) != 0) 
+                if (pi.CanWrite)
                 {
-                    object v = d[name];
+                    object v = d[n];
 
                     if (v != null)
                     {
@@ -519,7 +514,7 @@ namespace fastBinaryJSON
                                 {
                                     if (pi.IsGenericType && pi.IsValueType == false)
                                         oset = CreateGenericList((List<object>)v, pi.pt, pi.bt, globaltypes);
-                                    else if (pi.IsClass && v is Dictionary<string, object>)
+                                    else if ((pi.IsClass || pi.IsStruct) && v is Dictionary<string, object>)
                                         oset = ParseDictionary((Dictionary<string, object>)v, globaltypes, pi.pt, input);
 
                                     else if (v is List<object>)
@@ -593,7 +588,7 @@ namespace fastBinaryJSON
                 else if (ob is List<object>)
                 {
                     if (bt.IsGenericType)
-                        col.Add((List<object>)ob);//).ToArray());
+                        col.Add((List<object>)ob);
                     else
                         col.Add(((List<object>)ob).ToArray());
                 }

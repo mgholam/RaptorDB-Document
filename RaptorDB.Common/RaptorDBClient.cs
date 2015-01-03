@@ -502,23 +502,54 @@ namespace RaptorDB
             return (byte[])ret.Data;
         }
 
-
+        /// <summary>
+        /// Query a View with a string filter with paging
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public Result<object> Query(string viewname, string filter, int start, int count)
         {
             return this.Query(viewname, filter, start, count, "");
         }
 
+        /// <summary>
+        /// Query a view with paging
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public Result<object> Query<TRowSchema>(string viewname, Expression<Predicate<TRowSchema>> filter, int start, int count)
         {
             return this.Query(viewname, filter, start, count, "");
         }
 
-
+        /// <summary>
+        /// Query a view with paging
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public Result<TRowSchema> Query<TRowSchema>(Expression<Predicate<TRowSchema>> filter, int start, int count)
         {
             return Query<TRowSchema>(filter, start, count, "");
         }
 
+        /// <summary>
+        /// Query a view with paging
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public Result<TRowSchema> Query<TRowSchema>(string filter, int start, int count)
         {
             return Query<TRowSchema>(filter, start, count, "");
@@ -616,6 +647,18 @@ namespace RaptorDB
             p.Data = new object[] { viewname, row };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (bool)ret.Data;
+        }
+
+        /// <summary>
+        ///  Get the number of documents in the storage file regardless of versions
+        /// </summary>
+        /// <returns></returns>
+        public long DocumentCount()
+        {
+            Packet p = CreatePacket();
+            p.Command = "doccount";
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (long)ret.Data;
         }
     }
 }

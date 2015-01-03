@@ -623,31 +623,74 @@ namespace RaptorDB
             return a.ToArray();
         }
 
+        /// <summary>
+        /// Query a view
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public Result<TRowSchema> Query<TRowSchema>(Expression<Predicate<TRowSchema>> filter)
         {
             return _viewManager.Query<TRowSchema>(filter, 0, -1);
         }
 
+        /// <summary>
+        /// Query a view with paging
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public Result<TRowSchema> Query<TRowSchema>(Expression<Predicate<TRowSchema>> filter, int start, int count)
         {
             return _viewManager.Query<TRowSchema>(filter, start, count, "");
         }
 
+        /// <summary>
+        /// Query a view with paging and order by
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <param name="orderby"></param>
+        /// <returns></returns>
         public Result<TRowSchema> Query<TRowSchema>(Expression<Predicate<TRowSchema>> filter, int start, int count, string orderby)
         {
             return _viewManager.Query<TRowSchema>(filter, start, count, orderby);
         }
 
+        /// <summary>
+        /// Query a view 
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public Result<TRowSchema> Query<TRowSchema>(string filter)
         {
             return _viewManager.Query<TRowSchema>(filter, 0, -1);
         }
 
+        /// <summary>
+        /// Query a view with paging
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public Result<TRowSchema> Query<TRowSchema>(string filter, int start, int count)
         {
             return _viewManager.Query<TRowSchema>(filter, start, count);
         }
 
+        /// <summary>
+        /// Count with filter
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public int Count<TRowSchema>(Expression<Predicate<TRowSchema>> filter)
         {
             return _viewManager.Count<TRowSchema>(filter);
@@ -907,7 +950,7 @@ namespace RaptorDB
             _fulltextTimer.AutoReset = true;
             _fulltextTimer.Start();
 
-            // start full text timer 
+            // start free memory timer 
             _freeMemTimer = new System.Timers.Timer(Global.FreeMemoryTimerSeconds * 1000);
             _freeMemTimer.Elapsed += new System.Timers.ElapsedEventHandler(_freeMemTimer_Elapsed);
             _freeMemTimer.Enabled = true;
@@ -1203,26 +1246,58 @@ namespace RaptorDB
             return _viewManager.GetAssemblyForView(viewname, out typename);
         }
 
+        /// <summary>
+        /// Get the current registered views
+        /// </summary>
+        /// <returns></returns>
         public List<ViewBase> GetViews()
         {
             return _viewManager.GetViews();
         }
 
+        /// <summary>
+        /// Get the schema for a view
+        /// </summary>
+        /// <param name="view"></param>
+        /// <returns></returns>
         public ViewRowDefinition GetSchema(string view)
         {
             return _viewManager.GetSchema(view);
         }
 
+        /// <summary>
+        /// Query a view with paging and ordering
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <param name="orderby"></param>
+        /// <returns></returns>
         public Result<object> Query(string viewname, string filter, int start, int count, string orderby)
         {
             return _viewManager.Query(viewname, filter, start, count, orderby);
         }
 
+        /// <summary>
+        /// Query a view with paging and ordering
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="filter"></param>
+        /// <param name="start"></param>
+        /// <param name="count"></param>
+        /// <param name="orderby"></param>
+        /// <returns></returns>
         public Result<TRowSchema> Query<TRowSchema>(string filter, int start, int count, string orderby)
         {
             return _viewManager.Query<TRowSchema>(filter, start, count, orderby);
         }
 
+        /// <summary>
+        /// Get the history information for a document
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
         public HistoryInfo[] FetchHistoryInfo(Guid docid)
         {
             List<HistoryInfo> h = new List<HistoryInfo>();
@@ -1239,6 +1314,11 @@ namespace RaptorDB
             return h.ToArray();
         }
 
+        /// <summary>
+        /// Get the history information for a file
+        /// </summary>
+        /// <param name="docid"></param>
+        /// <returns></returns>
         public HistoryInfo[] FetchBytesHistoryInfo(Guid docid)
         {
             List<HistoryInfo> h = new List<HistoryInfo>();
@@ -1255,6 +1335,12 @@ namespace RaptorDB
             return h.ToArray();
         }
 
+        /// <summary>
+        /// Direct delete from a view
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public int ViewDelete<TRowSchema>(Expression<Predicate<TRowSchema>> filter)
         {           
             // do the delete
@@ -1272,6 +1358,12 @@ namespace RaptorDB
             return c;
         }
 
+        /// <summary>
+        /// Direct delete from a view
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public int ViewDelete(string viewname, string filter)
         {          
             // do the delete
@@ -1287,6 +1379,13 @@ namespace RaptorDB
             return c;
         }
 
+        /// <summary>
+        /// Direct insert into a view
+        /// </summary>
+        /// <typeparam name="TRowSchema"></typeparam>
+        /// <param name="id"></param>
+        /// <param name="row"></param>
+        /// <returns></returns>
         public bool ViewInsert<TRowSchema>(Guid id, TRowSchema row)
         {
             string vn = _viewManager.GetViewName(typeof(TRowSchema));
@@ -1304,6 +1403,13 @@ namespace RaptorDB
             return false;
         }
 
+        /// <summary>
+        /// Direct insert into a view
+        /// </summary>
+        /// <param name="viewname"></param>
+        /// <param name="id"></param>
+        /// <param name="row"></param>
+        /// <returns></returns>
         public bool ViewInsert(string viewname, Guid id, object row)
         {
             if (_viewManager.ViewInsert(viewname, id, row))
@@ -1315,6 +1421,15 @@ namespace RaptorDB
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Total number of documents in the storage file including duplicates
+        /// </summary>
+        /// <returns></returns>
+        public long DocumentCount()
+        {
+            return _objStore.Count();
         }
     }
 }

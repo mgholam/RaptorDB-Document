@@ -391,6 +391,13 @@ namespace RaptorDB.Views
 
         internal void Shutdown()
         {
+            if (_rebuilding)
+                _log.Debug("Waiting for view rebuild to finish... : " + _view.Name);
+
+            while(_rebuilding)
+            {
+                Thread.Sleep(50);
+            }
             _log.Debug("Shutting down Viewhandler");
             // shutdown indexes
             foreach (var v in _indexes)
@@ -616,53 +623,63 @@ namespace RaptorDB.Views
         }
 
         MethodInfo insertmethod = null;
+        bool _rebuilding = false;
         private void RebuildFromScratch(IDocStorage<Guid> docs)
         {
-            insertmethod = this.GetType().GetMethod("Insert", BindingFlags.Instance | BindingFlags.NonPublic);
-            _log.Debug("Rebuilding view from scratch...");
-            _log.Debug("View = " + _view.Name);
-            DateTime dt = FastDateTime.Now;
-
-            int c = docs.RecordCount();
-            for (int i = 0; i < c; i++)
+            _rebuilding = true;
+            try
             {
-                StorageItem<Guid> meta = null;
-                object b = docs.GetObject(i, out meta);
-                if (meta != null && meta.isDeleted)
-                    Delete(meta.key);
-                else
-                {
-                    if (b != null)
-                    {
-                        // FEATURE : optimize this by not creating the object if not in FireOnTypes
-                        object obj = b;
-                        Type t = obj.GetType();
-                        if (t == typeof(View_delete))
-                        {
-                            View_delete vd = (View_delete)obj;
-                            if (vd.Viewname.ToLower() == this._view.Name.ToLower())
-                                ViewDelete(vd.Filter);
-                        }
-                        else if (t == typeof(View_insert))
-                        {
-                            View_insert vi = (View_insert)obj;
-                            if (vi.Viewname.ToLower() == this._view.Name.ToLower())
-                                ViewInsert(vi.ID, vi.RowObject);
-                        }
-                        else if (t.IsSubclassOf(basetype) || t == basetype) //_view.FireOnTypes.Contains(t))//.AssemblyQualifiedName))
-                        {
-                            var m = insertmethod.MakeGenericMethod(new Type[] { obj.GetType() });
-                            m.Invoke(this, new object[] { meta.key, obj });
-                        }
-                    }
-                    else
-                        _log.Error("Doc is null : " + meta.key);
-                }
-            }
-            _log.Debug("rebuild view '" + _view.Name + "' done (s) = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+                insertmethod = this.GetType().GetMethod("Insert", BindingFlags.Instance | BindingFlags.NonPublic);
+                _log.Debug("Rebuilding view from scratch...");
+                _log.Debug("View = " + _view.Name);
+                DateTime dt = FastDateTime.Now;
 
-            // write version.dat file when done
-            File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
+                int c = docs.RecordCount();
+                for (int i = 0; i < c; i++)
+                {
+                    StorageItem<Guid> meta = null;
+                    object b = docs.GetObject(i, out meta);
+                    if (meta != null && meta.isDeleted)
+                        Delete(meta.key);
+                    else
+                    {
+                        if (b != null)
+                        {
+                            // FEATURE : optimize this by not creating the object if not in FireOnTypes
+                            object obj = b;
+                            Type t = obj.GetType();
+                            if (t == typeof(View_delete))
+                            {
+                                View_delete vd = (View_delete)obj;
+                                if (vd.Viewname.ToLower() == this._view.Name.ToLower())
+                                    ViewDelete(vd.Filter);
+                            }
+                            else if (t == typeof(View_insert))
+                            {
+                                View_insert vi = (View_insert)obj;
+                                if (vi.Viewname.ToLower() == this._view.Name.ToLower())
+                                    ViewInsert(vi.ID, vi.RowObject);
+                            }
+                            else if (t.IsSubclassOf(basetype) || t == basetype)
+                            {
+                                var m = insertmethod.MakeGenericMethod(new Type[] { obj.GetType() });
+                                m.Invoke(this, new object[] { meta.key, obj });
+                            }
+                        }
+                        else
+                            _log.Error("Doc is null : " + meta.key);
+                    }
+                }
+                _log.Debug("rebuild view '" + _view.Name + "' done (s) = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
+
+                // write version.dat file when done
+                File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
+            }
+            catch(Exception ex)
+            {
+                _log.Error("Rebuilding View failed : " + _view.Name, ex);
+            }
+            _rebuilding = false;
         }
 
         private object CreateObject(byte[] b)

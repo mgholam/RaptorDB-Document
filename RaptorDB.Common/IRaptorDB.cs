@@ -310,5 +310,11 @@ namespace RaptorDB.Common
         /// <param name="row"></param>
         /// <returns></returns>
         bool ViewInsert(string viewname, Guid id, object row);
+
+        /// <summary>
+        /// Get the number of documents in the storage file regardless of versions
+        /// </summary>
+        /// <returns></returns>
+        long DocumentCount();
     }
 }
