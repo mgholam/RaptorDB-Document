@@ -348,7 +348,7 @@ namespace RaptorDB
 
         public byte[] FetchRecordBytes(int record)
         {
-            return _archive.ReadData(record);
+            return _archive.ReadBytes(record);
         }
 
         public long Count()
@@ -391,7 +391,7 @@ namespace RaptorDB
             // search index
             if (_index.Get(key, out off))
             {
-                val = _archive.ReadData(off);
+                val = _archive.ReadBytes(off);
                 return true;
             }
             return false;
@@ -406,7 +406,7 @@ namespace RaptorDB
         {
             int recno = -1;
             // save to storage
-            recno = _archive.WriteObject(key, doc);
+            recno = (int) _archive.WriteObject(key, doc);
             // save to index
             _index.Set(key, recno);
 
@@ -417,7 +417,7 @@ namespace RaptorDB
         {
             int recno = -1;
             // save to storage
-            recno = _archive.WriteData(key, data);
+            recno = (int)_archive.WriteData(key, data);
             // save to index
             _index.Set(key, recno);
 
@@ -551,7 +551,7 @@ namespace RaptorDB
         internal byte[] FetchRecordBytes(int record, out bool isdeleted)
         {
             StorageItem<T> meta;
-            byte[] b = _archive.ReadData(record, out meta);
+            byte[] b = _archive.ReadBytes(record, out meta);
             isdeleted = meta.isDeleted;
             return b;
         }
@@ -559,7 +559,7 @@ namespace RaptorDB
         internal bool Delete(T id)
         {
             // write a delete record
-            int rec = _archive.Delete(id);
+            int rec = (int)_archive.Delete(id);
             _deleted.Set(true, rec);
             return _index.RemoveKey(id);
         }
@@ -567,19 +567,19 @@ namespace RaptorDB
         internal bool DeleteReplicated(T id)
         {
             // write a delete record for replicated object
-            int rec = _archive.DeleteReplicated(id);
+            int rec = (int)_archive.DeleteReplicated(id);
             _deleted.Set(true, rec);
             return _index.RemoveKey(id);
         }
 
-        internal int CopyTo(StorageFile<T> storagefile, int start)
+        internal int CopyTo(StorageFile<T> storagefile, long startrecord)
         {
-            return _archive.CopyTo(storagefile, start);
+            return _archive.CopyTo(storagefile, startrecord);
         }
 
         public byte[] GetBytes(int rowid, out StorageItem<T> meta)
         {
-            return _archive.ReadData(rowid, out meta);
+            return _archive.ReadBytes(rowid, out meta);
         }
 
         internal void FreeMemory()
@@ -601,7 +601,7 @@ namespace RaptorDB
         {
             int recno = -1;
             // save to storage
-            recno = _archive.WriteReplicationObject(key, doc);
+            recno = (int) _archive.WriteReplicationObject(key, doc);
             // save to index
             _index.Set(key, recno);
 

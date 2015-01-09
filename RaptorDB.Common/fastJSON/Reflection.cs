@@ -159,9 +159,13 @@ namespace fastJSON
             else
             {
                 sd = new Dictionary<string, myPropInfo>();
-                PropertyInfo[] pr = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                PropertyInfo[] pr = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                 foreach (PropertyInfo p in pr)
                 {
+                    if (p.GetIndexParameters().Length > 0)
+                    {// Property is an indexer
+                        continue;
+                    }
                     myPropInfo d = CreateMyProp(p.PropertyType, p.Name, customType);
 
                     d.setter = Reflection.CreateSetMethod(type, p);
@@ -170,14 +174,18 @@ namespace fastJSON
                     d.getter = Reflection.CreateGetMethod(type, p);
                     sd.Add(p.Name.ToLower(), d);
                 }
-                FieldInfo[] fi = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+                FieldInfo[] fi = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                 foreach (FieldInfo f in fi)
                 {
                     myPropInfo d = CreateMyProp(f.FieldType, f.Name, customType);
-                    d.CanWrite = true;
-                    d.setter = Reflection.CreateSetField(type, f);
-                    d.getter = Reflection.CreateGetField(type, f);
-                    sd.Add(f.Name.ToLower(), d);
+                    if (f.IsLiteral == false)
+                    {
+                        d.setter = Reflection.CreateSetField(type, f);
+                        if (d.setter != null)
+                            d.CanWrite = true;
+                        d.getter = Reflection.CreateGetField(type, f);
+                        sd.Add(f.Name.ToLower(), d);
+                    }
                 }
 
                 _propertycache.Add(typename, sd);
@@ -482,10 +490,14 @@ namespace fastJSON
             if (_getterscache.TryGetValue(type, out val))
                 return val;
 
-            PropertyInfo[] props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo[] props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
             List<Getters> getters = new List<Getters>();
             foreach (PropertyInfo p in props)
             {
+                if (p.GetIndexParameters().Length > 0)
+                {// Property is an indexer
+                    continue;
+                }
                 if (!p.CanWrite && ShowReadOnlyProperties == false) continue;
                 if (IgnoreAttributes != null)
                 {
@@ -506,7 +518,7 @@ namespace fastJSON
                     getters.Add(new Getters { Getter = g, Name = p.Name, lcName = p.Name.ToLower() });
             }
 
-            FieldInfo[] fi = type.GetFields(BindingFlags.Instance | BindingFlags.Public);
+            FieldInfo[] fi = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.Static);
             foreach (var f in fi)
             {
                 if (IgnoreAttributes != null)
@@ -523,10 +535,12 @@ namespace fastJSON
                     if (found)
                         continue;
                 }
-
-                GenericGetter g = CreateGetField(type, f);
-                if (g != null)
-                    getters.Add(new Getters { Getter = g, Name = f.Name, lcName = f.Name.ToLower() });
+                if (f.IsLiteral == false)
+                {
+                    GenericGetter g = CreateGetField(type, f);
+                    if (g != null)
+                        getters.Add(new Getters { Getter = g, Name = f.Name, lcName = f.Name.ToLower() });
+                }
             }
             val = getters.ToArray();
             _getterscache.Add(type, val);

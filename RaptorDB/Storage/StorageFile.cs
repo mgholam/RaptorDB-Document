@@ -42,6 +42,13 @@ namespace RaptorDB
         JSON
     }
 
+    internal struct SplitFile
+    {
+        public long start;
+        public long uptolength;
+        public FileStream file;
+    }
+
     internal class StorageFile<T>
     {
         FileStream _datawrite;
@@ -51,7 +58,7 @@ namespace RaptorDB
 
         private string _filename = "";
         private string _recfilename = "";
-        private int _lastRecordNum = 0;
+        private long _lastRecordNum = 0;
         private long _lastWriteOffset = _fileheader.Length;
         private object _readlock = new object();
         private bool _dirty = false;
@@ -62,34 +69,68 @@ namespace RaptorDB
         // **** change this if storage format changed ****
         internal static int _CurrentVersion = 2;
 
+        //private ushort _splitMegaBytes = 0; // 0 = off 
+        //private bool _enableSplits = false;
+        private List<SplitFile> _files = new List<SplitFile>();
+        private List<long> _uptoindexes = new List<long>();
+        // no splits in view mode 
+        private bool _viewmode = false;
+        private SplitFile _lastsplitfile;
+
         public static byte[] _fileheader = { (byte)'M', (byte)'G', (byte)'D', (byte)'B',
                                               0, // 4 -- storage file version number,
                                               0  // 5 -- not used
                                            };
-
+        private static string _splitfileExtension = "00000";
         // record format :
         //    1 type (0 = raw no meta data, 1 = bson meta, 2 = json meta)  
         //    4 byte meta/data length, 
         //    n byte meta serialized data if exists 
         //    m byte data (if meta exists then m is in meta.dataLength)
 
-        public StorageFile(string filename, SF_FORMAT format, bool readmode)
+        /// <summary>
+        /// View data storage mode (no splits, bson save) 
+        /// </summary>
+        /// <param name="filename"></param>
+        public StorageFile(string filename)
         {
-            _saveFormat = format;
+            _viewmode = true;
+            _saveFormat = SF_FORMAT.BSON;
             // add version number
             _fileheader[5] = (byte)_CurrentVersion;
-            Initialize(filename, readmode);
+            Initialize(filename, false);
         }
-
-        public StorageFile(string filename, bool ReadMode)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <param name="format"></param>
+        /// <param name="StorageOnlyMode">= true -> don't create mgrec files (used for backup and replication mode)</param>
+        public StorageFile(string filename, SF_FORMAT format, bool StorageOnlyMode)
         {
-            Initialize(filename, ReadMode);
+            _saveFormat = format;
+            if (StorageOnlyMode) _viewmode = true; // no file splits
+            // add version number
+            _fileheader[5] = (byte)_CurrentVersion;
+            Initialize(filename, StorageOnlyMode);
         }
 
-        private void Initialize(string filename, bool ReadMode)
+        private StorageFile(string filename, bool StorageOnlyMode)
+        {
+            Initialize(filename, StorageOnlyMode);
+        }
+
+        private void Initialize(string filename, bool StorageOnlyMode)
         {
             _T = RDBDataType<T>.ByteHandler();
             _filename = filename;
+
+            // search for mgdat00000 extensions -> split files load
+            if (File.Exists(filename + _splitfileExtension))
+            {
+                LoadSplitFiles(filename);
+            }
+
             if (File.Exists(filename) == false)
                 _datawrite = new FileStream(filename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
             else
@@ -106,9 +147,14 @@ namespace RaptorDB
             }
             else
             {
-                _lastWriteOffset = _datawrite.Seek(0L, SeekOrigin.End);
+                long i = _datawrite.Seek(0L, SeekOrigin.End);
+                if (_files.Count == 0)
+                    _lastWriteOffset = i;
+                else
+                    _lastWriteOffset += i; // add to the splits
             }
-            if (ReadMode == false)
+
+            if (StorageOnlyMode == false)
             {
                 // load rec pointers
                 _recfilename = filename.Substring(0, filename.LastIndexOf('.')) + ".mgrec";
@@ -124,11 +170,37 @@ namespace RaptorDB
             }
         }
 
+        private void LoadSplitFiles(string filename)
+        {
+            _log.Debug("Loading split files...");
+            _lastWriteOffset = 0;
+            for (int i = 0; ; i++)
+            {
+                string _filename = filename + i.ToString(_splitfileExtension);
+                if (File.Exists(_filename) == false)
+                    break;
+                FileStream file = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                SplitFile sf = new SplitFile();
+                sf.start = _lastWriteOffset;
+                _lastWriteOffset += file.Length;
+                sf.file = file;
+                sf.uptolength = _lastWriteOffset;
+                _files.Add(sf);
+                _uptoindexes.Add(sf.uptolength);
+            }
+            _lastsplitfile = _files[_files.Count - 1];
+            _log.Debug("Number of split files = " + _files.Count);
+        }
+
         public static int GetStorageFileHeaderVersion(string filename)
         {
-            if (File.Exists(filename))
+            string fn = filename + _splitfileExtension; // if split files -> load the header from the first file -> mgdat00000
+            if (File.Exists(fn) == false)
+                fn = filename; // else use the mgdat file 
+
+            if (File.Exists(fn))
             {
-                var fs = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                var fs = new FileStream(fn, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
                 fs.Seek(0L, SeekOrigin.Begin);
                 byte[] b = new byte[_fileheader.Length];
                 fs.Read(b, 0, _fileheader.Length);
@@ -143,12 +215,12 @@ namespace RaptorDB
             return (int)(_recfilewrite.Length >> 3);
         }
 
-        public int WriteRawData(byte[] b)
+        public long WriteRawData(byte[] b)
         {
             return internalWriteData(null, b, true);
         }
 
-        public int Delete(T key)
+        public long Delete(T key)
         {
             StorageItem<T> meta = new StorageItem<T>();
             meta.key = key;
@@ -157,7 +229,7 @@ namespace RaptorDB
             return internalWriteData(meta, null, false);
         }
 
-        public int DeleteReplicated(T key)
+        public long DeleteReplicated(T key)
         {
             StorageItem<T> meta = new StorageItem<T>();
             meta.key = key;
@@ -167,7 +239,7 @@ namespace RaptorDB
             return internalWriteData(meta, null, false);
         }
 
-        public int WriteObject(T key, object obj)
+        public long WriteObject(T key, object obj)
         {
             StorageItem<T> meta = new StorageItem<T>();
             meta.key = key;
@@ -181,7 +253,7 @@ namespace RaptorDB
             return internalWriteData(meta, data, false);
         }
 
-        public int WriteReplicationObject(T key, object obj)
+        public long WriteReplicationObject(T key, object obj)
         {
             StorageItem<T> meta = new StorageItem<T>();
             meta.key = key;
@@ -196,7 +268,7 @@ namespace RaptorDB
             return internalWriteData(meta, data, false);
         }
 
-        public int WriteData(T key, byte[] data)
+        public long WriteData(T key, byte[] data)
         {
             StorageItem<T> meta = new StorageItem<T>();
             meta.key = key;
@@ -204,21 +276,21 @@ namespace RaptorDB
             return internalWriteData(meta, data, false);
         }
 
-        public byte[] ReadData(int recnum)
+        public byte[] ReadBytes(long recnum)
         {
             StorageItem<T> meta;
-            return ReadData(recnum, out meta);
+            return ReadBytes(recnum, out meta);
         }
 
-        public object ReadObject(int recnum)
+        public object ReadObject(long recnum)
         {
             StorageItem<T> meta = null;
             return ReadObject(recnum, out meta);
         }
 
-        public object ReadObject(int recnum, out StorageItem<T> meta)
+        public object ReadObject(long recnum, out StorageItem<T> meta)
         {
-            byte[] b = ReadData(recnum, out meta);
+            byte[] b = ReadBytes(recnum, out meta);
             if (b == null)
                 return null;
             if (b[0] < 32)
@@ -232,8 +304,9 @@ namespace RaptorDB
         /// </summary>
         /// <param name="recnum"></param>
         /// <returns></returns>
-        public byte[] ReadRawData(int recnum)
+        public byte[] ViewReadRawBytes(long recnum)
         {
+            // views can't be split
             if (recnum >= _lastRecordNum)
                 return null;
 
@@ -259,6 +332,9 @@ namespace RaptorDB
 
         public void Shutdown()
         {
+            if (_files.Count > 0)
+                _files.ForEach(s => FlushClose(s.file));
+
             FlushClose(_dataread);
             FlushClose(_recfileread);
             FlushClose(_recfilewrite);
@@ -277,7 +353,7 @@ namespace RaptorDB
             return sf;
         }
 
-        public StorageItem<T> ReadMeta(int rowid)
+        public StorageItem<T> ReadMeta(long rowid)
         {
             if (rowid >= _lastRecordNum)
                 return null;
@@ -285,21 +361,27 @@ namespace RaptorDB
             {
                 int metalen = 0;
                 long off = ComputeOffset(rowid);
-                _dataread.Seek(off, SeekOrigin.Begin);
-                StorageItem<T> meta = ReadMetaData(out metalen);
+                FileStream fs = GetReadFileStreamWithSeek(off);
+                StorageItem<T> meta = ReadMetaData(fs, out metalen);
                 return meta;
             }
         }
 
         #region [ private / internal  ]
 
-        private int internalWriteData(StorageItem<T> meta, byte[] data, bool raw)
+        private long internalWriteData(StorageItem<T> meta, byte[] data, bool raw)
         {
             lock (_readlock)
             {
                 _dirty = true;
                 // seek end of file
                 long offset = _lastWriteOffset;
+                if (_viewmode == false && Global.SplitStorageFilesMegaBytes > 0)
+                {
+                    // current file size > _splitMegaBytes --> new file
+                    if (_datawrite.Length > (long)Global.SplitStorageFilesMegaBytes * 1024 * 1024)
+                        CreateNewStorageFile();
+                }
 
                 if (raw == false)
                 {
@@ -330,7 +412,7 @@ namespace RaptorDB
                     _lastWriteOffset += data.Length;
                 }
                 // return starting offset -> recno
-                int recno = _lastRecordNum++;
+                long recno = _lastRecordNum++;
                 if (_recfilewrite != null)
                     _recfilewrite.Write(Helper.GetBytes(offset, false), 0, 8);
                 if (Global.FlushStorageFileImmediately)
@@ -343,7 +425,35 @@ namespace RaptorDB
             }
         }
 
-        internal byte[] ReadData(int recnum, out StorageItem<T> meta)
+        private void CreateNewStorageFile()
+        {
+            _log.Debug("Split limit reached = " + _datawrite.Length);
+            int i = _files.Count;
+            // close files
+            FlushClose(_datawrite);
+            FlushClose(_dataread);
+            long start = 0;
+            if (i > 0)
+                start = _lastsplitfile.uptolength; // last file offset
+            // rename mgdat to mgdat0000n
+            File.Move(_filename, _filename + i.ToString(_splitfileExtension));
+            FileStream file = new FileStream(_filename + i.ToString(_splitfileExtension), FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            SplitFile sf = new SplitFile();
+            sf.start = start;
+            sf.uptolength = _lastWriteOffset;
+            sf.file = file;
+            _files.Add(sf);
+
+            _uptoindexes.Add(sf.uptolength);
+
+            _lastsplitfile = sf;
+            // new mgdat file
+            _datawrite = new FileStream(_filename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
+            _dataread = new FileStream(_filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            _log.Debug("New storage file created, count = " + _files.Count);
+        }
+
+        internal byte[] ReadBytes(long recnum, out StorageItem<T> meta)
         {
             meta = null;
             if (recnum >= _lastRecordNum)
@@ -351,19 +461,20 @@ namespace RaptorDB
             lock (_readlock)
             {
                 long off = ComputeOffset(recnum);
-                byte[] data = internalReadData(off, out meta);
+                FileStream fs = GetReadFileStreamWithSeek(off);
+                byte[] data = internalReadBytes(fs, out meta);
                 return data;
             }
         }
 
-        private long ComputeOffset(int recnum)
+        private long ComputeOffset(long recnum)
         {
             if (_dirty)
             {
                 _datawrite.Flush();
                 _recfilewrite.Flush();
             }
-            long off = recnum * 8L;
+            long off = recnum << 3;// *8L;
             byte[] b = new byte[8];
 
             _recfileread.Seek(off, SeekOrigin.Begin);
@@ -374,42 +485,40 @@ namespace RaptorDB
             return off;
         }
 
-        private byte[] internalReadData(long offset, out StorageItem<T> meta)
+        private byte[] internalReadBytes(FileStream fs, out StorageItem<T> meta)
         {
-            // seek offset in file
-            _dataread.Seek(offset, System.IO.SeekOrigin.Begin);
             int metalen = 0;
-            meta = ReadMetaData(out metalen);
+            meta = ReadMetaData(fs, out metalen);
             if (meta != null)
             {
                 if (meta.isDeleted == false)
                 {
                     byte[] data = new byte[meta.dataLength];
-                    _dataread.Read(data, 0, meta.dataLength);
+                    fs.Read(data, 0, meta.dataLength);
                     return data;
                 }
             }
             else
             {
                 byte[] data = new byte[metalen];
-                _dataread.Read(data, 0, metalen);
+                fs.Read(data, 0, metalen);
                 return data;
             }
             return null;
         }
 
-        private StorageItem<T> ReadMetaData(out int metasize)
+        private StorageItem<T> ReadMetaData(FileStream fs, out int metasize)
         {
             byte[] hdr = new byte[5];
             // read header
-            _dataread.Read(hdr, 0, 5); // meta length
+            fs.Read(hdr, 0, 5); // meta length
             int len = Helper.ToInt32(hdr, 1);
             int type = hdr[0];
             if (type > 0)
             {
                 metasize = len + 5;
                 hdr = new byte[len];
-                _dataread.Read(hdr, 0, len);
+                fs.Read(hdr, 0, len);
                 StorageItem<T> meta;
                 if (type == 1)
                     meta = fastBinaryJSON.BJSON.ToObject<StorageItem<T>>(hdr);
@@ -436,36 +545,60 @@ namespace RaptorDB
             }
         }
 
-        internal T GetKey(int recnum, out bool deleted)
+        internal T GetKey(long recnum, out bool deleted)
         {
             lock (_readlock)
             {
                 deleted = false;
                 long off = ComputeOffset(recnum);
-                _dataread.Seek(off, SeekOrigin.Begin);
-                //long off = recnum * 8L;
-                //byte[] b = new byte[8];
-
-                //_recfileread.Seek(off, SeekOrigin.Begin);
+                FileStream fs = GetReadFileStreamWithSeek(off);
 
                 int metalen = 0;
-                StorageItem<T> meta = ReadMetaData(out metalen);
+                StorageItem<T> meta = ReadMetaData(fs, out metalen);
                 deleted = meta.isDeleted;
                 return meta.key;
             }
         }
 
-        internal int CopyTo(StorageFile<T> storageFile, int start)
+        internal int CopyTo(StorageFile<T> storageFile, long startrecord)
         {
+            FileStream fs;
+            bool inthefiles = false;
             // copy data here
             lock (_readlock)
             {
-                long off = ComputeOffset(start);
-                _dataread.Seek(off, SeekOrigin.Begin);
-                Pump(_dataread, storageFile._datawrite);
-
-                return _lastRecordNum;
+                long off = ComputeOffset(startrecord);
+                fs = GetReadFileStreamWithSeek(off);
+                if (fs != _dataread)
+                    inthefiles = true;
+                Pump(fs, storageFile._datawrite);
             }
+
+            // pump the remainder of the files also 
+            if (inthefiles && _files.Count > 0)
+            {
+                long off = ComputeOffset(startrecord);
+                int i = binarysearch(off);
+                i++; // next file stream
+                for (int j = i; j < _files.Count; j++)
+                {
+                    lock (_readlock)
+                    {
+                        fs = _files[j].file;
+                        fs.Seek(0L, SeekOrigin.Begin);
+                        Pump(fs, storageFile._datawrite);
+                    }
+                }
+
+                // pump the current mgdat
+                lock(_readlock)
+                {
+                    _dataread.Seek(0L, SeekOrigin.Begin);
+                    Pump(_dataread, storageFile._datawrite);
+                }
+            }
+
+            return (int)_lastRecordNum;
         }
 
         private static void Pump(Stream input, Stream output)
@@ -476,19 +609,37 @@ namespace RaptorDB
                 output.Write(bytes, 0, n);
         }
 
-        internal IEnumerable<StorageData<T>> Enumerate()
+        internal IEnumerable<StorageData<T>> ReadOnlyEnumerate()
         {
-            lock (_readlock)
+            // MGREC files may not exist
+
+            //// the total number of records 
+            //long count = _recfileread.Length >> 3;
+
+            //for (long i = 0; i < count; i++)
+            //{
+            //    StorageItem<T> meta;
+            //    byte[] data = ReadBytes(i, out meta);
+            //    StorageData<T> sd = new StorageData<T>();
+            //    sd.meta = meta;
+            //    if (meta.dataLength > 0)
+            //        sd.data = data;
+
+            //    yield return sd;
+            //}
+
+            long offset = _fileheader.Length;// start; // skip header
+            long size = _dataread.Length;
+            while (offset < size)
             {
-                long offset = _fileheader.Length;// start; // skip header
-                long size = _dataread.Length;
-                while (offset < size)
+                StorageData<T> sd = new StorageData<T>();
+                lock (_readlock)
                 {
                     _dataread.Seek(offset, SeekOrigin.Begin);
                     int metalen = 0;
-                    StorageItem<T> meta = ReadMetaData(out metalen);
+                    StorageItem<T> meta = ReadMetaData(_dataread, out metalen);
                     offset += metalen;
-                    StorageData<T> sd = new StorageData<T>();
+
                     sd.meta = meta;
                     if (meta.dataLength > 0)
                     {
@@ -497,9 +648,59 @@ namespace RaptorDB
                         sd.data = data;
                     }
                     offset += meta.dataLength;
-                    yield return sd;
                 }
+                yield return sd;
             }
+        }
+
+        private FileStream GetReadFileStreamWithSeek(long offset)
+        {
+            long fileoffset = offset;
+            // search split _files for offset and compute fileoffset in the file
+            if (_files.Count > 0) // we have splits
+            {
+                if (offset < _lastsplitfile.uptolength) // offset is in the list
+                {
+                    int i = binarysearch(offset);
+                    var f = _files[i];
+                    fileoffset -= f.start; // offset in the file 
+                    f.file.Seek(fileoffset, SeekOrigin.Begin);
+                    return f.file;
+                }
+                else
+                    fileoffset -= _lastsplitfile.uptolength; // offset in the mgdat file
+            }
+
+            // seek to position in file 
+            _dataread.Seek(fileoffset, SeekOrigin.Begin);
+            return _dataread;
+        }
+
+        private int binarysearch(long offset)
+        {
+            //// binary search
+            int low = 0;
+            int high = _files.Count - 1;
+            int midpoint = 0;
+            int lastlower = 0;
+
+            while (low <= high)
+            {
+                midpoint = low + (high - low) / 2;
+                long k = _uptoindexes[midpoint];
+                // check to see if value is equal to item in array
+                if (offset == k)
+                    return midpoint + 1;
+                else if (offset < k)
+                {
+                    high = midpoint - 1;
+                    lastlower = midpoint;
+                }
+                else
+                    low = midpoint + 1;
+            }
+
+            return lastlower;
         }
         #endregion
     }

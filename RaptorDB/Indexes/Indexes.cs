@@ -235,7 +235,7 @@ namespace RaptorDB
 
         public object[] GetKeys()
         {
-            return new object[] { }; // FIX : ? support get keys 
+            return new object[] { }; // FEATURE: ? support get keys 
         }
     }
     #endregion

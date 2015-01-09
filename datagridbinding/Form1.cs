@@ -96,6 +96,7 @@ namespace datagridbinding
         private object _lock = new object();
         private void insert100000DocumentsToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            //RaptorDB.Global.SplitStorageFilesMegaBytes = 50;
             lock (_lock)
             {
                 DialogResult dr = MessageBox.Show("Do you want to insert?", "Continue?", MessageBoxButtons.OKCancel, MessageBoxIcon.Stop, MessageBoxDefaultButton.Button2);
@@ -209,7 +210,7 @@ namespace datagridbinding
             //Guid g = new Guid("82997e60-f8f4-4b37-ae35-02d033512673");
             var qq = rap.Query<SalesInvoiceViewRowSchema>(x => x.docid == new Guid("82997e60-f8f4-4b37-ae35-02d033512673"));
             dataGridView1.DataSource = q.Rows;
-            
+
             //int i = rap.ViewDelete<SalesInvoiceViewRowSchema>(x => x.Serial == 0);
 
             //var qqq= rap.Query<SalesInvoiceViewRowSchema>(x => );

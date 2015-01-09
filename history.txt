@@ -1,3 +1,11 @@
+v3.1.6
+------
+- document storage files can now be split with Global.SplitStorageFilesMegaBytes configuration
+- refactoring StorageFile.cs
+- Upgrade to fastJSON v2.1.8
+- Upgrade to fastBinaryJSON v1.4.6
+- bug fix .config files were not saved correctly
+
 v3.1.5
 ------
 - added View.NoIndexingColumns definition to override indexing of selected columns

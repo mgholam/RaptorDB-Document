@@ -122,13 +122,13 @@ namespace RaptorDB.Views
 
             LoadDeletedRowsBitmap();
 
-            _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat", SF_FORMAT.BSON, false);
+            _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat");
 
             CreateResultRowFiller();
 
             mapper = view.Mapper;
             // looking for the T in View<T>
-            if (view.GetType().GetGenericArguments().Length == 1) // FIX : kludge 
+            if (view.GetType().GetGenericArguments().Length == 1) // HACK : kludge change when possible 
                 basetype = view.GetType().GetGenericArguments()[0];
             else
             {
@@ -518,7 +518,7 @@ namespace RaptorDB.Views
                     }
                 }
             }
-            if (trows != null) // FIX : move to start and decrement in count
+            if (trows != null) // TODO : move to start and decrement in count
                 foreach (var o in trows)
                     rows.Add(o);
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
@@ -531,7 +531,7 @@ namespace RaptorDB.Views
 
         private bool OutputRow<T>(List<T> rows, int i)
         {
-            byte[] b = _viewData.ReadRawData(i);
+            byte[] b = _viewData.ViewReadRawBytes(i);
             if (b != null)
             {
                 object o = FastCreateObject(_view.Schema);
@@ -585,7 +585,7 @@ namespace RaptorDB.Views
                     }
                 }
             }
-            if (trows != null)// FIX : move to start and decrement in count
+            if (trows != null)// TODO : move to start and decrement in count
                 foreach (var o in trows)
                     rows.Add(o);
             _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
@@ -816,7 +816,7 @@ namespace RaptorDB.Views
                 Array.Copy(row, 0, r, 1, row.Length);
                 byte[] b = fastBinaryJSON.BJSON.ToBJSON(r);
 
-                int rownum = _viewData.WriteRawData(b);
+                int rownum = (int) _viewData.WriteRawData(b);
 
                 // case insensitve columns here
                 foreach (var kv in _nocase)

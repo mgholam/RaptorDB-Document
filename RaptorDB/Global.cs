@@ -14,11 +14,17 @@ namespace RaptorDB
         /// True = Save to other views in process , False = background save to other views
         /// </summary>
         public static bool BackgroundSaveToOtherViews = true;
-
+        /// <summary>
+        /// Default maximum string key size for indexes
+        /// </summary>
         public static byte DefaultStringKeySize = 60;
-
+        /// <summary>
+        /// Free bitmap index memory on save 
+        /// </summary>
         public static bool FreeBitmapMemoryOnSave = false;
-
+        /// <summary>
+        /// Number of items in each index page (default = 10000) [Expert only, do not change]
+        /// </summary>
         public static ushort PageItemCount = 10000;
         /// <summary>
         /// KeyStore save to disk timer
@@ -44,10 +50,10 @@ namespace RaptorDB
         /// How many items to process in a background view save event
         /// </summary>
         public static int BackgroundViewSaveBatchSize = 1000000;
-        /// <summary>
-        /// Check the restore folder for new backup files to restore
-        /// </summary>
-        public static int RestoreTimerSeconds = 10; // FIX : implement this
+        ///// <summary>
+        ///// Check the restore folder for new backup files to restore
+        ///// </summary>
+        //public static int RestoreTimerSeconds = 10; // TODO : implement this
         /// <summary>
         /// Timer for full text indexing of original documents (default = 15 sec)
         /// </summary>
@@ -65,9 +71,9 @@ namespace RaptorDB
         /// </summary>
         public static long MemoryLimit = 100;
         /// <summary>
-        /// Backup cron schedule (default = "0 0 * * *" [every day at 00:00])  
+        /// Backup cron schedule (default = "0 * * * *" [every hour])  
         /// </summary>
-        public static string BackupCronSchedule = "0 0 * * *";
+        public static string BackupCronSchedule = "0 * * * *";
         /// <summary>
         /// Require primary view to be defined for save, false = key/value store (default = true)
         /// </summary>
@@ -80,5 +86,11 @@ namespace RaptorDB
         /// Process inbox timer (default = 60 sec)
         /// </summary>
         public static int ProcessInboxTimerSeconds = 10;
+        /// <summary>
+        /// Split the data storage files in MegaBytes (default 0 = off) [500 = 500mb]
+        /// <para> - You can set and unset this value anytime and it will operate from that point on.</para>
+        /// <para> - If you unset (0) the value previous split files will remain and all the data will go to the last file.</para>
+        /// </summary>
+        public static ushort SplitStorageFilesMegaBytes = 0;
     }
 }

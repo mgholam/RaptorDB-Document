@@ -273,8 +273,8 @@ namespace RaptorDB
                 _repclient.Shutdown();
 
             // TODO : write global or something else?
-            if (File.Exists(_Path + "RaptorDB.config") == false)
-                File.WriteAllText(_Path + "RaptorDB.config", fastJSON.JSON.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
+            //if (File.Exists(_Path + "RaptorDB.config") == false)
+            File.WriteAllText(_Path + "RaptorDB.config", fastJSON.JSON.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
             if (_cron != null)
                 _cron.Stop();
             _fulltextindex.Shutdown();
@@ -351,7 +351,7 @@ namespace RaptorDB
                 // check if ".counter" file exists
                 if (files.Length > 0)
                 {
-                    // FIX: if lastfailedtime < 15 -> wait 15 min and retry (avoid extra cpu burning)
+                    // FEATURE: if lastfailedtime < 15 -> wait 15 min and retry (avoid extra cpu burning)
                     // recovery mode
                     string fn = files[0];
                     int start = -1;
@@ -396,7 +396,7 @@ namespace RaptorDB
             int counter = 0;
             if (start > 0)
                 _log.Debug("skipping replication items : " + start);
-            foreach (var i in sf.Enumerate())
+            foreach (var i in sf.ReadOnlyEnumerate())
             {
                 if (start > 0) // skip already done
                 {
@@ -511,7 +511,7 @@ namespace RaptorDB
             string path = Path.GetDirectoryName(filename);
             int counter = 0;
             StorageFile<Guid> sf = StorageFile<Guid>.ReadForward(filename);
-            foreach (var i in sf.Enumerate())
+            foreach (var i in sf.ReadOnlyEnumerate())
             {
                 if (start > 0)
                 {
