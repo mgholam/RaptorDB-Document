@@ -1,3 +1,12 @@
+v3.2.0
+------
+- you can compress the documents in the storage file with Global.CompressDocumentOverKiloBytes configuration
+- Upgrade to fastJSON v2.1.9
+- added integrity check for views with auto rebuild if not shutdown cleanly
+- bug fix disable timers before Shutdown()
+- high frequency update key value storage file
+
+
 v3.1.6
 ------
 - document storage files can now be split with Global.SplitStorageFilesMegaBytes configuration

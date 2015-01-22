@@ -32,6 +32,7 @@ namespace RaptorDB
         private int _LastPageNumber = 1; // 0 = page list
         private int _PageLength;
         private int _rowSize;
+        private bool _allowDups = true;
         ILog log = LogManager.GetLogger(typeof(IndexFile<T>));
         private BitmapIndex _bitmap;
         IGetBytes<T> _T = null;
@@ -43,6 +44,7 @@ namespace RaptorDB
             _maxKeySize = maxKeySize;
             _PageNodeCount = pageNodeCount;
             _rowSize = (_maxKeySize + 1 + 4 + 4);
+            //_allowDups = allowdups;
 
             string path = Path.GetDirectoryName(filename);
             Directory.CreateDirectory(path);
@@ -69,7 +71,8 @@ namespace RaptorDB
             if (_LastPageNumber == 0)
                 _LastPageNumber = 1;
             // bitmap duplicates 
-            _bitmap = new BitmapIndex(Path.GetDirectoryName(filename), Path.GetFileNameWithoutExtension(filename));
+            if (_allowDups)
+                _bitmap = new BitmapIndex(Path.GetDirectoryName(filename), Path.GetFileNameWithoutExtension(filename));
         }
 
         #region [  C o m m o n  ]
@@ -178,7 +181,8 @@ namespace RaptorDB
 
         public void FreeMemory()
         {
-            _bitmap.FreeMemory();
+            if (_allowDups)
+                _bitmap.FreeMemory();
         }
 
         public void Shutdown()
@@ -190,8 +194,11 @@ namespace RaptorDB
                 _file.Close();
             }
             _file = null;
-            _bitmap.Commit(Global.FreeBitmapMemoryOnSave);
-            _bitmap.Shutdown();
+            if (_allowDups)
+            {
+                _bitmap.Commit(Global.FreeBitmapMemoryOnSave);
+                _bitmap.Shutdown();
+            }
         }
 
         #endregion
@@ -336,7 +343,7 @@ namespace RaptorDB
                 // save page list
                 int c = (_pages.Count / Global.PageItemCount) + 1;
                 // allocate pages needed 
-               while (c > diskpages.Count)
+                while (c > diskpages.Count)
                     diskpages.Add(GetNewPageNumber());
 
                 byte[] page = new byte[_PageLength];
@@ -394,7 +401,8 @@ namespace RaptorDB
 
         internal void BitmapFlush()
         {
-            _bitmap.Commit(Global.FreeBitmapMemoryOnSave);
+            if (_allowDups)
+                _bitmap.Commit(Global.FreeBitmapMemoryOnSave);
         }
     }
 }

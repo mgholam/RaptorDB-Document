@@ -524,5 +524,17 @@ namespace RaptorDB
             }
             return keys.ToArray();
         }
+
+        internal int Count()
+        {
+            int count = 0;
+            for (int i = 0; i < _pageList.Count; i++)
+            {
+                Page<T> page = LoadPage(_pageList.GetValue(i).PageNumber);
+                foreach (var k in page.tree.Keys())
+                    count++;
+            }
+            return count;
+        }
     }
 }

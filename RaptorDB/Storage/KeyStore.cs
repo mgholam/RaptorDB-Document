@@ -433,6 +433,7 @@ namespace RaptorDB
                     log.Debug("Shutting down");
                 else
                     return;
+                _savetimer.Enabled = false;
                 SaveIndex();
                 SaveLastRecord();
 

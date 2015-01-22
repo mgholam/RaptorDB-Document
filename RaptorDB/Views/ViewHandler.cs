@@ -46,11 +46,6 @@ namespace RaptorDB.Views
         {
             _Path = path;
             _viewmanager = manager;
-            _saveTimer = new System.Timers.Timer();
-            _saveTimer.AutoReset = true;
-            _saveTimer.Elapsed += new System.Timers.ElapsedEventHandler(_saveTimer_Elapsed);
-            _saveTimer.Interval = Global.SaveIndexToDiskTimerSeconds * 1000;
-            _saveTimer.Start();
         }
 
         private string _S = Path.DirectorySeparatorChar.ToString();
@@ -71,6 +66,8 @@ namespace RaptorDB.Views
         private System.Timers.Timer _saveTimer;
         Type basetype; // used for mapper
         dynamic mapper;
+        bool _isDirty = false;
+        private string _dirtyFilename = "temp.$";
 
         void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
@@ -116,6 +113,13 @@ namespace RaptorDB.Views
                     }
                 }
             }
+            if (File.Exists(_Path + _dirtyFilename))
+            {
+                _log.Debug("Last shutdown failed, rebuilding view..." + _view.Name);
+                Directory.Delete(_Path, true);
+                Directory.CreateDirectory(_Path);
+                rebuild = true;
+            }
 
             // load indexes here
             CreateLoadIndexes(_schema);
@@ -138,6 +142,12 @@ namespace RaptorDB.Views
 
             if (rebuild)
                 Task.Factory.StartNew(() => RebuildFromScratch(docs));
+
+            _saveTimer = new System.Timers.Timer();
+            _saveTimer.AutoReset = true;
+            _saveTimer.Elapsed += new System.Timers.ElapsedEventHandler(_saveTimer_Elapsed);
+            _saveTimer.Interval = Global.SaveIndexToDiskTimerSeconds * 1000;
+            _saveTimer.Start();
         }
 
         internal void FreeMemory()
@@ -190,6 +200,7 @@ namespace RaptorDB.Views
             // delete any items with docid in view
             if (_view.DeleteBeforeInsert)
                 DeleteRowsWith(guid);
+
             SaveAndIndex(api.emit);
         }
 
@@ -391,10 +402,11 @@ namespace RaptorDB.Views
 
         internal void Shutdown()
         {
+            _saveTimer.Enabled = false;
             if (_rebuilding)
                 _log.Debug("Waiting for view rebuild to finish... : " + _view.Name);
 
-            while(_rebuilding)
+            while (_rebuilding)
             {
                 Thread.Sleep(50);
             }
@@ -413,6 +425,10 @@ namespace RaptorDB.Views
             // write view version
             if (File.Exists(_Path + "version_.dat") == false)
                 File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
+
+            // remove dirty file
+            if (File.Exists(_Path + _dirtyFilename))
+                File.Delete(_Path + _dirtyFilename);
         }
 
         internal void Delete(Guid docid)
@@ -675,7 +691,7 @@ namespace RaptorDB.Views
                 // write version.dat file when done
                 File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _log.Error("Rebuilding View failed : " + _view.Name, ex);
             }
@@ -809,6 +825,9 @@ namespace RaptorDB.Views
 
         private void InsertRowsWithIndexUpdate(Guid guid, List<object[]> rows)
         {
+            if (_isDirty == false)
+                WriteDirtyFile();
+
             foreach (var row in rows)
             {
                 object[] r = new object[row.Length + 1];
@@ -816,7 +835,7 @@ namespace RaptorDB.Views
                 Array.Copy(row, 0, r, 1, row.Length);
                 byte[] b = fastBinaryJSON.BJSON.ToBJSON(r);
 
-                int rownum = (int) _viewData.WriteRawData(b);
+                int rownum = (int)_viewData.WriteRawData(b);
 
                 // case insensitve columns here
                 foreach (var kv in _nocase)
@@ -1123,7 +1142,8 @@ namespace RaptorDB.Views
         internal int ViewDelete<T>(Expression<Predicate<T>> filter)
         {
             _log.Debug("delete : " + _view.Name);
-
+            if (_isDirty == false)
+                WriteDirtyFile();
             QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
             qv.Visit(filter);
             var delbits = _deletedRows.GetBits();
@@ -1138,9 +1158,22 @@ namespace RaptorDB.Views
             return count;
         }
 
+        private object _dfile = new object();
+        private void WriteDirtyFile()
+        {
+            lock(_dfile)
+            { 
+            _isDirty = true;
+            if (File.Exists(_Path + _dirtyFilename) == false)
+                File.WriteAllText(_Path + _dirtyFilename, "dirty");
+                }
+        }
+
         internal int ViewDelete(string filter)
         {
             _log.Debug("delete : " + _view.Name);
+            if (_isDirty == false)
+                WriteDirtyFile();
             int count = 0;
             if (filter != "")
             {

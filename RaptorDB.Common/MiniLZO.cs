@@ -62,7 +62,7 @@ using System.IO;
 
 namespace RaptorDB
 {
-    internal class MiniLZO
+    public class MiniLZO
     {
         private const uint M2_MAX_LEN = 8;
         private const uint M4_MAX_LEN = 9;
@@ -226,7 +226,7 @@ namespace RaptorDB
                             uint t = (uint)(ip - ii);
                             if (t <= 3)
                             {
-                                Debug.Assert(op - 2 > output);
+                                //Debug.Assert(op - 2 > output);
                                 op[-2] |= (byte)(t);
                             }
                             else if (t <= 18)
@@ -240,7 +240,7 @@ namespace RaptorDB
                                     tt -= 255;
                                     *op++ = 0;
                                 }
-                                Debug.Assert(tt > 0);
+                                //Debug.Assert(tt > 0);
                                 *op++ = (byte)(tt);
                             }
                             do
@@ -248,15 +248,15 @@ namespace RaptorDB
                                 *op++ = *ii++;
                             } while (--t > 0);
                         }
-                        Debug.Assert(ii == ip);
+                        //Debug.Assert(ii == ip);
                         ip += 3;
                         if (pos[3] != *ip++ || pos[4] != *ip++ || pos[5] != *ip++
                            || pos[6] != *ip++ || pos[7] != *ip++ || pos[8] != *ip++)
                         {
                             --ip;
                             length = (uint)(ip - ii);
-                            Debug.Assert(length >= 3);
-                            Debug.Assert(length <= M2_MAX_LEN);
+                            //Debug.Assert(length >= 3);
+                            //Debug.Assert(length <= M2_MAX_LEN);
                             if (offset <= M2_MAX_OFFSET)
                             {
                                 --offset;
@@ -273,8 +273,8 @@ namespace RaptorDB
                             else
                             {
                                 offset -= 0x4000;
-                                Debug.Assert(offset > 0);
-                                Debug.Assert(offset <= 0x7FFF);
+                                //Debug.Assert(offset > 0);
+                                //Debug.Assert(offset <= 0x7FFF);
                                 *op++ = (byte)(M4_MARKER | ((offset & 0x4000) >> 11) | (length - 2));
                                 *op++ = (byte)((offset & 63) << 2);
                                 *op++ = (byte)(offset >> 6);
@@ -289,7 +289,7 @@ namespace RaptorDB
                                 ++ip;
                             }
                             length = (uint)(ip - ii);
-                            Debug.Assert(length > M2_MAX_LEN);
+                            //Debug.Assert(length > M2_MAX_LEN);
                             if (offset <= M3_MAX_OFFSET)
                             {
                                 --offset;
@@ -304,15 +304,15 @@ namespace RaptorDB
                                         length -= 255;
                                         *op++ = 0;
                                     }
-                                    Debug.Assert(length > 0);
+                                    //Debug.Assert(length > 0);
                                     *op++ = (byte)(length);
                                 }
                             }
                             else
                             {
                                 offset -= 0x4000;
-                                Debug.Assert(offset > 0);
-                                Debug.Assert(offset <= 0x7FFF);
+                                //Debug.Assert(offset > 0);
+                                //Debug.Assert(offset <= 0x7FFF);
                                 if (length <= M4_MAX_LEN)
                                     *op++ = (byte)(M4_MARKER | ((offset & 0x4000) >> 11) | (length - 2));
                                 else
@@ -324,7 +324,7 @@ namespace RaptorDB
                                         length -= 255;
                                         *op++ = 0;
                                     }
-                                    Debug.Assert(length > 0);
+                                    //Debug.Assert(length > 0);
                                     *op++ = (byte)(length);
                                 }
                             }
@@ -363,7 +363,7 @@ namespace RaptorDB
                         tt -= 255;
                         dst[dstlen++] = 0;
                     }
-                    Debug.Assert(tt > 0);
+                    //Debug.Assert(tt > 0);
                     dst[dstlen++] = (byte)(tt);
                 }
                 do
@@ -410,7 +410,7 @@ namespace RaptorDB
                         match_next = true;
                     else
                     {
-                        Debug.Assert(t > 0);
+                        //Debug.Assert(t > 0);
                         if ((op_end - op) < t)
                             throw new OverflowException("Output Overrun");
                         if ((ip_end - ip) < t + 1)
@@ -444,7 +444,7 @@ namespace RaptorDB
                                 }
                                 t += (uint)(15 + *ip++);
                             }
-                            Debug.Assert(t > 0);
+                            //Debug.Assert(t > 0);
                             if ((op_end - op) < t + 3)
                                 throw new OverflowException("Output Overrun");
                             if ((ip_end - ip) < t + 4)
@@ -579,7 +579,7 @@ namespace RaptorDB
                         {
                             if (pos < output || pos >= op)
                                 throw new OverflowException("Lookbehind Overrun");
-                            Debug.Assert(t > 0);
+                            //Debug.Assert(t > 0);
                             if ((op_end - op) < t + 2)
                                 throw new OverflowException("Output Overrun");
                         }
@@ -625,8 +625,8 @@ namespace RaptorDB
                         if (!eof_found)
                         {
                             match_next = false;
-                            Debug.Assert(t > 0);
-                            Debug.Assert(t < 4);
+                            //Debug.Assert(t > 0);
+                            //Debug.Assert(t < 4);
                             if ((op_end - op) < t)
                                 throw new OverflowException("Output Overrun");
                             if ((ip_end - ip) < t + 1)
@@ -646,7 +646,7 @@ namespace RaptorDB
                     throw new OverflowException("EOF Marker Not Found");
                 else
                 {
-                    Debug.Assert(t == 1);
+                    //Debug.Assert(t == 1);
                     if (ip > ip_end)
                         throw new OverflowException("Input Overrun");
                     else if (ip < ip_end)

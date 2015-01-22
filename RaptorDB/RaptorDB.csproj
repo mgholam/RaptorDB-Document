@@ -127,6 +127,8 @@
     <Compile Include="Replication\ReplicationServer.cs" />
     <Compile Include="Storage\KeyStore.cs" />
     <Compile Include="RaptorDB.cs" />
+    <Compile Include="Storage\KeyStoreHF.cs" />
+    <Compile Include="Storage\StorageFileHF.cs" />
     <Compile Include="Storage\StorageFile.cs">
       <SubType>Code</SubType>
     </Compile>

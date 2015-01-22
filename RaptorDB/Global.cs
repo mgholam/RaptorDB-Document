@@ -92,5 +92,10 @@ namespace RaptorDB
         /// <para> - If you unset (0) the value previous split files will remain and all the data will go to the last file.</para>
         /// </summary>
         public static ushort SplitStorageFilesMegaBytes = 0;
+        /// <summary>
+        /// Compress the documents in the storage file if it is over this size (default = 100 Kilobytes) 
+        /// <para> - You will be trading CPU for disk IO</para>
+        /// </summary>
+        public static ushort CompressDocumentOverKiloBytes = 100;
     }
 }

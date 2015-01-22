@@ -8,29 +8,29 @@ namespace RaptorDB
 {
     public static class RDBExtensions
     {
-        /// <summary>
-        /// For RaptorDB optimized range queries
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="obj"></param>
-        /// <param name="from"></param>
-        /// <param name="to"></param>
-        /// <returns></returns>
-        public static bool Between<T>(this T obj, T from, T to)
-        {
-            return true;
-        }
+        ///// <summary>
+        ///// For RaptorDB optimized range queries
+        ///// </summary>
+        ///// <typeparam name="T"></typeparam>
+        ///// <param name="obj"></param>
+        ///// <param name="from"></param>
+        ///// <param name="to"></param>
+        ///// <returns></returns>
+        //public static bool Between<T>(this T obj, T from, T to)
+        //{
+        //    return true;
+        //}
 
-        /// <summary>
-        /// For RaptorDB full text search queries
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <param name="what"></param>
-        /// <returns></returns>
-        public static bool Contains(this string obj, string what)
-        {
-            return true;
-        }
+        ///// <summary>
+        ///// For RaptorDB full text search queries
+        ///// </summary>
+        ///// <param name="obj"></param>
+        ///// <param name="what"></param>
+        ///// <returns></returns>
+        //public static bool Contains(this string obj, string what)
+        //{
+        //    return true;
+        //}
     }
 
     /// <summary>

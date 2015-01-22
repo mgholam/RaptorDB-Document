@@ -10,6 +10,7 @@ using RaptorDB;
 using RaptorDB.Common;
 using SampleViews;
 using System.Linq.Expressions;
+using System.IO;
 
 namespace datagridbinding
 {
@@ -110,19 +111,7 @@ namespace datagridbinding
                 Random r = new Random();
                 for (int i = 0; i < count; i++)
                 {
-                    var inv = new SalesInvoice()
-                    {
-                        Date = Faker.DateTimeFaker.BirthDay(),// FastDateTime.Now.AddMinutes(r.Next(60)),
-                        Serial = i % 10000,
-                        CustomerName = Faker.NameFaker.Name(),// "Me " + i % 10,
-                        NoCase = "Me " + i % 10,
-                        Status = (byte)(i % 4),
-                        Address = Faker.LocationFaker.Street(), //"df asd sdf asdf asdf",
-                        Approved = i % 100 == 0 ? true : false
-                    };
-                    inv.Items = new List<LineItem>();
-                    for (int k = 0; k < 5; k++)
-                        inv.Items.Add(new LineItem() { Product = "prod " + k, Discount = 0, Price = 10 + k, QTY = 1 + k });
+                    var inv = CreateInvoice(i);
                     if (i % step == 0)
                         toolStripProgressBar1.Value++;
                     rap.Save(inv.ID, inv);
@@ -130,6 +119,24 @@ namespace datagridbinding
                 MessageBox.Show("Insert done in (sec) : " + FastDateTime.Now.Subtract(dt).TotalSeconds);
                 toolStripProgressBar1.Value = 0;
             }
+        }
+
+        private static SalesInvoice CreateInvoice(int i)
+        {
+            var inv = new SalesInvoice()
+            {
+                Date = Faker.DateTimeFaker.BirthDay(),// FastDateTime.Now.AddMinutes(r.Next(60)),
+                Serial = i % 10000,
+                CustomerName = Faker.NameFaker.Name(),// "Me " + i % 10,
+                NoCase = "Me " + i % 10,
+                Status = (byte)(i % 4),
+                Address = Faker.LocationFaker.Street(), //"df asd sdf asdf asdf",
+                Approved = i % 100 == 0 ? true : false
+            };
+            inv.Items = new List<LineItem>();
+            for (int k = 0; k < 5; k++)
+                inv.Items.Add(new LineItem() { Product = "prod " + k, Discount = 0, Price = 10 + k, QTY = 1 + k });
+            return inv;
         }
 
         private void backupToolStripMenuItem_Click(object sender, EventArgs e)
@@ -173,6 +180,30 @@ namespace datagridbinding
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GC.Collect(2);
+            var r = (rap as RaptorDB.RaptorDB);
+            
+            //var gg = r.HF.GetObject("aaa10");
+            DateTime dt = DateTime.Now;
+            for (int i = 0; i < 100000; i++)
+            {
+                var o = CreateInvoice(i);
+                r.KVHF.SetObject(i.ToString(), o);// new byte[100000]);
+            }
+            MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
+            var g = r.KVHF.GetObject("aaa");
+
+            //foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
+            //{
+            //    r.KVHF.SetObject(f, File.ReadAllBytes(f));
+            //}
+            //foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
+            //{
+            //    var o = r.KVHF.GetObject(f);
+            //    File.WriteAllBytes(f.Replace("\\pp\\", "\\ppp\\"), o as byte[]);
+            //}
+            
+            //int i = 0;
+
             //var t = rap.FullTextSearch("bc73f619-6035-49a3-99c7-3be4ca4170cb");
             //object o = rap.FetchVersion(t[0]);
 
