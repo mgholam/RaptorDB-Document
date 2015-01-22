@@ -243,6 +243,7 @@ namespace RaptorDB
 
         public void Shutdown()
         {
+            SaveIndex();
             // save page list
             _index.SavePageList(_pageList, _pageListDiskPages);
             // shutdown

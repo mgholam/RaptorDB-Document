@@ -97,6 +97,13 @@ namespace RaptorDB
         //    return false;
         //}
 
+
+        /// <summary>
+        /// High frequency mode Key/Value store with recycled storage file.
+        /// <para>Use for rapid saves of the same key.</para>
+        /// <para>Views are not effected by saves in this storage.</para>
+        /// <para>NOTE : You do not have history of changes in this storage.</para>
+        /// </summary>
         public IKeyStoreHF KVHF
         {
             get { return _objHF; }

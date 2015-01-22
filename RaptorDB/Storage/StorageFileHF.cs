@@ -81,13 +81,13 @@ namespace RaptorDB
         internal int GetFreeBlockNumber()
         {
             // get the first free block or append to the end
-            if(_freeList.CountOnes()>0)
+            if (_freeList.CountOnes() > 0)
             {
                 int i = _freeList.GetFirst();
                 _freeList.Set(i, false);
                 return i;
             }
-            else 
+            else
                 return _lastBlockNumber++;
         }
 
@@ -115,7 +115,7 @@ namespace RaptorDB
             _datawrite.Seek(offset, SeekOrigin.Begin);// wiil seek past the end of file on fs.Write will zero the difference
         }
 
-        internal void WriteBlockBytes(byte[] data,int start, int len)
+        internal void WriteBlockBytes(byte[] data, int start, int len)
         {
             _datawrite.Write(data, start, len);
         }
@@ -177,7 +177,7 @@ namespace RaptorDB
             _freeList = new WAHBitArray();
             if (File.Exists(_Path + _filename + ".mgbmp"))
             {
-                ReadFreeListBMPFile(_Path + _filename + ".mgbmp");  
+                ReadFreeListBMPFile(_Path + _filename + ".mgbmp");
                 // delete file so if failure no big deal on restart
                 File.Delete(_Path + _filename + ".mgbmp");
             }
@@ -213,5 +213,15 @@ namespace RaptorDB
             }
         }
         #endregion
+
+        internal int NumberofBlocks()
+        {
+            return (int)((_datawrite.Length / (int)_BLOCKSIZE) + 1);
+        }
+
+        internal void FreeBlock(int i)
+        {
+            _freeList.Set(i, true);
+        }
     }
 }

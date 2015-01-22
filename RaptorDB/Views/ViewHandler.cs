@@ -661,7 +661,6 @@ namespace RaptorDB.Views
                     {
                         if (b != null)
                         {
-                            // FEATURE : optimize this by not creating the object if not in FireOnTypes
                             object obj = b;
                             Type t = obj.GetType();
                             if (t == typeof(View_delete))

@@ -177,12 +177,10 @@ namespace datagridbinding
             toolStripStatusLabel1.Text = "Count = " + qq.Count.ToString("#,0");
         }
 
-        private void testToolStripMenuItem_Click(object sender, EventArgs e)
+        private void KVHFtest()
         {
-            GC.Collect(2);
             var r = (rap as RaptorDB.RaptorDB);
-            
-            //var gg = r.HF.GetObject("aaa10");
+
             DateTime dt = DateTime.Now;
             for (int i = 0; i < 100000; i++)
             {
@@ -190,43 +188,37 @@ namespace datagridbinding
                 r.KVHF.SetObject(i.ToString(), o);// new byte[100000]);
             }
             MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
-            var g = r.KVHF.GetObject("aaa");
 
-            //foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
-            //{
-            //    r.KVHF.SetObject(f, File.ReadAllBytes(f));
-            //}
-            //foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
-            //{
-            //    var o = r.KVHF.GetObject(f);
-            //    File.WriteAllBytes(f.Replace("\\pp\\", "\\ppp\\"), o as byte[]);
-            //}
+            var g = r.KVHF.GetObject("1009");
+
+            for (int i = 0; i < 100000; i++)
+                r.KVHF.DeleteKey(i.ToString());
             
-            //int i = 0;
+            g = r.KVHF.GetObject("1009");
+            MessageBox.Show(""+r.KVHF.Count());
 
-            //var t = rap.FullTextSearch("bc73f619-6035-49a3-99c7-3be4ca4170cb");
-            //object o = rap.FetchVersion(t[0]);
-
-            //Guid g = Guid.NewGuid();
-            //var inv = new SalesInvoice()
+            foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
+            {
+                r.KVHF.SetObject(f, File.ReadAllBytes(f));
+            }
+            foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
+            {
+                var o = r.KVHF.GetObject(f);
+                File.WriteAllBytes(f.Replace("\\pp\\", "\\ppp\\"), o as byte[]);
+            }
+            bool b = r.KVHF.Contains("aa");
+            var keys = r.KVHF.GetKeys();
+            //foreach(var o in r.KVHF.EnumerateObjects())
             //{
-            //    ID = g,
-            //    Date = FastDateTime.Now,
-            //    Serial = 30000,
-            //    CustomerName = "revision test",
-            //    NoCase = "revision test",
-            //    Status = 0,
-            //    Address = "here there",
-            //    Approved = false
-            //};
-            //rap.Save(g, inv);
-            //inv.CustomerName += "1";
-            //rap.Save(g, inv);
-            //inv.CustomerName += "2";
-            //rap.Save(g, inv);
+            //    string s = o.GetType().ToString();
+            //}
+        }
 
-            //int[] revs = rap.FetchHistory(g);
-            //object oo = rap.FetchVersion(revs[0]);
+        private void testToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            GC.Collect(2);
+            KVHFtest();
+            
 
             int c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < 100);
             c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial != 100);
