@@ -237,6 +237,35 @@ namespace RaptorDB
                         ret.OK = true;
                         ret.Data = _raptor.DocumentCount();
                         break;
+                    case "getobjecthf":
+                        ret.OK = true;
+                        ret.Data = _raptor.GetKVHF().GetObjectHF((string)p.Data);
+                        break;
+                    case "setobjecthf":
+                        ret.OK = true;
+                        param = (object[])p.Data;
+                        _raptor.GetKVHF().SetObjectHF((string)param[0], param[1]);
+                        break;
+                    case "deletekeyhf":
+                        ret.OK = true;
+                        ret.Data = _raptor.GetKVHF().DeleteKeyHF((string)p.Data);
+                        break;
+                    case "counthf":
+                        ret.OK = true;
+                        ret.Data = _raptor.GetKVHF().CountHF();
+                        break;
+                    case "containshf":
+                        ret.OK = true;
+                        ret.Data = _raptor.GetKVHF().ContainsHF((string)p.Data);
+                        break;
+                    case "getkeyshf":
+                        ret.OK = true;
+                        ret.Data = _raptor.GetKVHF().GetKeysHF();
+                        break;
+                    case "compactstoragehf":
+                        ret.OK = true;
+                        _raptor.GetKVHF().CompactStorageHF();
+                        break;
                 }
             }
             catch (Exception ex)

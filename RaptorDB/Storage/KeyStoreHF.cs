@@ -19,53 +19,12 @@ namespace RaptorDB
         public int blocknumber;
     }
 
-    public interface IKeyStoreHF
-    {
-        /// <summary>
-        /// Get the object for the key
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        object GetObject(string key);
-        /// <summary>
-        /// Set the object for the key
-        /// </summary>
-        /// <param name="key"></param>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        bool SetObject(string key, object obj);
-        /// <summary>
-        /// Delete key 
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        bool DeleteKey(string key);
-        /// <summary>
-        /// Count the number of items
-        /// </summary>
-        /// <returns></returns>
-        int Count();
-        /// <summary>
-        /// If the key exists
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        bool Contains(string key);
-        //IEnumerable<object> EnumerateObjects();
-        /// <summary>
-        /// Get the keys as an array
-        /// </summary>
-        /// <returns></returns>
-        string[] GetKeys();
-        // SearchKeys()
-    }
-
     internal class KeyStoreHF : IKeyStoreHF
     {
         MGIndex<string> _keys;
         StorageFileHF _datastore;
         object _lock = new object();
-        ushort _BlockSize = 2048; // FEATURE : bring out as a config
+        ushort _BlockSize = 2048;
         private const int _KILOBYTE = 1024;
         ILog _log = LogManager.GetLogger(typeof(KeyStoreHF));
 
@@ -95,18 +54,18 @@ namespace RaptorDB
                 _log.Error("Last shutdown failed, rebuilding data files...");
                 RebuildDataFiles();
             }
-            _datastore = new StorageFileHF(_Path + "data.mghf", _BlockSize);
+            _datastore = new StorageFileHF(_Path + "data.mghf", Global.HighFrequencyKVDiskBlockSize);
             _keys = new MGIndex<string>(_Path, "keys.idx", 255, Global.PageItemCount, false);
 
             _BlockSize = _datastore.GetBlockSize();
         }
 
-        public int Count()
+        public int CountHF()
         {
             return _keys.Count();
         }
 
-        public object GetObject(string key)
+        public object GetObjectHF(string key)
         {
             lock (_lock)
             {
@@ -140,7 +99,7 @@ namespace RaptorDB
             return null;
         }
 
-        public bool SetObject(string key, object obj)
+        public bool SetObjectHF(string key, object obj)
         {
             byte[] k = Helper.GetBytes(key);
             if (k.Length > 255)
@@ -170,7 +129,7 @@ namespace RaptorDB
             }
         }
 
-        public bool DeleteKey(string key)
+        public bool DeleteKeyHF(string key)
         {
             lock (_lock)
             {
@@ -185,19 +144,16 @@ namespace RaptorDB
 
                     ab.keylen = (byte)keybytes.Length;
 
-                    // remove key from index
-                    _keys.RemoveKey(key);
+                    _keys.RemoveKey(key);// remove key from index
 
                     // write ab
                     ab.deleteKey = true;
                     ab.datalength = 0;
-                    ab.blocknumber = _datastore.GetFreeBlockNumber();
 
                     byte[] header = CreateAllocHeader(ab, keybytes);
 
                     _datastore.SeekBlock(ab.blocknumber);
                     _datastore.WriteBlockBytes(header, 0, header.Length);
-                    _datastore.WriteBlockBytes(new byte[_BlockSize - header.Length], 0, _BlockSize - header.Length);
 
                     // free old data blocks
                     _datastore.FreeBlocks(ab.Blocks);
@@ -208,35 +164,71 @@ namespace RaptorDB
             return false;
         }
 
-        //public void CompactStorage()
-        //{
-        //    // FEATURE : compact storage file
-        //    throw new NotImplementedException();
-        //}
-
-        //public IEnumerable<object> EnumerateObjects()
-        //{
-        //    foreach (var k in _keys.GetKeys())
-        //    {
-        //        yield return GetObject(k.ToString());
-        //    }
-        //}
-
-        public string[] GetKeys()
+        public void CompactStorageHF()
         {
-            return _keys.GetKeys().Cast<string>().ToArray(); // FEATURE : dirty !?
+            lock (_lock)
+            {
+                try
+                {
+                    _log.Debug("Compacting storage file ...");
+                    if (Directory.Exists(_Path + "temp"))
+                        Directory.Delete(_Path + "temp",true);
+
+                    KeyStoreHF newfile = new KeyStoreHF(_Path + "temp");
+                    string[] keys = _keys.GetKeys().Cast<string>().ToArray();
+                    _log.Debug("Number of keys : " + keys.Length);
+                    foreach (var k in keys)
+                    {
+                        newfile.SetObjectHF(k, GetObjectHF(k));
+                    }
+                    newfile.Shutdown();
+                    _log.Debug("Compact done.");
+                    // shutdown and move files and restart here
+                    if (Directory.Exists(_Path + "old"))
+                        Directory.Delete(_Path + "old", true);
+                    Directory.CreateDirectory(_Path + "old");
+                    _datastore.Shutdown();
+                    _keys.Shutdown();
+                    _log.Debug("Moving files...");
+                    foreach (var f in Directory.GetFiles(_Path, "*.*"))
+                        File.Move(f, _Path + "old" + _S + Path.GetFileName(f));
+
+                    foreach (var f in Directory.GetFiles(_Path + "temp", "*.*"))
+                        File.Move(f, _Path + Path.GetFileName(f));
+
+                    Directory.Delete(_Path + "temp", true);
+                    //Directory.Delete(_Path + "old", true); // FEATURE : delete or keep?
+                    _log.Debug("Re-opening storage file");
+                    _datastore = new StorageFileHF(_Path + "data.mghf", Global.HighFrequencyKVDiskBlockSize);
+                    _keys = new MGIndex<string>(_Path, "keys.idx", 255, Global.PageItemCount, false);
+
+                    _BlockSize = _datastore.GetBlockSize();
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex);
+                }
+            }
         }
 
-        public bool Contains(string key)
+        public string[] GetKeysHF()
         {
-            int i = 0;
-            return _keys.Get(key, out i);
+            lock (_lock)
+                return _keys.GetKeys().Cast<string>().ToArray(); // FEATURE : dirty !?
+        }
+
+        public bool ContainsHF(string key)
+        {
+            lock (_lock)
+            {
+                int i = 0;
+                return _keys.Get(key, out i);
+            }
         }
 
         internal void Shutdown()
         {
             _datastore.Shutdown();
-            // _keys.SaveIndex();
             _keys.Shutdown();
 
             if (File.Exists(_Path + _dirtyFilename))
@@ -406,7 +398,7 @@ namespace RaptorDB
                 if (File.Exists(_Path + "data.bmp"))
                     File.Delete(_Path + "data.bmp");
 
-                _datastore = new StorageFileHF(_Path + "data.mghf", _BlockSize);
+                _datastore = new StorageFileHF(_Path + "data.mghf", Global.HighFrequencyKVDiskBlockSize);
                 _BlockSize = _datastore.GetBlockSize();
                 if (File.Exists(_Path + "keys.idx"))
                 {
@@ -472,10 +464,8 @@ namespace RaptorDB
                     // new data ok
                     if (failed == false)
                     {
-                        // valid block found
-                        keys.Set(ab.key, ab.blocknumber);
-                        // free the old blocks
-                        if (freelast)
+                        keys.Set(ab.key, ab.blocknumber);// valid block found
+                        if (freelast)// free the old blocks
                             _datastore.FreeBlocks(old.Blocks);
                     }
 

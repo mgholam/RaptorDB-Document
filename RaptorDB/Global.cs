@@ -97,5 +97,10 @@ namespace RaptorDB
         /// <para> - You will be trading CPU for disk IO</para>
         /// </summary>
         public static ushort CompressDocumentOverKiloBytes = 100;
+        /// <summary>
+        /// Disk block size for high frequency KV storage file (default = 2048)
+        /// <para> * Do not use anything under 512 with large string keys</para>
+        /// </summary>
+        public static ushort HighFrequencyKVDiskBlockSize = 2048; 
     }
 }

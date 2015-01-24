@@ -15,7 +15,7 @@ namespace RaptorDB
             0,               // 3 = [keysize]   max 255
             0,0,             // 4 = [node size] max 65536
             0,0,0,0,         // 6 = [root page num]
-            0,               // 10 = Index file type : 0=mgindex   
+            0,               // 10 = Index file type : 0=mgindex 1=mgindex+strings  
             0,0,0,0          // 11 = last record number indexed 
             };
 

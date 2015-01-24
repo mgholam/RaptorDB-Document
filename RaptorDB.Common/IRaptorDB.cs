@@ -14,6 +14,26 @@ namespace RaptorDB.Common
         public DateTime ChangeDate;
     }
 
+    /// <summary>
+    /// High frequency mode Key/Value store with recycled storage file.
+    /// <para>Use for rapid saves of the same key.</para>
+    /// <para>Views are not effected by saves in this storage.</para>
+    /// <para>NOTE : You do not have history of changes in this storage.</para>
+    /// </summary>
+    public interface IKeyStoreHF
+    {
+        object GetObjectHF(string key);
+        bool SetObjectHF(string key, object obj);
+        bool DeleteKeyHF(string key);
+        int CountHF();
+        bool ContainsHF(string key);
+        string[] GetKeysHF();
+        void CompactStorageHF();
+
+        //IEnumerable<object> EnumerateObjects();
+        // SearchKeys()
+    }
+
     public interface IRaptorDB
     {
         /// <summary>
@@ -316,5 +336,13 @@ namespace RaptorDB.Common
         /// </summary>
         /// <returns></returns>
         long DocumentCount();
+
+        /// <summary>
+        /// High frequency mode Key/Value store with recycled storage file.
+        /// <para>Use for rapid saves of the same key.</para>
+        /// <para>Views are not effected by saves in this storage.</para>
+        /// <para>NOTE : You do not have history of changes in this storage.</para>
+        /// </summary>
+        IKeyStoreHF GetKVHF();
     }
 }

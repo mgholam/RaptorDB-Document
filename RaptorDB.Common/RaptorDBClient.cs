@@ -9,6 +9,99 @@ using System.IO;
 
 namespace RaptorDB
 {
+    public class KVHF : IKeyStoreHF
+    {
+        public KVHF(NetworkClient client, string username, string password)
+        {
+            _client = client;
+            _username = username;
+            _password = password;
+        }
+
+        NetworkClient _client;
+        private string _username;
+        private string _password;
+
+
+        public object GetObjectHF(string key)
+        {
+            Packet p = CreatePacket();
+            p.Command = "getobjecthf";
+            p.Data = key;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            if (ret.OK)
+                return ret.Data;
+            else
+                return null;
+        }
+
+        public bool SetObjectHF(string key, object obj)
+        {
+            Packet p = CreatePacket();
+            p.Command = "setobjecthf";
+            p.Data = new object[] { key, obj };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+
+            return ret.OK;
+        }
+
+        public bool DeleteKeyHF(string key)
+        {
+            Packet p = CreatePacket();
+            p.Command = "deletekeyhf";
+            p.Data = key;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+
+            return (bool)ret.Data;
+        }
+
+        public int CountHF()
+        {
+            Packet p = CreatePacket();
+            p.Command = "counthf";
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+
+            return (int)ret.Data;
+        }
+
+        public bool ContainsHF(string key)
+        {
+            Packet p = CreatePacket();
+            p.Command = "containshf";
+            p.Data = key;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+
+            return (bool)ret.Data;
+        }
+
+        public string[] GetKeysHF()
+        {
+            Packet p = CreatePacket();
+            p.Command = "getkeyshf";
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+
+            return ((object[])ret.Data).Cast<string>().ToArray();
+        }
+
+        public void CompactStorageHF()
+        {
+            Packet p = CreatePacket();
+            p.Command = "compactstoragehf";
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+
+            return;
+        }
+
+        private Packet CreatePacket()
+        {
+            Packet p = new Packet();
+            p.Username = _username;
+            p.PasswordHash = Helper.MurMur.Hash(Encoding.UTF8.GetBytes(_username + "|" + _password)).ToString();
+
+            return p;
+        }
+    }
+
     public class RaptorDBClient : IRaptorDB
     {
         public RaptorDBClient(string server, int port, string username, string password)
@@ -19,8 +112,10 @@ namespace RaptorDB
             // speed settings
             fastJSON.JSON.Parameters.ParametricConstructorOverride = true;
             fastBinaryJSON.BJSON.Parameters.ParametricConstructorOverride = true;
+            _kv = new KVHF(_client, _username, _password);
         }
 
+        private KVHF _kv;
         private NetworkClient _client;
         private string _username;
         private string _password;
@@ -580,7 +675,7 @@ namespace RaptorDB
             p.Command = "fetchbytehistoryinfo";
             p.Docid = docid;
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (HistoryInfo[])ret.Data;            
+            return (HistoryInfo[])ret.Data;
         }
 
         /// <summary>
@@ -597,7 +692,7 @@ namespace RaptorDB
             p.Command = "viewdelete-t";
             p.Data = new object[] { typeof(TRowSchema).AssemblyQualifiedName, ls.sb.ToString() };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (int)ret.Data;       
+            return (int)ret.Data;
         }
 
         /// <summary>
@@ -610,7 +705,7 @@ namespace RaptorDB
         {
             Packet p = CreatePacket();
             p.Command = "viewdelete";
-            p.Data = new object[] { viewname , filter };
+            p.Data = new object[] { viewname, filter };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (int)ret.Data;
         }
@@ -659,6 +754,11 @@ namespace RaptorDB
             p.Command = "doccount";
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (long)ret.Data;
+        }
+
+        public IKeyStoreHF GetKVHF()
+        {
+            return _kv;
         }
     }
 }

@@ -552,7 +552,7 @@ namespace fastBinaryJSON
 
         private object CreateEnum(Type pt, object v)
         {
-            // TODO : optimize create enum
+            // FEATURE : optimize create enum
 #if !SILVERLIGHT
             return Enum.Parse(pt, v.ToString());
 #else

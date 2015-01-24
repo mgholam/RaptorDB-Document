@@ -179,35 +179,39 @@ namespace datagridbinding
 
         private void KVHFtest()
         {
-            var r = (rap as RaptorDB.RaptorDB);
-
+            //var r = (rap as RaptorDB.RaptorDB);
+            var kv = rap.GetKVHF();
+            
             DateTime dt = DateTime.Now;
             for (int i = 0; i < 100000; i++)
             {
                 var o = CreateInvoice(i);
-                r.KVHF.SetObject(i.ToString(), o);// new byte[100000]);
+                kv.SetObjectHF(i.ToString(), o);// new byte[100000]);
             }
             MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
 
-            var g = r.KVHF.GetObject("1009");
+            var g = kv.GetObjectHF("1009");
 
             for (int i = 0; i < 100000; i++)
-                r.KVHF.DeleteKey(i.ToString());
+                kv.DeleteKeyHF(i.ToString());
             
-            g = r.KVHF.GetObject("1009");
-            MessageBox.Show(""+r.KVHF.Count());
+            g = kv.GetObjectHF("1009");
+            MessageBox.Show(""+kv.CountHF());
 
             foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
             {
-                r.KVHF.SetObject(f, File.ReadAllBytes(f));
+                kv.SetObjectHF(f, File.ReadAllBytes(f));
             }
+            
+            kv.CompactStorageHF();
+
             foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
             {
-                var o = r.KVHF.GetObject(f);
+                var o = kv.GetObjectHF(f);
                 File.WriteAllBytes(f.Replace("\\pp\\", "\\ppp\\"), o as byte[]);
             }
-            bool b = r.KVHF.Contains("aa");
-            var keys = r.KVHF.GetKeys();
+            bool b = kv.ContainsHF("aa");
+            var keys = kv.GetKeysHF();
             //foreach(var o in r.KVHF.EnumerateObjects())
             //{
             //    string s = o.GetType().ToString();
@@ -217,7 +221,7 @@ namespace datagridbinding
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GC.Collect(2);
-            KVHFtest();
+            //KVHFtest();
             
 
             int c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < 100);

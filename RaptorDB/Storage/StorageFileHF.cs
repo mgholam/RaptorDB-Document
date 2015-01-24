@@ -45,7 +45,7 @@ namespace RaptorDB
         {
             FlushClose(_datawrite);
             // write free list 
-            WriteFreeListBMPFile(_Path + _filename + ".mgbmp");
+            WriteFreeListBMPFile(_Path + _filename + ".free");
 
             _datawrite = null;
         }
@@ -90,24 +90,6 @@ namespace RaptorDB
             else
                 return _lastBlockNumber++;
         }
-
-        //internal bool WriteBlock(int blocknumber, byte[] data, int start)
-        //{
-        //    SeekBlock(blocknumber);
-
-        //    if (data.Length > start + _BLOCKSIZE)
-        //        _datawrite.Write(data, start, _BLOCKSIZE);
-        //    else
-        //    {
-        //        // available data
-        //        int i = data.Length - start;
-        //        _datawrite.Write(data, start, i);
-        //        // remainder to blocksize
-        //        byte[] b = new byte[_BLOCKSIZE - i];
-        //        _datawrite.Write(b, 0, b.Length);
-        //    }
-        //    return true;
-        //}
 
         internal void SeekBlock(int blocknumber)
         {
@@ -175,11 +157,11 @@ namespace RaptorDB
                 _lastBlockNumber++;
             }
             _freeList = new WAHBitArray();
-            if (File.Exists(_Path + _filename + ".mgbmp"))
+            if (File.Exists(_Path + _filename + ".free"))
             {
-                ReadFreeListBMPFile(_Path + _filename + ".mgbmp");
+                ReadFreeListBMPFile(_Path + _filename + ".free");
                 // delete file so if failure no big deal on restart
-                File.Delete(_Path + _filename + ".mgbmp");
+                File.Delete(_Path + _filename + ".free");
             }
         }
 

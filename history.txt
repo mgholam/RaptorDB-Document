@@ -4,7 +4,7 @@ v3.2.0
 - Upgrade to fastJSON v2.1.9
 - added integrity check for views with auto rebuild if not shutdown cleanly
 - bug fix disable timers before Shutdown()
-- high frequency update key value storage file
+- added high frequency update key/value storage file
 
 
 v3.1.6

@@ -97,18 +97,6 @@ namespace RaptorDB
         //    return false;
         //}
 
-
-        /// <summary>
-        /// High frequency mode Key/Value store with recycled storage file.
-        /// <para>Use for rapid saves of the same key.</para>
-        /// <para>Views are not effected by saves in this storage.</para>
-        /// <para>NOTE : You do not have history of changes in this storage.</para>
-        /// </summary>
-        public IKeyStoreHF KVHF
-        {
-            get { return _objHF; }
-        }
-
         #region [   p u b l i c    i n t e r f a c e   ]
         /// <summary>
         /// Save files to RaptorDB
@@ -1002,7 +990,7 @@ namespace RaptorDB
                 _repclient = new Replication.ReplicationClient(_Path, File.ReadAllText(_Path + "RaptorDB-Branch.config"), _objStore);
             }
 
-            _objHF = new KeyStoreHF(_Path + "dataHF");
+            _objHF = new KeyStoreHF(_Path + "DataHF");
         }
 
         object _inboxlock = new object();
@@ -1452,6 +1440,11 @@ namespace RaptorDB
         public long DocumentCount()
         {
             return _objStore.Count();
+        }
+
+        public IKeyStoreHF GetKVHF()
+        {
+            return _objHF;
         }
     }
 }
