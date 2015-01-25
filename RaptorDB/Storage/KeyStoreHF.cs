@@ -49,7 +49,7 @@ namespace RaptorDB
             Directory.CreateDirectory(_Path);
             if (_Path.EndsWith(_S) == false) _Path += _S;
 
-            if (File.Exists(_Path + "temp.$"))
+            if (File.Exists(_Path + _dirtyFilename))
             {
                 _log.Error("Last shutdown failed, rebuilding data files...");
                 RebuildDataFiles();

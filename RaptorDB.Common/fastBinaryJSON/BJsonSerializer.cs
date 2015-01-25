@@ -501,7 +501,7 @@ namespace fastBinaryJSON
             {
                 var p = g[ii];
                 var o = p.Getter(obj);
-                if ((o == null || o is DBNull) && _params.SerializeNulls == false)
+                if (_params.SerializeNulls == false && (o == null || o is DBNull))
                 {
                     
                 }
@@ -519,7 +519,7 @@ namespace fastBinaryJSON
 
         private void WritePairFast(string name, string value)
         {
-            if ((value == null) && _params.SerializeNulls == false)
+            if ( _params.SerializeNulls == false && (value == null))
                 return;
             WriteName(name);
 
@@ -530,7 +530,7 @@ namespace fastBinaryJSON
 
         private void WritePair(string name, object value)
         {
-            if ((value == null || value is DBNull) && _params.SerializeNulls == false)
+            if (_params.SerializeNulls == false && (value == null || value is DBNull))
                 return;
             WriteName(name);
 
