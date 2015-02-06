@@ -15,7 +15,7 @@ namespace RaptorDB
             0,               // 3 = [keysize]   max 255
             0,0,             // 4 = [node size] max 65536
             0,0,0,0,         // 6 = [root page num]
-            0,               // 10 = Index file type : 0=mgindex 1=mgindex+strings  
+            0,               // 10 = Index file type : 0=mgindex 1=mgindex+strings (key = firstallocblock)
             0,0,0,0          // 11 = last record number indexed 
             };
 
@@ -38,13 +38,22 @@ namespace RaptorDB
         IGetBytes<T> _T = null;
         private object _fileLock = new object();
 
+        private KeyStoreHF _strings;
+        private bool _externalStrings = false;
+
         public IndexFile(string filename, byte maxKeySize, ushort pageNodeCount)
         {
             _T = RDBDataType<T>.ByteHandler();
-            _maxKeySize = maxKeySize;
+            if (typeof(T) == typeof(string) && Global.EnableOptimizedStringIndex)
+            {
+                _externalStrings = true;
+                _maxKeySize = 4;// blocknum:int
+            } 
+            else
+                _maxKeySize = maxKeySize;
+
             _PageNodeCount = pageNodeCount;
             _rowSize = (_maxKeySize + 1 + 4 + 4);
-            //_allowDups = allowdups;
 
             string path = Path.GetDirectoryName(filename);
             Directory.CreateDirectory(path);
@@ -53,6 +62,10 @@ namespace RaptorDB
                 // if file exists open and read header
                 _file = File.Open(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
                 ReadFileHeader();
+                if (_externalStrings == false)// if the file says different
+                {
+                    _rowSize = (_maxKeySize + 1 + 4 + 4);
+                }
                 // compute last page number from file length 
                 _PageLength = (_BlockHeader.Length + _rowSize * (_PageNodeCount));
                 _LastPageNumber = (int)((_file.Length - _FileHeader.Length) / _PageLength);
@@ -67,6 +80,10 @@ namespace RaptorDB
                 CreateFileHeader(0);
 
                 _LastPageNumber = (int)((_file.Length - _FileHeader.Length) / _PageLength);
+            }
+            if (_externalStrings)
+            {
+                _strings = new KeyStoreHF(path, Path.GetFileNameWithoutExtension(filename) + ".strings");
             }
             if (_LastPageNumber == 0)
                 _LastPageNumber = 1;
@@ -121,6 +138,9 @@ namespace RaptorDB
                 b = Helper.GetBytes(rowsindexed, false);
                 Buffer.BlockCopy(b, 0, _FileHeader, 11, 4);
 
+                if (_externalStrings)
+                    _FileHeader[10] = 1;
+
                 _file.Seek(0L, SeekOrigin.Begin);
                 _file.Write(_FileHeader, 0, _FileHeader.Length);
                 if (rowsindexed == 0)
@@ -140,7 +160,7 @@ namespace RaptorDB
             byte[] b = new byte[_FileHeader.Length];
             _file.Read(b, 0, _FileHeader.Length);
 
-            if (b[0] == _FileHeader[0] && b[1] == _FileHeader[1] && b[2] == _FileHeader[2])
+            if (b[0] == _FileHeader[0] && b[1] == _FileHeader[1] && b[2] == _FileHeader[2]) // header
             {
                 byte maxks = b[3];
                 ushort nodes = (ushort)Helper.ToInt16(b, 4);
@@ -148,6 +168,8 @@ namespace RaptorDB
                 _maxKeySize = maxks;
                 _PageNodeCount = nodes;
                 _FileHeader = b;
+                if (b[10] == 0)
+                    _externalStrings = false;
             }
 
             return false;
@@ -188,6 +210,9 @@ namespace RaptorDB
         public void Shutdown()
         {
             log.Debug("Shutdown IndexFile");
+            if (_externalStrings)
+                _strings.Shutdown();
+
             if (_file != null)
             {
                 _file.Flush();
@@ -275,16 +300,35 @@ namespace RaptorDB
                 byte[] b = null;
                 T[] keys = node.tree.Keys();
                 Array.Sort(keys); // sort keys on save for read performance
+                int blocknum = 0;
+                if (_externalStrings)
+                {
+                    // free old blocks
+                    if (node.allocblocks != null)
+                        _strings.FreeBlocks(node.allocblocks);
+                    blocknum = _strings.SaveData(node.DiskPageNumber.ToString(), fastBinaryJSON.BJSON.ToBJSON(keys));
+                }
                 // node children
                 foreach (var kp in keys)
                 {
                     var val = node.tree[kp];
-                    int idx = index + _rowSize * i++;
+                    int idx = index + _rowSize * i;
                     // key bytes
-                    byte[] kk = _T.GetBytes(kp);
-                    byte size = (byte)kk.Length;
-                    if (size > _maxKeySize)
-                        size = _maxKeySize;
+                    byte[] kk;
+                    byte size;
+                    if (_externalStrings == false)
+                    {
+                        kk = _T.GetBytes(kp);
+                        size = (byte)kk.Length;
+                        if (size > _maxKeySize)
+                            size = _maxKeySize;
+                    }
+                    else
+                    {
+                        kk = new byte[4];
+                        Buffer.BlockCopy(Helper.GetBytes(blocknum, false), 0, kk, 0, 4);
+                        size = 4;
+                    }
                     // key size = 1 byte
                     page[idx] = size;
                     Buffer.BlockCopy(kk, 0, page, idx + 1, page[idx]);
@@ -294,6 +338,7 @@ namespace RaptorDB
                     // duplicatepage = 4 bytes
                     b = Helper.GetBytes(val.DuplicateBitmapNumber, false);
                     Buffer.BlockCopy(b, 0, page, idx + 1 + _maxKeySize + 4, b.Length);
+                    i++;
                 }
                 _file.Write(page, 0, page.Length);
             }
@@ -318,12 +363,25 @@ namespace RaptorDB
                     page.DiskPageNumber = number;
                     page.RightPageNumber = Helper.ToInt32(b, 11);
                     int index = _BlockHeader.Length;
+                    object[] keys = null;
 
                     for (int i = 0; i < count; i++)
                     {
                         int idx = index + _rowSize * i;
                         byte ks = b[idx];
-                        T key = _T.GetObject(b, idx + 1, ks);
+                        T key;
+                        if (_externalStrings == false)
+                            key = _T.GetObject(b, idx + 1, ks);
+                        else
+                        {
+                            if (keys == null)
+                            {
+                                int blknum = Helper.ToInt32(b, idx + 1, false);
+                                byte[] bb = _strings.GetData(blknum, page.allocblocks);
+                                keys = (object[])fastBinaryJSON.BJSON.ToObject(bb);
+                            }
+                            key = (T)keys[i];
+                        }
                         int offset = Helper.ToInt32(b, idx + 1 + _maxKeySize);
                         int duppage = Helper.ToInt32(b, idx + 1 + _maxKeySize + 4);
                         page.tree.Add(key, new KeyInfo(offset, duppage));

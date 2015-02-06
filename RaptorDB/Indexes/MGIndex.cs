@@ -67,6 +67,7 @@ namespace RaptorDB
         public T FirstKey;
         public bool isDirty;
         public SafeDictionary<T, KeyInfo> tree;
+        public List<int> allocblocks;
     }
 
     //internal class Statistics
@@ -293,6 +294,7 @@ namespace RaptorDB
             PageInfo pi;
             Page<T> page = LoadPage(key, out pi);
             bool b = page.tree.Remove(key);
+            // FIX : reset the first key for page
             if (b)
             {
                 pi.UniqueCount--;

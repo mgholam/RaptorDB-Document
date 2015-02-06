@@ -60,6 +60,17 @@ namespace RaptorDB
             _BlockSize = _datastore.GetBlockSize();
         }
 
+        public KeyStoreHF(string folder, string filename) // mgindex special storage for strings
+        {
+            _Path = folder;
+            Directory.CreateDirectory(_Path);
+            if (_Path.EndsWith(_S) == false) _Path += _S;
+
+            _datastore = new StorageFileHF(_Path + filename, Global.HighFrequencyKVDiskBlockSize);
+
+            _BlockSize = _datastore.GetBlockSize();
+        }
+
         public int CountHF()
         {
             return _keys.Count();
@@ -172,7 +183,7 @@ namespace RaptorDB
                 {
                     _log.Debug("Compacting storage file ...");
                     if (Directory.Exists(_Path + "temp"))
-                        Directory.Delete(_Path + "temp",true);
+                        Directory.Delete(_Path + "temp", true);
 
                     KeyStoreHF newfile = new KeyStoreHF(_Path + "temp");
                     string[] keys = _keys.GetKeys().Cast<string>().ToArray();
@@ -229,7 +240,8 @@ namespace RaptorDB
         internal void Shutdown()
         {
             _datastore.Shutdown();
-            _keys.Shutdown();
+            if (_keys != null)
+                _keys.Shutdown();
 
             if (File.Exists(_Path + _dirtyFilename))
                 File.Delete(_Path + _dirtyFilename);
@@ -269,6 +281,14 @@ namespace RaptorDB
             }
             ab.datalength = data.Length;
 
+            int firstblock = internalSave(keybytes, data, ab);
+
+            // save keys
+            _keys.Set(key, firstblock);
+        }
+
+        private int internalSave(byte[] keybytes, byte[] data, AllocationBlock ab)
+        {
             int firstblock = _datastore.GetFreeBlockNumber();
             int blocknum = firstblock;
             byte[] header = CreateAllocHeader(ab, keybytes);
@@ -302,9 +322,7 @@ namespace RaptorDB
                 len -= c;
                 counter++;
             }
-
-            // save keys
-            _keys.Set(key, firstblock);
+            return firstblock;
         }
 
         private byte[] CreateAllocHeader(AllocationBlock ab, byte[] keybytes)
@@ -403,7 +421,8 @@ namespace RaptorDB
                 if (File.Exists(_Path + "keys.idx"))
                 {
                     _log.Debug("removing old keys index");
-                    File.Delete(_Path + "keys.idx");
+                    foreach (var f in Directory.GetFiles(_Path, "keys.*"))
+                        File.Delete(f);
                 }
 
                 keys = new MGIndex<string>(_Path, "keys.idx", 255, Global.PageItemCount, false);
@@ -489,5 +508,53 @@ namespace RaptorDB
             }
         }
         #endregion
+
+        internal void FreeBlocks(List<int> list)
+        {
+            lock (_lock)
+                _datastore.FreeBlocks(list);
+        }
+
+        internal int SaveData(string key, byte[] data)
+        {
+            lock (_lock)
+            {
+                byte[] kb = Helper.GetBytes(key);
+                AllocationBlock ab = new AllocationBlock();
+                ab.key = key;
+                ab.keylen = (byte)kb.Length;
+                ab.isCompressed = false;
+                ab.isBinaryJSON = true;
+                ab.datalength = data.Length;
+
+                return internalSave(kb, data, ab);
+            }
+        }
+
+        internal byte[] GetData(int blocknumber, List<int> usedblocks)
+        {
+            lock (_lock)
+            {
+                AllocationBlock ab = FillAllocationBlock(blocknumber);
+                usedblocks = ab.Blocks;
+                byte[] data = new byte[ab.datalength];
+                long offset = 0;
+                int len = ab.datalength;
+                int dbsize = _BlockSize - _blockheader.Length - ab.keylen;
+                ab.Blocks.ForEach(x =>
+                {
+                    byte[] b = _datastore.ReadBlock(x);
+                    int c = len;
+                    if (c > dbsize) c = dbsize;
+                    Buffer.BlockCopy(b, _blockheader.Length + ab.keylen, data, (int)offset, c);
+                    offset += c;
+                    len -= c;
+                });
+                if (ab.isCompressed)
+                    data = MiniLZO.Decompress(data);
+
+                return data;
+            }
+        }
     }
 }

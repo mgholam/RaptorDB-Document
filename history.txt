@@ -1,3 +1,8 @@
+v3.2.5
+------
+- new optimized for storage string MGIndex file 
+- added Global.EnableOptimizedStringIndex flag to control the new index usage
+
 v3.2.0
 ------
 - you can compress the documents in the storage file with Global.CompressDocumentOverKiloBytes configuration

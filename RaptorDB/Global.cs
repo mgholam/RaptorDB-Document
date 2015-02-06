@@ -101,6 +101,10 @@ namespace RaptorDB
         /// Disk block size for high frequency KV storage file (default = 2048)
         /// <para> * Do not use anything under 512 with large string keys</para>
         /// </summary>
-        public static ushort HighFrequencyKVDiskBlockSize = 2048; 
+        public static ushort HighFrequencyKVDiskBlockSize = 2048;
+        /// <summary>
+        /// String key MGIndex that stores keys in an external file for smaller index files
+        /// </summary>
+        public static bool EnableOptimizedStringIndex = true;
     }
 }
