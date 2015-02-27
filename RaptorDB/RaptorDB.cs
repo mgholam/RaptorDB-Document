@@ -298,6 +298,8 @@ namespace RaptorDB
             _objStore.Shutdown();
             _fileStore.Shutdown();
             _objHF.Shutdown();
+            _log.Debug("Shutting down log.");
+            _log.Debug("RaptorDB done.");
             LogManager.Shutdown();
         }
 

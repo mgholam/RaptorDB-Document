@@ -87,7 +87,7 @@ namespace RaptorDB
         {
             // create file
             _filename = filename;
-            if (_filename.Contains(".") == false) _filename += ".idx";
+            if (_filename.Contains(".") == false) _filename += ".deleted";
             _path = path;
             if (_path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false)
                 _path += Path.DirectorySeparatorChar.ToString();
@@ -150,16 +150,19 @@ namespace RaptorDB
 
         private void WriteFile()
         {
-            WAHBitArray.TYPE t;
-            uint[] ints = _bits.GetCompressed(out t);
-            MemoryStream ms = new MemoryStream();
-            BinaryWriter bw = new BinaryWriter(ms);
-            bw.Write((byte)t);// write new format with the data type byte
-            foreach (var i in ints)
+            lock (_lock)
             {
-                bw.Write(i);
+                WAHBitArray.TYPE t;
+                uint[] ints = _bits.GetCompressed(out t);
+                MemoryStream ms = new MemoryStream();
+                BinaryWriter bw = new BinaryWriter(ms);
+                bw.Write((byte)t);// write new format with the data type byte
+                foreach (var i in ints)
+                {
+                    bw.Write(i);
+                }
+                File.WriteAllBytes(_path + _filename, ms.ToArray());
             }
-            File.WriteAllBytes(_path + _filename, ms.ToArray());
         }
 
         private void ReadFile()
@@ -179,12 +182,6 @@ namespace RaptorDB
             }
             _bits = new WAHBitArray(t, ints.ToArray());
         }
-
-        //internal WAHBitArray Not()
-        //{
-        //    return _bits.Not();
-        //}
-
 
         public WAHBitArray Query(object fromkey, object tokey, int maxsize)
         {

@@ -214,7 +214,7 @@ namespace RaptorDB
 
         public int Count()
         {
-            return (int)(_recfilewrite.Length >> 3);
+            return (int)_lastRecordNum;// (int)(_recfilewrite.Length >> 3);
         }
 
         public long WriteRawData(byte[] b)

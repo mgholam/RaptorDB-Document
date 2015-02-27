@@ -24,7 +24,7 @@ namespace Views
 
             var res = from x in q.Rows
                       group x by x.Product into g
-                      select new sumtype // avoid annymous types
+                      select new sumtype // avoid anonymous types
                       {
                           Product = g.Key,
                           TotalPrice = g.Sum(p => p.Price),

@@ -6,6 +6,7 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using RaptorDB.Common;
+using System.Threading;
 
 namespace RaptorDB
 {
@@ -88,7 +89,7 @@ namespace RaptorDB
                 return i;
             }
             else
-                return _lastBlockNumber++;
+                return Interlocked.Increment(ref _lastBlockNumber);//++;
         }
 
         internal void SeekBlock(int blocknumber)

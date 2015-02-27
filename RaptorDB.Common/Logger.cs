@@ -89,7 +89,6 @@ namespace RaptorDB
             }
         }
 
-        //object _writelock = new object();
         private void WriteData()
         {
             if (_output == null)
@@ -181,7 +180,6 @@ namespace RaptorDB
             return sb.ToString();
         }
 
-        //private object _lock = new object();
         public void Log(string logtype, string type, string meth, string msg, params object[] objs)
         {
             lock (_que)

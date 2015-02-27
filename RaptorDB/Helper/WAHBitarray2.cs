@@ -89,9 +89,10 @@ namespace RaptorDB
 
                     if (val == true)
                     {
-                        bool b = false;
-                        if (_offsets.TryGetValue((uint)index, out b) == false)
-                            _offsets.Add((uint)index, true);
+                        //    bool b = false;
+                        //    if (_offsets.TryGetValue((uint)index, out b) == false)
+                        //        _offsets.Add((uint)index, true);
+                        _offsets[(uint)index] = true;
                         // set max
                         if (index > _curMax)
                             _curMax = (uint)index;
@@ -337,8 +338,12 @@ namespace RaptorDB
         #region [  P R I V A T E  ]
         private uint[] GetOffsets()
         {
-            uint[] k = new uint[_offsets.Count];
-            _offsets.Keys.CopyTo(k, 0);
+            uint[] k;
+            lock (_lock)
+            {
+                k = new uint[_offsets.Count];
+                _offsets.Keys.CopyTo(k, 0);
+            }
             Array.Sort(k);
             return k;
         }
@@ -428,6 +433,11 @@ namespace RaptorDB
                 return;
             int c = index >> 5;
             c++;
+            if(_uncompressed == null)
+            {
+                _uncompressed = new uint[c];
+                return;
+            }
             if (c > _uncompressed.Length)
             {
                 uint[] ar = new uint[c];

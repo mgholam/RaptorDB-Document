@@ -1,6 +1,17 @@
+v3.2.6
+------
+- optimizations done by Stainslav Lukeš
+- upgrade to fastJSON v2.1.10
+- upgrade to fastBinaryJSON v1.4.7
+- bug fix bitmap indexes 
+- bug fix file name conflicts with deleted bitmap indexes
+- added version checking of views and RaptorDB engine with auto rebuild for engine upgrades
+- changed deleted bitmap indexes to .deleted extension
+- changed version number files to text mode with .version extension
+
 v3.2.5
 ------
-- new optimized for storage string MGIndex file 
+- new optimized storage for string key MGIndex file 
 - added Global.EnableOptimizedStringIndex flag to control the new index usage
 
 v3.2.0

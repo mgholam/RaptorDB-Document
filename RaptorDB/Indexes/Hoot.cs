@@ -18,20 +18,20 @@ namespace RaptorDB
             _docMode = DocMode;
             if (_Path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false) _Path += Path.DirectorySeparatorChar;
             Directory.CreateDirectory(IndexPath);
-            //LogManager.Configure(_Path + "log.txt", 200, false);
-            //_log.Debug("\r\n");
+
             _log.Debug("Starting hOOt....");
             _log.Debug("Storage Folder = " + _Path);
 
             if (DocMode)
+            {
                 _docs = new KeyStoreString(_Path + "files.docs", false);
-            _bitmaps = new BitmapIndex(_Path, _FileName + ".mgbmp");
-            if (DocMode)
+                // read deleted
+                _deleted = new BoolIndex(_Path, "_deleted.hoot");
                 _lastDocNum = (int)_docs.Count();
+            }
+            _bitmaps = new BitmapIndex(_Path, _FileName + ".mgbmp");
             // read words
             LoadWords();
-            // read deleted
-            _deleted = new BoolIndex(_Path, "_deleted.idx");
         }
 
         private SafeDictionary<string, int> _words = new SafeDictionary<string, int>();
@@ -56,7 +56,8 @@ namespace RaptorDB
 
         public void Save()
         {
-            InternalSave();
+            lock (_lock)
+                InternalSave();
         }
 
         public void Index(int recordnumber, string text)
@@ -268,36 +269,34 @@ namespace RaptorDB
         private object _lock = new object();
         private void InternalSave()
         {
-            lock (_lock)
-            {
-                _log.Debug("saving index...");
-                DateTime dt = FastDateTime.Now;
-                // save deleted
+            _log.Debug("saving index...");
+            DateTime dt = FastDateTime.Now;
+            // save deleted
+            if (_deleted != null)
                 _deleted.SaveIndex();
 
-                // save docs 
-                if (_docMode)
-                    _docs.SaveIndex();
-                _bitmaps.Commit(false);
+            // save docs 
+            if (_docMode)
+                _docs.SaveIndex();
+            _bitmaps.Commit(false);
 
-                MemoryStream ms = new MemoryStream();
-                BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
+            MemoryStream ms = new MemoryStream();
+            BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
 
-                // save words and bitmaps
-                using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Create))
+            // save words and bitmaps
+            using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Create))
+            {
+                foreach (string key in _words.Keys())
                 {
-                    foreach (string key in _words.Keys())
-                    {
-                        bw.Write(key);
-                        bw.Write(_words[key]);
-                    }
-                    byte[] b = ms.ToArray();
-                    words.Write(b, 0, b.Length);
-                    words.Flush();
-                    words.Close();
+                    bw.Write(key);
+                    bw.Write(_words[key]);
                 }
-                _log.Debug("save time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+                byte[] b = ms.ToArray();
+                words.Write(b, 0, b.Length);
+                words.Flush();
+                words.Close();
             }
+            _log.Debug("save time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
         }
 
         private void LoadWords()
@@ -458,10 +457,16 @@ namespace RaptorDB
 
         public void Shutdown()
         {
-            Save();
-            _deleted.Shutdown();
-            if (_docMode)
-                _docs.Shutdown();
+            lock (_lock)
+            {
+                InternalSave();
+
+                if (_docMode)
+                {
+                    _docs.Shutdown();
+                    _deleted.Shutdown();
+                }
+            }
         }
 
         public void FreeMemory()

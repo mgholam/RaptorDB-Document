@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using System.Collections;
 using RaptorDB.Common;
+using System.Threading;
 
 namespace RaptorDB
 {
@@ -177,7 +178,7 @@ namespace RaptorDB
 
         public int GetNewPageNumber()
         {
-            return _LastPageNumber++;
+            return Interlocked.Increment(ref _LastPageNumber); //_LastPageNumber++;
         }
 
         private void SeekPage(int pnum)

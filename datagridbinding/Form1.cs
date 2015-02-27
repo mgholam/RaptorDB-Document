@@ -223,6 +223,7 @@ namespace datagridbinding
             GC.Collect(2);
             //KVHFtest();
 
+
             int c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < 100);
             c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial != 100);
             c = rap.Count("SalesInvoice", "serial != 100");

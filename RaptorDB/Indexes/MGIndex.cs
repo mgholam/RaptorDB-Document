@@ -9,21 +9,6 @@ using RaptorDB.Common;
 namespace RaptorDB
 {
     #region [ internal classes ]
-    //internal struct CacheTimeOut : IComparable<CacheTimeOut>
-    //{
-    //    public CacheTimeOut(int pagenum, long ticks)
-    //    {
-    //        PageNumber = pagenum;
-    //        Ticks = ticks;
-    //    }
-    //    public int PageNumber;
-    //    public long Ticks;
-
-    //    public int CompareTo(CacheTimeOut other)
-    //    {
-    //        return this.Ticks.CompareTo(other.Ticks);
-    //    }
-    //}
 
     internal struct PageInfo  // FEATURE : change back to class for count access for query caching
     {
@@ -67,21 +52,9 @@ namespace RaptorDB
         public T FirstKey;
         public bool isDirty;
         public SafeDictionary<T, KeyInfo> tree;
-        public List<int> allocblocks;
+        public List<int> allocblocks = null;
     }
 
-    //internal class Statistics
-    //{
-    //    public int PageCount = 0;
-    //    public double TotalSplitTime = 0;
-    //    public double FillFactor = 0;
-
-    //    public override string ToString()
-    //    {
-    //        string s = "Page Count = " + PageCount + ", Total Split Time = " + TotalSplitTime;// +", Fill Factor = " + FillFactor;
-    //        return s;
-    //    }
-    //}
     #endregion
 
     internal class MGIndex<T> where T : IComparable<T>
@@ -89,7 +62,6 @@ namespace RaptorDB
         ILog _log = LogManager.GetLogger(typeof(MGIndex<T>));
         private SafeSortedList<T, PageInfo> _pageList = new SafeSortedList<T, PageInfo>();
         private SafeDictionary<int, Page<T>> _cache = new SafeDictionary<int, Page<T>>();
-        //private SafeDictionary<int, CacheTimeOut> _usage = new SafeDictionary<int, CacheTimeOut>();
         private List<int> _pageListDiskPages = new List<int>();
         private IndexFile<T> _index;
         private bool _AllowDuplicates = true;
@@ -455,8 +427,6 @@ namespace RaptorDB
                 page = _index.LoadPageFromPageNumber(pagenum);
                 _cache.Add(pagenum, page);
             }
-            // page usage data 
-            //_usage.Add(pagenum, new CacheTimeOut(pagenum, FastDateTime.Now.Ticks));
             return page;
         }
 
@@ -469,8 +439,6 @@ namespace RaptorDB
                 page = _index.LoadPageFromPageNumber(pagenum);
                 _cache.Add(pagenum, page);
             }
-            // page usage data 
-            //_usage.Add(pagenum, new CacheTimeOut(pagenum, FastDateTime.Now.Ticks));
             return page;
         }
 
@@ -534,8 +502,9 @@ namespace RaptorDB
             for (int i = 0; i < _pageList.Count; i++)
             {
                 Page<T> page = LoadPage(_pageList.GetValue(i).PageNumber);
-                foreach (var k in page.tree.Keys())
-                    count++;
+                //foreach (var k in page.tree.Keys())
+                //    count++;
+                count += page.tree.Count;
             }
             return count;
         }

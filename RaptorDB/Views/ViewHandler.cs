@@ -68,13 +68,22 @@ namespace RaptorDB.Views
         dynamic mapper;
         bool _isDirty = false;
         private string _dirtyFilename = "temp.$";
+        private bool _stsaving = false;
+        private int _RaptorDBVersion = 1; // used for engine changes to views
+        private string _RaptorDBVersionFilename = "RaptorDB.version";
 
+        private object _stlock = new object();
         void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            foreach (var i in _indexes)
-                i.Value.SaveIndex();
+            lock (_stlock)
+            {
+                _stsaving = true;
+                foreach (var i in _indexes)
+                    i.Value.SaveIndex();
 
-            _deletedRows.SaveIndex();
+                _deletedRows.SaveIndex();
+                _stsaving = false;
+            }
         }
 
         public Type GetFireOnType()
@@ -100,31 +109,51 @@ namespace RaptorDB.Views
             {
                 // read version file and check with view
                 int version = 0;
-                if (File.Exists(_Path + "version_.dat"))
+                if (File.Exists(_Path + _view.Name + ".version"))
                 {
-                    version = Helper.ToInt32(File.ReadAllBytes(_Path + "version_.dat"), 0);
-                    if (version < view.Version)
+                    int.TryParse(File.ReadAllText(_Path + _view.Name + ".version"), out version);
+                    if (version != view.Version)
                     {
                         _log.Debug("Newer view version detected");
-                        _log.Debug("Deleting view = " + view.Name);
-                        Directory.Delete(_Path, true);
-                        Directory.CreateDirectory(_Path);
                         rebuild = true;
                     }
                 }
             }
+
             if (File.Exists(_Path + _dirtyFilename))
             {
-                _log.Debug("Last shutdown failed, rebuilding view..." + _view.Name);
-                Directory.Delete(_Path, true);
-                Directory.CreateDirectory(_Path);
+                _log.Debug("Last shutdown failed, rebuilding view : " + _view.Name);
                 rebuild = true;
             }
 
+            if (File.Exists(_Path + _RaptorDBVersionFilename))
+            {
+                // check view engine version
+                string s = File.ReadAllText(_Path + _RaptorDBVersionFilename);
+                int version = 0;
+                int.TryParse(s, out version);
+                if (version != _RaptorDBVersion)
+                {
+                    _log.Debug("RaptorDB view engine upgrade, rebuilding view : " + _view.Name);
+                    rebuild = true;
+                }
+            }
+            else
+            {
+                _log.Debug("RaptorDB view engine upgrade, rebuilding view : " + _view.Name);
+                rebuild = true;
+            }
+
+            if(rebuild)
+            {                     
+                _log.Debug("Deleting old view data folder = " + view.Name);
+                Directory.Delete(_Path, true);
+                Directory.CreateDirectory(_Path);
+            }
             // load indexes here
             CreateLoadIndexes(_schema);
 
-            LoadDeletedRowsBitmap();
+            _deletedRows = new BoolIndex(_Path, _view.Name + ".deleted");
 
             _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat");
 
@@ -349,6 +378,7 @@ namespace RaptorDB.Views
             // exec query return rows
             return ReturnRows<T>(ba, trows, start, count, order);
         }
+
         internal Result<object> Query(int start, int count)
         {
             return Query(start, count, "");
@@ -359,22 +389,22 @@ namespace RaptorDB.Views
             // no filter query -> just show all the data
             DateTime dt = FastDateTime.Now;
             _log.Debug("query : " + _view.Name);
-            int c = _viewData.Count();
+            int totalviewrows = _viewData.Count();
             List<object> rows = new List<object>();
             Result<object> ret = new Result<object>();
             int skip = start;
             int cc = 0;
             WAHBitArray del = _deletedRows.GetBits();
-            ret.TotalCount = c - (int)del.CountOnes();
+            ret.TotalCount = totalviewrows - (int)del.CountOnes();
 
             var order = SortBy(orderby);
 
             if (order.Count == 0)
-                for (int i = 0; i < c; i++)
+                for (int i = 0; i < totalviewrows; i++)
                     order.Add(i);
 
             if (count == -1)
-                count = c;
+                count = totalviewrows;
 
             foreach (int i in order)
             {
@@ -402,33 +432,44 @@ namespace RaptorDB.Views
 
         internal void Shutdown()
         {
-            _saveTimer.Enabled = false;
-            if (_rebuilding)
-                _log.Debug("Waiting for view rebuild to finish... : " + _view.Name);
-
-            while (_rebuilding)
+            try
             {
-                Thread.Sleep(50);
+                lock (_stlock)
+                    _saveTimer.Enabled = false;
+                while (_stsaving)
+                    Thread.Sleep(1);
+
+                if (_rebuilding)
+                    _log.Debug("Waiting for view rebuild to finish... : " + _view.Name);
+
+                while (_rebuilding)
+                    Thread.Sleep(50);
+
+                _log.Debug("Shutting down Viewhandler");
+                // shutdown indexes
+                foreach (var v in _indexes)
+                {
+                    _log.Debug("Shutting down view index : " + v.Key);
+                    v.Value.Shutdown();
+                }
+                // save deletedbitmap
+                _deletedRows.Shutdown();
+
+                _viewData.Shutdown();
+
+                // write view version
+                File.WriteAllText(_Path + _view.Name + ".version", _view.Version.ToString());
+
+                File.WriteAllText(_Path + _RaptorDBVersionFilename, _RaptorDBVersion.ToString());
+                // remove dirty file
+                if (File.Exists(_Path + _dirtyFilename))
+                    File.Delete(_Path + _dirtyFilename);
+                _log.Debug("Viewhandler shutdown done.");
             }
-            _log.Debug("Shutting down Viewhandler");
-            // shutdown indexes
-            foreach (var v in _indexes)
+            catch (Exception ex)
             {
-                _log.Debug("Shutting down view index : " + v.Key);
-                v.Value.Shutdown();
+                _log.Error(ex);
             }
-            // save deletedbitmap
-            _deletedRows.Shutdown();
-
-            _viewData.Shutdown();
-
-            // write view version
-            if (File.Exists(_Path + "version_.dat") == false)
-                File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
-
-            // remove dirty file
-            if (File.Exists(_Path + _dirtyFilename))
-                File.Delete(_Path + _dirtyFilename);
         }
 
         internal void Delete(Guid docid)
@@ -688,7 +729,7 @@ namespace RaptorDB.Views
                 _log.Debug("rebuild view '" + _view.Name + "' done (s) = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
 
                 // write version.dat file when done
-                File.WriteAllBytes(_Path + "version_.dat", Helper.GetBytes(_view.Version, false));
+                File.WriteAllText(_Path + _view.Name + ".version", _view.Version.ToString());
             }
             catch (Exception ex)
             {
@@ -817,11 +858,6 @@ namespace RaptorDB.Views
             }
         }
 
-        private void LoadDeletedRowsBitmap()
-        {
-            _deletedRows = new BoolIndex(_Path, "deleted_.idx");
-        }
-
         private void InsertRowsWithIndexUpdate(Guid guid, List<object[]> rows)
         {
             if (_isDirty == false)
@@ -906,7 +942,7 @@ namespace RaptorDB.Views
             }
 
             else if (type == typeof(bool) || type == typeof(bool?))
-                return new BoolIndex(_Path, name);
+                return new BoolIndex(_Path, name + ".idx");
 
             else if (type.IsEnum)
                 return (IIndex)Activator.CreateInstance(
@@ -1160,12 +1196,12 @@ namespace RaptorDB.Views
         private object _dfile = new object();
         private void WriteDirtyFile()
         {
-            lock(_dfile)
-            { 
-            _isDirty = true;
-            if (File.Exists(_Path + _dirtyFilename) == false)
-                File.WriteAllText(_Path + _dirtyFilename, "dirty");
-                }
+            lock (_dfile)
+            {
+                _isDirty = true;
+                if (File.Exists(_Path + _dirtyFilename) == false)
+                    File.WriteAllText(_Path + _dirtyFilename, "dirty");
+            }
         }
 
         internal int ViewDelete(string filter)

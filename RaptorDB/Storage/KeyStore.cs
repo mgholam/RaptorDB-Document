@@ -446,8 +446,8 @@ namespace RaptorDB
                 _index = null;
                 _archive = null;
                 _deleted = null;
-                log.Debug("Shutting down log");
-                LogManager.Shutdown();
+                //log.Debug("Shutting down log");
+                //LogManager.Shutdown();
             }
         }
 
