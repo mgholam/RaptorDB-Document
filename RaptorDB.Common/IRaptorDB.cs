@@ -344,5 +344,7 @@ namespace RaptorDB.Common
         /// <para>NOTE : You do not have history of changes in this storage.</para>
         /// </summary>
         IKeyStoreHF GetKVHF();
+
+        void Shutdown();
     }
 }

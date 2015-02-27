@@ -89,8 +89,8 @@ namespace datagridbinding
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //if (rap != null)
-            //    rap.Shutdown();
+            if (rap != null)
+                rap.Shutdown();
             this.Close();
         }
 

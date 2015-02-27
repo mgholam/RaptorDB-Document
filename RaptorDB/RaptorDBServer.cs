@@ -16,7 +16,7 @@ namespace RaptorDB
         {
             _path = Directory.GetCurrentDirectory();
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
-            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
+            //AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
             _server = new NetworkServer();
 
             _datapath = DataPath;
@@ -29,12 +29,12 @@ namespace RaptorDB
             _server.Start(port, processpayload);
         }
 
-        void CurrentDomain_ProcessExit(object sender, EventArgs e)
-        {
-            //perform cleanup here
-            log.Debug("process exited");
-            Shutdown();
-        }
+        //void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        //{
+        //    //perform cleanup here
+        //    log.Debug("process exited");
+        //    Shutdown();
+        //}
 
         private string _S = Path.DirectorySeparatorChar.ToString();
         private Dictionary<string, uint> _users = new Dictionary<string, uint>();
@@ -77,6 +77,7 @@ namespace RaptorDB
         {
             WriteUsers();
             _server.Stop();
+            _raptor.Shutdown();
         }
 
         private void WriteUsers()

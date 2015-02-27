@@ -284,13 +284,7 @@ namespace RaptorDB
             if (_cron != null)
                 _cron.Stop();
             _fulltextindex.Shutdown();
-            // save records 
-            _log.Debug("last full text record = " + _LastFulltextIndexed);
-            File.WriteAllBytes(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec", Helper.GetBytes(_LastFulltextIndexed, false));
-            _log.Debug("last record = " + _LastRecordNumberProcessed);
-            File.WriteAllBytes(_Path + "Data" + _S + "_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
-            _log.Debug("last backup record = " + _LastBackupRecordNumber);
-            File.WriteAllBytes(_Path + "Backup" + _S + "LastBackupRecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
+
             _log.Debug("Shutting down");
             _saveTimer.Stop();
             _fulltextTimer.Stop();
@@ -298,6 +292,15 @@ namespace RaptorDB
             _objStore.Shutdown();
             _fileStore.Shutdown();
             _objHF.Shutdown();
+
+            // save records 
+            _log.Debug("last full text record = " + _LastFulltextIndexed);
+            File.WriteAllBytes(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec", Helper.GetBytes(_LastFulltextIndexed, false));
+            _log.Debug("last record = " + _LastRecordNumberProcessed);
+            File.WriteAllBytes(_Path + "Data" + _S + "_lastrecord.rec", Helper.GetBytes(_LastRecordNumberProcessed, false));
+            _log.Debug("last backup record = " + _LastBackupRecordNumber);
+            File.WriteAllBytes(_Path + "Backup" + _S + "LastBackupRecord.rec", Helper.GetBytes(_LastBackupRecordNumber, false));
+
             _log.Debug("Shutting down log.");
             _log.Debug("RaptorDB done.");
             LogManager.Shutdown();
@@ -884,7 +887,7 @@ namespace RaptorDB
 
         private void Initialize()
         {
-            AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
+            //AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
 
             // TODO : read/write global or another object?
             // read raptordb.config here (running parameters)
@@ -1133,11 +1136,12 @@ namespace RaptorDB
             // read from one file and write to the other 
         }
 
-        private void CurrentDomain_ProcessExit(object sender, EventArgs e)
-        {
-            _log.Debug("appdomain closing");
-            Shutdown();
-        }
+        //private void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        //{
+            
+        //    _log.Debug("appdomain closing");
+        //    Shutdown();
+        //}
 
         private object _slock = new object();
         private void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)

@@ -83,7 +83,7 @@ Run with :
             var _raptor = new RaptorDB.RaptorDBServer(Program.Port, Program.Path);
             Console.WriteLine("Press Enter to shutdown...");
             Console.ReadLine();
-            //_raptor.Shutdown();
+            _raptor.Shutdown();
         }
 
         private static bool IsServiceInstalled(string serviceName)

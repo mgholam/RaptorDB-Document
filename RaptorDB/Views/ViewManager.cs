@@ -179,13 +179,20 @@ namespace RaptorDB.Views
         internal void ShutDown()
         {
             _log.Debug("View Manager shutdown");
-            _que.Shutdown();
             // shutdown views
             foreach (var v in _views)
             {
-                _log.Debug(" shutting down view : " + v.Value._view.Name);
-                v.Value.Shutdown();
+                try
+                {
+                    _log.Debug(" shutting down view : " + v.Value._view.Name);
+                    v.Value.Shutdown();
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex);
+                }
             }
+            _que.Shutdown();
         }
 
         internal List<string> GetConsistentViews(Type type)

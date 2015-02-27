@@ -106,7 +106,7 @@ namespace RaptorDB
             {
                 WAHBitArray ba = null;
 
-                ba = GetBitmap(bitmaprecno);
+                ba = internalGetBitmap(bitmaprecno); //GetBitmap(bitmaprecno);
 
                 ba.Set(record, true);
             }

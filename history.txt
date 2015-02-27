@@ -1,3 +1,7 @@
+v3.2.7
+------
+- bug fix wait on view rebuild while Shutdown() was being cut off in 2 secs mid process (ProcessExit)
+
 v3.2.6
 ------
 - optimizations done by Stainslav Lukeš
