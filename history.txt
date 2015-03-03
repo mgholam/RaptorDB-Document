@@ -1,3 +1,7 @@
+v3.2.8
+------
+- bug fix duplicates showing in queries related to the deleted bitmap index 
+
 v3.2.7
 ------
 - bug fix wait on view rebuild while Shutdown() was being cut off in 2 secs mid process (ProcessExit)

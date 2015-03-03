@@ -69,7 +69,7 @@ namespace RaptorDB.Views
         bool _isDirty = false;
         private string _dirtyFilename = "temp.$";
         private bool _stsaving = false;
-        private int _RaptorDBVersion = 1; // used for engine changes to views
+        private int _RaptorDBVersion = 2; // used for engine changes to views
         private string _RaptorDBVersionFilename = "RaptorDB.version";
 
         private object _stlock = new object();
@@ -153,7 +153,7 @@ namespace RaptorDB.Views
             // load indexes here
             CreateLoadIndexes(_schema);
 
-            _deletedRows = new BoolIndex(_Path, _view.Name + ".deleted");
+            _deletedRows = new BoolIndex(_Path, _view.Name , ".deleted");
 
             _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat");
 
@@ -942,7 +942,7 @@ namespace RaptorDB.Views
             }
 
             else if (type == typeof(bool) || type == typeof(bool?))
-                return new BoolIndex(_Path, name + ".idx");
+                return new BoolIndex(_Path, name , ".idx");
 
             else if (type.IsEnum)
                 return (IIndex)Activator.CreateInstance(

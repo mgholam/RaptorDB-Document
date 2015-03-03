@@ -26,7 +26,7 @@ namespace RaptorDB
             {
                 _docs = new KeyStoreString(_Path + "files.docs", false);
                 // read deleted
-                _deleted = new BoolIndex(_Path, "_deleted.hoot");
+                _deleted = new BoolIndex(_Path, "_deleted" , ".hoot");
                 _lastDocNum = (int)_docs.Count();
             }
             _bitmaps = new BitmapIndex(_Path, _FileName + ".mgbmp");

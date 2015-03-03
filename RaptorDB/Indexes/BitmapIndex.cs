@@ -33,6 +33,7 @@ namespace RaptorDB
                 _sc.Done();
             }
         }
+
         private string _recExt = ".mgbmr";
         private string _bmpExt = ".mgbmp";
         private string _FileName = "";

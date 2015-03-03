@@ -484,7 +484,7 @@ namespace RaptorDB
             else
                 _archive = new StorageFile<T>(db, SF_FORMAT.JSON, false);
 
-            _deleted = new BoolIndex(_Path, _FileName + "_deleted.idx");
+            _deleted = new BoolIndex(_Path, _FileName , "_deleted.idx");
 
             log.Debug("Current Count = " + RecordCount().ToString("#,0"));
 
