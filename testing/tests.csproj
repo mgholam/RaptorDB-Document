@@ -109,7 +109,6 @@
     <Compile Include="AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Class1.cs" />
     <Compile Include="program.cs">
       <SubType>Code</SubType>
     </Compile>

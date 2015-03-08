@@ -1,3 +1,10 @@
+v3.2.9
+------
+- upgrade to fastJSON v2.1.11
+- upgrade to fastBinaryJSON v1.4.8
+- added support for vb.net string linq queries 
+- added vb test project
+
 v3.2.8
 ------
 - bug fix duplicates showing in queries related to the deleted bitmap index 

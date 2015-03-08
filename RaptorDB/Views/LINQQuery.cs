@@ -24,11 +24,13 @@ namespace RaptorDB.Views
         QueryExpression qexpression;
 
         protected override Expression VisitBinary(BinaryExpression b)
-        {
-            this.Visit(b.Left);
+        {           
+            var m = this.Visit(b.Left);
+            if (m == null) // VB.net sty;e linq for string compare
+                return b.Right;
             ExpressionType t = b.NodeType;
 
-            if (t == ExpressionType.Equal || t== ExpressionType.NotEqual || 
+            if (t == ExpressionType.Equal || t == ExpressionType.NotEqual ||
                 t == ExpressionType.LessThan || t == ExpressionType.LessThanOrEqual ||
                 t == ExpressionType.GreaterThan || t == ExpressionType.GreaterThanOrEqual)
                 _stack.Push(b.NodeType);
@@ -81,6 +83,17 @@ namespace RaptorDB.Views
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
             string s = m.ToString();
+            // VB.net : e.g. CompareString(x.NoCase, "Me 4", False)
+            if(s.StartsWith("CompareString"))
+            {
+                var left = m.Arguments[0];
+                // Removes dot if any
+                var leftStr = left.ToString().Substring(left.ToString().IndexOf('.') + 1);
+                var right = m.Arguments[1].ToString().Replace("\"", String.Empty);
+                RDBExpression exp = RDBExpression.Equal;
+                _bitmap.Push(qexpression("" + leftStr, exp, right));
+                return null;
+            }
             string mc = s.Substring(s.IndexOf('.') + 1);
             if (mc.Contains("Between"))
             {
