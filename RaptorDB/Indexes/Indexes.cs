@@ -211,15 +211,23 @@ namespace RaptorDB
     #region [  FullTextIndex  ]
     internal class FullTextIndex : Hoot, IIndex
     {
-        public FullTextIndex(string IndexPath, string FileName, bool docmode)
+        public FullTextIndex(string IndexPath, string FileName, bool docmode, bool sortable)
             : base(IndexPath, FileName, docmode)
         {
-
+            if (sortable)
+            {
+                _idx = new TypeIndexes<string>(IndexPath, FileName, Global.DefaultStringKeySize);
+                _sortable = true;
+            }
         }
+        private bool _sortable = false;
+        private IIndex _idx;
 
         public void Set(object key, int recnum)
         {
             base.Index(recnum, (string)key);
+            if (_sortable)
+                _idx.Set(key, recnum); 
         }
 
         public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
@@ -230,8 +238,9 @@ namespace RaptorDB
         public void SaveIndex()
         {
             base.Save();
+            if (_sortable)
+                _idx.SaveIndex();
         }
-
 
         public WAHBitArray Query(object fromkey, object tokey, int maxsize)
         {
@@ -240,8 +249,26 @@ namespace RaptorDB
 
         public object[] GetKeys()
         {
-            return new object[] { }; // FEATURE: ? support get keys 
+            if (_sortable)
+                return _idx.GetKeys(); // support get keys 
+            else
+                return new object[] { }; 
         }
+        void IIndex.FreeMemory()
+        {
+            base.FreeMemory();
+
+            this.SaveIndex();
+        }
+
+        void IIndex.Shutdown()
+        {
+            this.SaveIndex();
+            base.Shutdown();
+            if (_sortable)
+                _idx.Shutdown();
+        }
+        
     }
     #endregion
 

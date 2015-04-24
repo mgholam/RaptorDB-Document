@@ -29,7 +29,7 @@ namespace RaptorDB
                 _deleted = new BoolIndex(_Path, "_deleted" , ".hoot");
                 _lastDocNum = (int)_docs.Count();
             }
-            _bitmaps = new BitmapIndex(_Path, _FileName + ".mgbmp");
+            _bitmaps = new BitmapIndex(_Path, _FileName + "_hoot.bmp");
             // read words
             LoadWords();
         }
@@ -167,7 +167,7 @@ namespace RaptorDB
 
         private WAHBitArray ExecutionPlan(string filter, int maxsize)
         {
-            _log.Debug("query : " + filter);
+            //_log.Debug("query : " + filter);
             DateTime dt = FastDateTime.Now;
             // query indexes
             string[] words = filter.Split(' ');
@@ -240,7 +240,7 @@ namespace RaptorDB
                 ret = bits.AndNot(_deleted.GetBits());
             else
                 ret = bits;
-            _log.Debug("query time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            //_log.Debug("query time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             return ret;
         }
 

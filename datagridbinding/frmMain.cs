@@ -14,9 +14,9 @@ using System.IO;
 
 namespace datagridbinding
 {
-    public partial class Form1 : Form
+    public partial class frmMain : Form
     {
-        public Form1()
+        public frmMain()
         {
             InitializeComponent();
         }
@@ -27,7 +27,7 @@ namespace datagridbinding
         private void Form1_Load(object sender, EventArgs e)
         {
             dataGridView1.DoubleBuffered(true);
-            Form2 f = new Form2();
+            frmStartup f = new frmStartup();
             if (f.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 rap = f._rap;

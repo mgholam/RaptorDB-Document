@@ -1,3 +1,11 @@
+v3.2.10
+-------
+- renamed Form1 to frmMain
+- added sortable fulltext indexes
+- fixed path names for linux systems
+- changed default save and free memory timers to 30 min instead of 60 sec
+- optimized query sorting with internal cache ~100x faster
+
 v3.2.9
 ------
 - upgrade to fastJSON v2.1.11

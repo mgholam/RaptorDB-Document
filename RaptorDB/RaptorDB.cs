@@ -25,6 +25,8 @@ namespace RaptorDB
             fastBinaryJSON.BJSON.Parameters.ParametricConstructorOverride = true;
             fastJSON.JSON.Parameters.UseEscapedUnicode = false;
 
+            if (_S == "/")
+                FolderPath = FolderPath.Replace("\\", "/");
             // create folders 
             Directory.CreateDirectory(FolderPath);
             string foldername = Path.GetFullPath(FolderPath);
@@ -946,7 +948,7 @@ namespace RaptorDB
             save = this.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
             saverep = this.GetType().GetMethod("SaveReplicationObject", BindingFlags.Instance | BindingFlags.NonPublic);
 
-            _fulltextindex = new FullTextIndex(_Path + "Data" + _S + "Fulltext", "fulltext", true);
+            _fulltextindex = new FullTextIndex(_Path + "Data" + _S + "Fulltext", "fulltext", true, false);
 
             // start backround save to views
             _saveTimer = new System.Timers.Timer(Global.BackgroundSaveViewTimer * 1000);

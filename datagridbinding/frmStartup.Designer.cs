@@ -1,6 +1,6 @@
 ﻿namespace datagridbinding
 {
-    partial class Form2
+    partial class frmStartup
     {
         /// <summary>
         /// Required designer variable.

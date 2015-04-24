@@ -69,7 +69,7 @@ namespace RaptorDB.Views
         bool _isDirty = false;
         private string _dirtyFilename = "temp.$";
         private bool _stsaving = false;
-        private int _RaptorDBVersion = 2; // used for engine changes to views
+        private int _RaptorDBVersion = 3; // used for engine changes to views
         private string _RaptorDBVersionFilename = "RaptorDB.version";
 
         private object _stlock = new object();
@@ -186,6 +186,7 @@ namespace RaptorDB.Views
                 i.Value.FreeMemory();
 
             _deletedRows.FreeMemory();
+            InvalidateSortCache();
         }
 
         internal void Commit(int ID)
@@ -240,6 +241,7 @@ namespace RaptorDB.Views
                 // insert new items into view
                 InsertRowsWithIndexUpdate(d.Key, d.Value);
             }
+            InvalidateSortCache();
         }
 
         internal bool InsertTransaction<T>(Guid docid, T doc)
@@ -475,6 +477,8 @@ namespace RaptorDB.Views
         internal void Delete(Guid docid)
         {
             DeleteRowsWith(docid);
+
+            InvalidateSortCache();
         }
 
         #region [  private methods  ]
@@ -931,7 +935,7 @@ namespace RaptorDB.Views
                 return new NoIndex();
 
             if (type == typeof(FullTextString))
-                return new FullTextIndex(_Path, name, false);
+                return new FullTextIndex(_Path, name, false, true);
 
             else if (type == typeof(string))
             {
@@ -1117,6 +1121,8 @@ namespace RaptorDB.Views
             return ReturnRows2<T>(ba, null, start, count, order);
         }
 
+        private SafeDictionary<string, List<int>> _sortcache = new SafeDictionary<string, List<int>>();
+
         internal List<int> SortBy(string sort)
         {
             List<int> sortlist = new List<int>();
@@ -1125,26 +1131,37 @@ namespace RaptorDB.Views
             string col = "";
             foreach (var c in _schema.Columns)
                 if (sort.ToLower().Contains(c.Key.ToLower()))
+                {
                     col = c.Key;
+                    break;
+                }
             if (col == "")
             {
                 _log.Debug("sort column not recognized : " + sort);
                 return sortlist;
             }
-
-            DateTime dt = FastDateTime.Now;
             bool desc = false;
             if (sort.ToLower().Contains(" desc"))
                 desc = true;
-            int count = _viewData.Count();
-            IIndex idx = _indexes[col];
-            object[] keys = idx.GetKeys();
-            Array.Sort(keys);
+            DateTime dt = FastDateTime.Now;
 
-            foreach (var k in keys)
-                foreach (var i in idx.Query(RDBExpression.Equal, k, count).GetBitIndexes())
-                    sortlist.Add(i);
-
+            if (_sortcache.TryGetValue(col, out sortlist) == false)
+            {
+                sortlist = new List<int>();
+                int count = _viewData.Count();
+                IIndex idx = _indexes[col];
+                object[] keys = idx.GetKeys();
+                Array.Sort(keys);
+                //_log.Debug("key count = " + keys.Length);
+                //_log.Debug("sort getkeys time = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+                foreach (var k in keys)
+                {
+                    var bi = idx.Query(RDBExpression.Equal, k, count).GetBitIndexes();
+                    foreach (var i in bi)
+                        sortlist.Add(i);
+                }
+                _sortcache.Add(col, sortlist);
+            }
             if (desc)
                 sortlist.Reverse();
             _log.Debug("Sort column = " + col + ", time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
@@ -1190,6 +1207,8 @@ namespace RaptorDB.Views
                 count = (int)qbits.CountOnes();
             }
             _log.Debug("Deleted rows = " + count);
+
+            InvalidateSortCache();
             return count;
         }
 
@@ -1228,6 +1247,8 @@ namespace RaptorDB.Views
                     count = (int)qbits.CountOnes();
                 }
             }
+
+            InvalidateSortCache();
             return count;
         }
 
@@ -1238,7 +1259,14 @@ namespace RaptorDB.Views
 
             var r = ExtractRows(l);
             InsertRowsWithIndexUpdate(id, r);
+
+            InvalidateSortCache();
             return true;
+        }
+
+        private void InvalidateSortCache()
+        {
+            _sortcache = new SafeDictionary<string, List<int>>();
         }
     }
 }

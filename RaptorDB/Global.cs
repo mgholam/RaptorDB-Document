@@ -29,7 +29,7 @@ namespace RaptorDB
         /// <summary>
         /// KeyStore save to disk timer
         /// </summary>
-        public static int SaveIndexToDiskTimerSeconds = 60;
+        public static int SaveIndexToDiskTimerSeconds = 1800;
         /// <summary>
         /// Flush the StorageFile stream immediately
         /// </summary>
@@ -63,9 +63,9 @@ namespace RaptorDB
         /// </summary>
         public static int BackgroundFullTextIndexBatchSize = 10000;
         /// <summary>
-        /// Free memory checking timer (default = 60 sec)
+        /// Free memory checking timer (default = 1800 sec ~ 30 min)
         /// </summary>
-        public static int FreeMemoryTimerSeconds = 60;
+        public static int FreeMemoryTimerSeconds = 1800;
         /// <summary>
         /// Memory usage limit for internal caching (default = 100 Mb) [using GC.GetTotalMemory()]
         /// </summary>

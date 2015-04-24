@@ -31,7 +31,7 @@ namespace RaptorDB.Common
         void CompactStorageHF();
 
         //IEnumerable<object> EnumerateObjects();
-        // SearchKeys()
+        //string[] SearchKeys(string contains); // FIX : implement 
     }
 
     public interface IRaptorDB

@@ -30,13 +30,14 @@ namespace testing
             Console.CancelKeyPress += new ConsoleCancelEventHandler(Console_CancelKeyPress);
             Console.ReadLine();
             server.Shutdown();
+            
             return;
         }
 
         static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             Console.WriteLine("Shutting down...");
-            server.Shutdown();
+            server.Shutdown(); 
         }
 
         static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

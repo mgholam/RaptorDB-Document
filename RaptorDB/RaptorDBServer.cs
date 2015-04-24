@@ -16,25 +16,22 @@ namespace RaptorDB
         {
             _path = Directory.GetCurrentDirectory();
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
-            //AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
             _server = new NetworkServer();
+            
+            if (_S == "/")// unix system
+                _datapath = DataPath.Replace("\\", "/");
+            else
+                _datapath = DataPath;
 
-            _datapath = DataPath;
             if (_datapath.EndsWith(_S) == false)
                 _datapath += _S;
+            
             _raptor = RaptorDB.Open(DataPath);
             register = _raptor.GetType().GetMethod("RegisterView", BindingFlags.Instance | BindingFlags.Public);
             save = _raptor.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
             Initialize();
             _server.Start(port, processpayload);
         }
-
-        //void CurrentDomain_ProcessExit(object sender, EventArgs e)
-        //{
-        //    //perform cleanup here
-        //    log.Debug("process exited");
-        //    Shutdown();
-        //}
 
         private string _S = Path.DirectorySeparatorChar.ToString();
         private Dictionary<string, uint> _users = new Dictionary<string, uint>();

@@ -10,9 +10,9 @@ using SampleViews;
 
 namespace datagridbinding
 {
-    public partial class Form2 : Form
+    public partial class frmStartup : Form
     {
-        public Form2()
+        public frmStartup()
         {
             InitializeComponent();
         }
