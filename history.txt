@@ -1,3 +1,7 @@
+v3.2.11
+-------
+- bug fix sorting cache
+
 v3.2.10
 -------
 - renamed Form1 to frmMain
