@@ -251,13 +251,13 @@ namespace RaptorDB
                 switch (op)
                 {
                     case OPERATION.AND:
-                        bits = c.And(bits);
+                        bits = bits.And(c);
                         break;
                     case OPERATION.OR:
-                        bits = c.Or(bits);
+                        bits = bits.Or(c);
                         break;
                     case OPERATION.ANDNOT:
-                        bits = c.And(bits.Not(maxsize));
+                        bits = bits.And(c.Not(maxsize));
                         break;
                 }
             }

@@ -144,8 +144,8 @@ namespace RaptorDB.Views
                 rebuild = true;
             }
 
-            if(rebuild)
-            {                     
+            if (rebuild)
+            {
                 _log.Debug("Deleting old view data folder = " + view.Name);
                 Directory.Delete(_Path, true);
                 Directory.CreateDirectory(_Path);
@@ -416,37 +416,17 @@ namespace RaptorDB.Views
             int len = order.Count;
             if (desc == false)
             {
-                for (int idx = 0; idx < len; idx++)// foreach (int i in order)
+                for (int idx = 0; idx < len; idx++)
                 {
-                    int i = order[idx];
-                    if (del.Get(i) == true)
-                        continue;
-                    if (skip > 0)
-                        skip--;
-                    else
-                    {
-                        bool b = OutputRow<object>(rows, i);
-                        if (b && count > 0)
-                            cc++;
-                    }
+                    extractrowobject(count, rows, ref skip, ref cc, del, order, idx);
                     if (cc == count) break;
                 }
             }
             else
             {
-                for (int idx = len - 1; idx >= 0; idx--)// foreach (int i in order)
+                for (int idx = len - 1; idx >= 0; idx--)
                 {
-                    int i = order[idx];
-                    if (del.Get(i) == true)
-                        continue;
-                    if (skip > 0)
-                        skip--;
-                    else
-                    {
-                        bool b = OutputRow<object>(rows, i);
-                        if (b && count > 0)
-                            cc++;
-                    }
+                    extractrowobject(count, rows, ref skip, ref cc, del, order, idx);
                     if (cc == count) break;
                 }
             }
@@ -458,6 +438,22 @@ namespace RaptorDB.Views
             //ret.TotalCount = rows.Count;
             ret.Rows = rows;
             return ret;
+        }
+
+        private void extractrowobject(int count, List<object> rows, ref int skip, ref int cc, WAHBitArray del, List<int> order, int idx)
+        {
+            int i = order[idx];
+            if (del.Get(i) == false)
+            {
+                if (skip > 0)
+                    skip--;
+                else
+                {
+                    bool b = OutputRow<object>(rows, i);
+                    if (b && count > 0)
+                        cc++;
+                }
+            }
         }
 
         internal void Shutdown()
@@ -576,42 +572,21 @@ namespace RaptorDB.Views
             if (count > 0)
             {
                 int len = orderby.Count;
-                if (descending == false)
+                if (len > 0)
                 {
-                    for (int idx = 0; idx < len; idx++) //foreach (int i in orderby)
+                    if (descending == false)
                     {
-                        int i = orderby[idx];
-                        if (ba.Get(i))
+                        for (int idx = 0; idx < len; idx++)
                         {
-                            if (skip > 0)
-                                skip--;
-                            else
-                            {
-                                bool b = OutputRow<object>(rows, i);
-                                if (b && count > 0)
-                                    c++;
-                            }
-                            ba.Set(i, false);
+                            extractsortrowobject(ba, count, orderby, rows, ref skip, ref c, idx);
                             if (c == count) break;
                         }
                     }
-                }
-                else
-                {
-                    for (int idx = len - 1; idx >= 0; idx--) //foreach (int i in orderby)
+                    else
                     {
-                        int i = orderby[idx];
-                        if (ba.Get(i))
+                        for (int idx = len - 1; idx >= 0; idx--)
                         {
-                            if (skip > 0)
-                                skip--;
-                            else
-                            {
-                                bool b = OutputRow<object>(rows, i);
-                                if (b && count > 0)
-                                    c++;
-                            }
-                            ba.Set(i, false);
+                            extractsortrowobject(ba, count, orderby, rows, ref skip, ref c, idx);
                             if (c == count) break;
                         }
                     }
@@ -643,6 +618,23 @@ namespace RaptorDB.Views
             return ret;
         }
 
+        private void extractsortrowobject(WAHBitArray ba, int count, List<int> orderby, List<object> rows, ref int skip, ref int c, int idx)
+        {
+            int i = orderby[idx];
+            if (ba.Get(i))
+            {
+                if (skip > 0)
+                    skip--;
+                else
+                {
+                    bool b = OutputRow<object>(rows, i);
+                    if (b && count > 0)
+                        c++;
+                }
+                ba.Set(i, false);
+            }
+        }
+
         private bool OutputRow<T>(List<T> rows, int i)
         {
             byte[] b = _viewData.ViewReadRawBytes(i);
@@ -668,42 +660,21 @@ namespace RaptorDB.Views
             if (count > 0)
             {
                 int len = orderby.Count;
-                if (descending == false)
+                if (len > 0)
                 {
-                    for (int idx = 0; idx < len; idx++) //foreach (int i in orderby)
+                    if (descending == false)
                     {
-                        int i = orderby[idx];
-                        if (ba.Get(i))
+                        for (int idx = 0; idx < len; idx++) //foreach (int i in orderby)
                         {
-                            if (skip > 0)
-                                skip--;
-                            else
-                            {
-                                bool b = OutputRow<T>(rows, i);
-                                if (b && count > 0)
-                                    c++;
-                            }
-                            ba.Set(i, false);
+                            extractsortrowT(ba, count, orderby, rows, ref skip, ref c, idx);
                             if (c == count) break;
                         }
                     }
-                }
-                else
-                {
-                    for (int idx = len - 1; idx >= 0; idx--) //foreach (int i in orderby)
+                    else
                     {
-                        int i = orderby[idx];
-                        if (ba.Get(i))
+                        for (int idx = len - 1; idx >= 0; idx--) //foreach (int i in orderby)
                         {
-                            if (skip > 0)
-                                skip--;
-                            else
-                            {
-                                bool b = OutputRow<T>(rows, i);
-                                if (b && count > 0)
-                                    c++;
-                            }
-                            ba.Set(i, false);
+                            extractsortrowT(ba, count, orderby, rows, ref skip, ref c, idx);
                             if (c == count) break;
                         }
                     }
@@ -733,6 +704,23 @@ namespace RaptorDB.Views
             ret.Count = rows.Count;
             ret.Rows = rows;
             return ret;
+        }
+
+        private void extractsortrowT<T>(WAHBitArray ba, int count, List<int> orderby, List<T> rows, ref int skip, ref int c, int idx)
+        {
+            int i = orderby[idx];
+            if (ba.Get(i))
+            {
+                if (skip > 0)
+                    skip--;
+                else
+                {
+                    bool b = OutputRow<T>(rows, i);
+                    if (b && count > 0)
+                        c++;
+                }
+                ba.Set(i, false);
+            }
         }
 
         private CreateRow _createrow = null;
@@ -1232,8 +1220,7 @@ namespace RaptorDB.Views
                 IIndex idx = _indexes[col];
                 object[] keys = idx.GetKeys();
                 Array.Sort(keys);
-                //_log.Debug("key count = " + keys.Length);
-                //_log.Debug("sort getkeys time = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+
                 foreach (var k in keys)
                 {
                     var bi = idx.Query(RDBExpression.Equal, k, count).GetBitIndexes();
@@ -1242,8 +1229,6 @@ namespace RaptorDB.Views
                 }
                 _sortcache.Add(col, sortlist);
             }
-            //if (desc)
-            //    sortlist.Reverse();
             _log.Debug("Sort column = " + col + ", time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             return sortlist;
         }

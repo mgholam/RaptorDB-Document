@@ -15,33 +15,43 @@ using System.Collections.Specialized;
 
 namespace fastBinaryJSON
 {
-    internal sealed class BJSONSerializer
+    internal sealed class BJSONSerializer : IDisposable
     {
         private MemoryStream _output = new MemoryStream();
         private MemoryStream _before = new MemoryStream();
-        readonly int _MAX_DEPTH = 20;
+        private int _MAX_DEPTH = 20;
         int _current_depth = 0;
         private Dictionary<string, int> _globalTypes = new Dictionary<string, int>();
         private Dictionary<object, int> _cirobj = new Dictionary<object, int>();
         private BJSONParameters _params;
 
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // dispose managed resources
+                _output.Close();
+                _before.Close();
+            }
+            // free native resources
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         internal BJSONSerializer(BJSONParameters param)
         {
             _params = param;
+            _MAX_DEPTH = param.SerializerMaxDepth;
         }
 
         internal byte[] ConvertToBJSON(object obj)
         {
             WriteValue(obj);
-            //if (_circular)
-            //{
-            //    _before.WriteByte(TOKENS.NAME);
-            //    byte[] b = Reflection.Instance.utf8.GetBytes("$circular");
-            //    _before.WriteByte((byte)b.Length);
-            //    _before.Write(b, 0, b.Length % 256);
-            //    _before.WriteByte(TOKENS.COLON);
-            //    _before.WriteByte(TOKENS.TRUE);
-            //}
+
             // add $types
             if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count > 0)
             {

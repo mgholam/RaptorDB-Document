@@ -1,3 +1,10 @@
+v3.2.12
+-------
+- code cleanup
+- bug fix full text searching with + - prefixes
+- upgrade to fastJSON v2.1.13
+- upgrade to fastBinaryJSON v1.4.10
+
 v3.2.11
 -------
 - bug fix sorting cache

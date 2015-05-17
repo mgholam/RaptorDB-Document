@@ -93,6 +93,10 @@ namespace fastBinaryJSON
         /// IMPORTANT NOTE : If True then all initial values within the class will be ignored and will be not set
         /// </summary>
         public bool ParametricConstructorOverride = false;
+        /// <summary>
+        /// Maximum depth the serializer will go to to avoid loops (default = 20 levels)
+        /// </summary>
+        public short SerializerMaxDepth = 20;
 
         public void FixValues()
         {
@@ -468,15 +472,17 @@ namespace fastBinaryJSON
             }
 
             Dictionary<string, myPropInfo> props = Reflection.Instance.Getproperties(type, typename, Reflection.Instance.IsTypeRegistered(type));
-            foreach (string n in d.Keys)
+            foreach (var kv in d)
             {
+                var n = kv.Key;
+                var v = kv.Value;
                 string name = n.ToLower();
                 myPropInfo pi;
                 if (props.TryGetValue(name, out pi) == false)
                     continue;
                 if (pi.CanWrite)
                 {
-                    object v = d[n];
+                    //object v = d[n];
 
                     if (v != null)
                     {
@@ -567,8 +573,14 @@ namespace fastBinaryJSON
             for (int i = 0; i < data.Count; i++)// each (object ob in data)
             {
                 object ob = data[i];
+                if (ob == null)
+                {
+                    continue;
+                }
                 if (ob is IDictionary)
                     col.SetValue(ParseDictionary((Dictionary<string, object>)ob, globalTypes, bt, null), i);
+                else if (ob is ICollection)
+                    col.SetValue(CreateArray((List<object>)ob, bt, bt.GetElementType(), globalTypes), i);
                 else
                     col.SetValue(ob, i);
             }
