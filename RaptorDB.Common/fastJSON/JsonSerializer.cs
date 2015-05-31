@@ -34,7 +34,6 @@ namespace fastJSON
         {
             WriteValue(obj);
 
-            string str = "";
             if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count > 0)
             {
                 var sb = new StringBuilder();

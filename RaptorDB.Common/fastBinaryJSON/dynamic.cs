@@ -30,8 +30,15 @@ namespace fastBinaryJSON
 
         public override bool TryGetIndex(GetIndexBinder binder, Object[] indexes, out Object result)
         {
-            int index = (int)indexes[0];
-            result = _list[index];
+            var index = indexes[0];
+            if (index is int)
+            {
+                result = _list[(int)index];
+            }
+            else
+            {
+                result = _dictionary[(string)index];
+            }
             if (result is IDictionary<string, object>)
                 result = new DynamicJson(result as IDictionary<string, object>);
             return true;

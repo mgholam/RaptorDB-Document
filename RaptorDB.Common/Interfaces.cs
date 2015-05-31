@@ -6,32 +6,32 @@ using System.Linq.Expressions;
 
 namespace RaptorDB
 {
-    public static class RDBExtensions
-    {
-        ///// <summary>
-        ///// For RaptorDB optimized range queries
-        ///// </summary>
-        ///// <typeparam name="T"></typeparam>
-        ///// <param name="obj"></param>
-        ///// <param name="from"></param>
-        ///// <param name="to"></param>
-        ///// <returns></returns>
-        //public static bool Between<T>(this T obj, T from, T to)
-        //{
-        //    return true;
-        //}
+    //public static class RDBExtensions
+    //{
+    //    ///// <summary>
+    //    ///// For RaptorDB optimized range queries
+    //    ///// </summary>
+    //    ///// <typeparam name="T"></typeparam>
+    //    ///// <param name="obj"></param>
+    //    ///// <param name="from"></param>
+    //    ///// <param name="to"></param>
+    //    ///// <returns></returns>
+    //    //public static bool Between<T>(this T obj, T from, T to)
+    //    //{
+    //    //    return true;
+    //    //}
 
-        ///// <summary>
-        ///// For RaptorDB full text search queries
-        ///// </summary>
-        ///// <param name="obj"></param>
-        ///// <param name="what"></param>
-        ///// <returns></returns>
-        //public static bool Contains(this string obj, string what)
-        //{
-        //    return true;
-        //}
-    }
+    //    ///// <summary>
+    //    ///// For RaptorDB full text search queries
+    //    ///// </summary>
+    //    ///// <param name="obj"></param>
+    //    ///// <param name="what"></param>
+    //    ///// <returns></returns>
+    //    //public static bool Contains(this string obj, string what)
+    //    //{
+    //    //    return true;
+    //    //}
+    //}
 
     /// <summary>
     /// Used for normal string columns 
@@ -144,5 +144,44 @@ namespace RaptorDB
     public interface IClientHandler
     {
         bool GenerateClientData(IQueryInterface api, string username, List<Guid> DocsToSend);
+    }
+
+    public enum COMMANDS
+    {
+        Save,
+        SaveBytes,
+        QueryType,
+        QueryStr,
+        Fetch,
+        FetchBytes,
+        Backup,
+        Delete,
+        DeleteBytes,
+        Restore,
+        AddUser,
+        ServerSide,
+        FullText,
+        CountType,
+        CountStr,
+        GCount,
+        DocHistory,
+        FileHistory,
+        FetchVersion,
+        FetchFileVersion,
+        CheckAssembly,
+        FetchHistoryInfo,
+        FetchByteHistoryInfo,
+        ViewDelete,
+        ViewDelete_t,
+        ViewInsert,
+        ViewInsert_t,
+        DocCount,
+        GetObjectHF,
+        SetObjectHF,
+        DeleteKeyHF,
+        CountHF,
+        ContainsHF,
+        GetKeysHF,
+        CompactStorageHF
     }
 }

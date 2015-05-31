@@ -175,7 +175,7 @@ namespace RaptorDB
             if (filter.IndexOfAny(new char[] { '+', '-' }, 0) > 0)
                 defaulttoand = false;
 
-            WAHBitArray bits = null;
+            WAHBitArray bits = WAHBitArray.Fill(maxsize);            
 
             foreach (string s in words)
             {
@@ -231,8 +231,8 @@ namespace RaptorDB
                     bits = DoBitOperation(bits, ba, op, maxsize);
                 }
             }
-            if (bits == null)
-                return new WAHBitArray();
+            //if (bits == null)
+            //    return new WAHBitArray();
 
             // remove deleted docs
             WAHBitArray ret;

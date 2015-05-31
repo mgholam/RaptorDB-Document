@@ -1,3 +1,11 @@
+v3.2.13
+-------
+- code refactoring
+- bug fix full text index search with leading not "-oak hill"
+- fix time output in logs
+- upgrade to fastJSON v2.1.14
+- upgrade to fastBinaryJSON v1.4.11
+
 v3.2.12
 -------
 - code cleanup

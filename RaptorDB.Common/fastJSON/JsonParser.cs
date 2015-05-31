@@ -298,13 +298,13 @@ namespace fastJSON
                 break;
             } while (true);
 
-			if (dec)
-			{
-				string s = json.Substring(startIndex, index - startIndex);
-				return double.Parse(s, NumberFormatInfo.InvariantInfo);
-			}
-			long num;
-			return JSON.CreateLong(out num, json, startIndex, index - startIndex);
+            if (dec)
+            {
+                string s = json.Substring(startIndex, index - startIndex);
+                return double.Parse(s, NumberFormatInfo.InvariantInfo);
+            }
+            long num;
+            return JSON.CreateLong(out num, json, startIndex, index - startIndex);
         }
 
         private Token LookAhead()

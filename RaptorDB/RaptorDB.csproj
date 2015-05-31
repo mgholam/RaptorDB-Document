@@ -140,6 +140,9 @@
     <Compile Include="Views\ViewManager.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\RaptorDB_Doc.nuspec">
+      <Link>RaptorDB_Doc.nuspec</Link>
+    </None>
     <None Include="Replication\Readme.txt" />
   </ItemGroup>
   <ItemGroup>
