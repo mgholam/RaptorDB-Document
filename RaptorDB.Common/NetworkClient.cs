@@ -14,6 +14,9 @@ namespace RaptorDB.Common
     // Header bits format : 0 - json = 1 , bin = 0 
     //                      1 - binaryjson = 1 , text json = 0
     //                      2 - compressed = 1 , uncompressed = 0 
+    //
+    //     0   : data format
+    //     1-4 : data length
 
     public class NetworkClient
     {
@@ -33,6 +36,7 @@ namespace RaptorDB.Common
         private string _server;
         private int _port;
 
+        public Guid ClientID = Guid.NewGuid();
         public bool UseBJSON = true;
 
         public void Connect()
@@ -115,6 +119,7 @@ namespace RaptorDB.Common
         {
             TcpListener listener = new TcpListener(IPAddress.Any, _port);
             listener.Start();
+            
             while (_run)
             {
                 try

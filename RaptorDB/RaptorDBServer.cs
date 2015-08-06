@@ -33,6 +33,17 @@ namespace RaptorDB
             save = _raptor.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
             Initialize();
             _server.Start(port, processpayload);
+
+            // add timer to cleanup connected clients
+            _concleanuptimer = new System.Timers.Timer(30 * 1000);
+            _concleanuptimer.AutoReset = true;
+            _concleanuptimer.Enabled = true;
+            _concleanuptimer.Elapsed += _concleanuptimer_Elapsed;
+        }
+
+        void _concleanuptimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            _connectedClients.Clear();
         }
 
         private string _S = Path.DirectorySeparatorChar.ToString();
@@ -48,6 +59,10 @@ namespace RaptorDB
         private SafeDictionary<string, ServerSideFunc> _ssidecache = new SafeDictionary<string, ServerSideFunc>();
         private Dictionary<string, Handler> _handlers = new Dictionary<string, Handler>();
         private const string _RaptorDB_users_config = "RaptorDB-Users.config";
+        private SafeDictionary<Guid, bool> _connectedClients = new SafeDictionary<Guid, bool>();
+        private System.Timers.Timer _concleanuptimer;
+
+        public int ConnectedClients { get { return _connectedClients.Count; } }
 
         private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
@@ -98,11 +113,18 @@ namespace RaptorDB
         private object processpayload(object data)
         {
             Packet p = (Packet)data;
+            ReturnPacket ret = new ReturnPacket(true);
 
             if (Authenticate(p) == false)
                 return new ReturnPacket(false, "Authentication failed");
+            if (p.Command == "_close")
+            {
+                _connectedClients.Remove(p.ClientID);
+                return ret;
+            }
+            else
+                _connectedClients.Add(p.ClientID, true);
 
-            ReturnPacket ret = new ReturnPacket(true);
             try
             {
                 Handler d = null;
@@ -383,6 +405,28 @@ namespace RaptorDB
                 {
                     ret.OK = true;
                     _raptor.GetKVHF().CompactStorageHF();
+                });
+
+            _handlers.Add("" + COMMANDS.IncrementHF,
+                (p, ret) =>
+                {
+                    ret.OK = true;
+                    var param = (object[])p.Data;
+                    if (param[1] is int)
+                        ret.Data = _raptor.GetKVHF().Increment((string)param[0], (int)param[1]);
+                    else
+                        ret.Data = _raptor.GetKVHF().Increment((string)param[0], (decimal)param[1]);
+                });
+
+            _handlers.Add("" + COMMANDS.DecrementHF,
+                (p, ret) =>
+                {
+                    ret.OK = true;
+                    var param = (object[])p.Data;
+                    if (param[1] is int)
+                        ret.Data = _raptor.GetKVHF().Decrement((string)param[0], (int)param[1]);
+                    else
+                        ret.Data = _raptor.GetKVHF().Decrement((string)param[0], (decimal)param[1]);
                 });
         }
 

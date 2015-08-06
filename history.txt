@@ -1,3 +1,13 @@
+v3.2.14
+-------
+- server keeps track of connected clients count with auto clear every 30 secs
+- added atomic Increment() Decrement() to HFKV int,decimal values
+- bug fix wildcard search in full text indexes
+- added not wildcard search in full text -> "-oak -*l"
+- fulltext indexes break text on spaces and char.IsPunctuation()
+- api.NextRowNumber() blocks until rebuild finishes
+- view map functions has access to high frequency KV through the api interface
+
 v3.2.13
 -------
 - code refactoring

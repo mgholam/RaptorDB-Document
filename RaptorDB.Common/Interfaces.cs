@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Linq.Expressions;
+using RaptorDB.Common;
 
 namespace RaptorDB
 {
@@ -139,6 +140,9 @@ namespace RaptorDB
         /// </summary>
         /// <returns></returns>
         int NextRowNumber();
+
+        IKeyStoreHF GetKVHF();
+        //void EmitRow<V>(Guid docid, V row);
     }
 
     public interface IClientHandler
@@ -182,6 +186,8 @@ namespace RaptorDB
         CountHF,
         ContainsHF,
         GetKeysHF,
-        CompactStorageHF
+        CompactStorageHF,
+        IncrementHF,
+        DecrementHF
     }
 }

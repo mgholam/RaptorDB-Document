@@ -83,6 +83,12 @@ namespace RaptorDB.Common
                 return _Dictionary.Remove(key);
             }
         }
+
+        public void Clear()
+        {
+            lock (_Padlock)
+                _Dictionary.Clear();
+        }
     }
 
     public class SafeSortedList<T,V>

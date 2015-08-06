@@ -97,8 +97,48 @@ namespace RaptorDB
             Packet p = new Packet();
             p.Username = _username;
             p.PasswordHash = Helper.MurMur.Hash(Encoding.UTF8.GetBytes(_username + "|" + _password)).ToString();
-
+            p.ClientID = _client.ClientID;
             return p;
+        }
+
+        public int Increment(string key, int amount)
+        {
+            Packet p = CreatePacket();
+            p.Command = "" + COMMANDS.IncrementHF;
+            p.Data = new object[] { key, amount };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+
+            return (int)ret.Data;
+        }
+
+        public int Decrement(string key, int amount)
+        {
+            Packet p = CreatePacket();
+            p.Command = "" + COMMANDS.DecrementHF;
+            p.Data = new object[] { key, amount };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+
+            return (int)ret.Data;
+        }
+
+        public decimal Increment(string key, decimal amount)
+        {
+            Packet p = CreatePacket();
+            p.Command = "" + COMMANDS.IncrementHF;
+            p.Data = new object[] { key, amount };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+
+            return (decimal)ret.Data;
+        }
+
+        public decimal Decrement(string key, decimal amount)
+        {
+            Packet p = CreatePacket();
+            p.Command = "" + COMMANDS.DecrementHF;
+            p.Data = new object[] { key, amount };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+
+            return (decimal)ret.Data;
         }
     }
 
@@ -215,7 +255,16 @@ namespace RaptorDB
         /// </summary>
         public void Shutdown()
         {
-            _client.Close();
+            try
+            {
+                // send close packet
+                Packet p = CreatePacket();
+                p.Command = "_close";
+                ReturnPacket ret = (ReturnPacket)_client.Send(p);    
+                _client.Close();
+            }
+            catch { }
+
         }
 
         /// <summary>
@@ -337,7 +386,7 @@ namespace RaptorDB
             Packet p = new Packet();
             p.Username = _username;
             p.PasswordHash = Helper.MurMur.Hash(Encoding.UTF8.GetBytes(_username + "|" + _password)).ToString();
-
+            p.ClientID = _client.ClientID;
             return p;
         }
 

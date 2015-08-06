@@ -29,7 +29,12 @@ namespace RaptorDB.Common
         bool ContainsHF(string key);
         string[] GetKeysHF();
         void CompactStorageHF();
-
+        int Increment(string key, int amount);
+        decimal Increment(string key, decimal amount);
+        int Decrement(string key, int amount);
+        decimal Decrement(string key, decimal amount);
+        //T Increment<T>(string key, T amount);
+        //T Decrement<T>(string key, T amount);
         //IEnumerable<object> EnumerateObjects();
         //string[] SearchKeys(string contains); // FIX : implement 
     }

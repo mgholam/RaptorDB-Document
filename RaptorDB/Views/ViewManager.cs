@@ -11,12 +11,14 @@ namespace RaptorDB.Views
 {
     internal class ViewManager
     {
-        public ViewManager(string viewfolder, IDocStorage<Guid> objstore)
+        public ViewManager(string viewfolder, IDocStorage<Guid> objstore, IKeyStoreHF kvhf)
         {
             _Path = viewfolder;
             _objectStore = objstore;
+            _kvhf = kvhf;
         }
 
+        private IKeyStoreHF _kvhf;
         private IDocStorage<Guid> _objectStore;
         private ILog _log = LogManager.GetLogger(typeof(ViewManager));
         private string _Path = "";
@@ -402,6 +404,11 @@ namespace RaptorDB.Views
                 return vman.ViewInsert(id, row);
             }
             return false;
+        }
+
+        internal IKeyStoreHF GetKVHF()
+        {
+            return _kvhf;
         }
     }
 }

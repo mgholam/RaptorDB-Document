@@ -762,6 +762,8 @@ namespace RaptorDB.Views
                 DateTime dt = FastDateTime.Now;
 
                 int c = docs.RecordCount();
+                int dc = 0;
+                
                 for (int i = 0; i < c; i++)
                 {
                     StorageItem<Guid> meta = null;
@@ -790,12 +792,14 @@ namespace RaptorDB.Views
                             {
                                 var m = insertmethod.MakeGenericMethod(new Type[] { obj.GetType() });
                                 m.Invoke(this, new object[] { meta.key, obj });
+                                dc++;
                             }
                         }
                         else
                             _log.Error("Doc is null : " + meta.key);
                     }
                 }
+                _log.Debug("Documents processed = " + dc);
                 _log.Debug("rebuild view '" + _view.Name + "' done (s) = " + FastDateTime.Now.Subtract(dt).TotalSeconds);
 
                 // write version.dat file when done
@@ -1096,6 +1100,9 @@ namespace RaptorDB.Views
 
         private int internalCount()
         {
+            if (_rebuilding)
+                while (_rebuilding)
+                    Thread.Sleep(10); // wait for rebuild to finish
             int c = _viewData.Count();
             int cc = (int)_deletedRows.GetBits().CountOnes();
             return c - cc;

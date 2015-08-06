@@ -175,11 +175,12 @@ namespace RaptorDB
             if (filter.IndexOfAny(new char[] { '+', '-' }, 0) > 0)
                 defaulttoand = false;
 
-            WAHBitArray bits = WAHBitArray.Fill(maxsize);            
+            WAHBitArray found = null;// WAHBitArray.Fill(maxsize);            
 
             foreach (string s in words)
             {
                 int c;
+                bool not = false;
                 string word = s;
                 if (s == "") continue;
 
@@ -197,13 +198,19 @@ namespace RaptorDB
                 {
                     op = OPERATION.ANDNOT;
                     word = s.Replace("-", "");
+                    not = true;
+                    if (found == null) // leading with - -> "-oak hill"
+                    {
+                        found = WAHBitArray.Fill(maxsize);
+                    }
                 }
 
-                if (s.Contains("*") || s.Contains("?"))
+                if (word.Contains("*") || word.Contains("?"))
                 {
-                    WAHBitArray wildbits = null;
+                    WAHBitArray wildbits = new WAHBitArray();
+
                     // do wildcard search
-                    Regex reg = new Regex("^" + s.Replace("*", ".*").Replace("?", "."), RegexOptions.IgnoreCase);
+                    Regex reg = new Regex("^" + word.Replace("*", ".*").Replace("?", ".")+"$", RegexOptions.IgnoreCase);
                     foreach (string key in _words.Keys())
                     {
                         if (reg.IsMatch(key))
@@ -214,32 +221,35 @@ namespace RaptorDB
                             wildbits = DoBitOperation(wildbits, ba, OPERATION.OR, maxsize);
                         }
                     }
-                    if (bits == null)
-                        bits = wildbits;
+
+                    if (found == null)
+                        found = wildbits;
                     else
                     {
-                        if (op == OPERATION.AND)
-                            bits = bits.And(wildbits);
-                        else
-                            bits = bits.Or(wildbits);
+                        if (not) // "-oak -*l"
+                            found = found.AndNot(wildbits);
+                        else if (op == OPERATION.AND)
+                            found = found.And(wildbits);
+                        else 
+                            found = found.Or(wildbits);
                     }
                 }
                 else if (_words.TryGetValue(word.ToLowerInvariant(), out c))
                 {
                     // bits logic
                     WAHBitArray ba = _bitmaps.GetBitmap(c);
-                    bits = DoBitOperation(bits, ba, op, maxsize);
+                    found = DoBitOperation(found, ba, op, maxsize);
                 }
             }
-            //if (bits == null)
-            //    return new WAHBitArray();
+            if (found == null)
+                return new WAHBitArray();
 
             // remove deleted docs
             WAHBitArray ret;
             if (_docMode)
-                ret = bits.AndNot(_deleted.GetBits());
+                ret = found.AndNot(_deleted.GetBits());
             else
-                ret = bits;
+                ret = found;
             //_log.Debug("query time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
             return ret;
         }
@@ -373,7 +383,7 @@ namespace RaptorDB
             while (index < count)
             {
                 char c = chars[index++];
-                if (!(char.IsLetterOrDigit(c) || c == '.' || c == '-' || c == '$' || c == '#')) // rdb specific
+                if (!(char.IsLetterOrDigit(c) || char.IsPunctuation(c) )) // rdb specific
                 {
                     if (run != -1)
                     {

@@ -922,7 +922,9 @@ namespace RaptorDB
             _objStore = new KeyStore<Guid>(_Path + "Data" + _S + "data", true);
             _fileStore = new KeyStore<Guid>(_Path + "Data" + _S + "files", true);
 
-            _viewManager = new Views.ViewManager(_Path + "Views", _objStore);
+            _objHF = new KeyStoreHF(_Path + "DataHF");
+
+            _viewManager = new Views.ViewManager(_Path + "Views", _objStore, _objHF);
 
             // load _LastFulltextIndexed 
             if (File.Exists(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec"))
@@ -996,8 +998,6 @@ namespace RaptorDB
                 // if branch.config exists -> start replication client
                 _repclient = new Replication.ReplicationClient(_Path, File.ReadAllText(_Path + "RaptorDB-Branch.config"), _objStore);
             }
-
-            _objHF = new KeyStoreHF(_Path + "DataHF");
         }
 
         object _inboxlock = new object();

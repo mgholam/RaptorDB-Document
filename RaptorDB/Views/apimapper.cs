@@ -127,5 +127,10 @@ namespace RaptorDB.Views
         {
             return _viewhandler.NextRowNumber();
         }
+
+        public Common.IKeyStoreHF GetKVHF()
+        {
+            return _viewmanager.GetKVHF();
+        }
     }
 }

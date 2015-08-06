@@ -86,21 +86,7 @@ namespace RaptorDB
                     AllocationBlock ab = FillAllocationBlock(alloc);
                     if (ab.deleteKey == false)
                     {
-                        byte[] data = new byte[ab.datalength];
-                        long offset = 0;
-                        int len = ab.datalength;
-                        int dbsize = _BlockSize - _blockheader.Length - ab.keylen;
-                        ab.Blocks.ForEach(x =>
-                        {
-                            byte[] b = _datastore.ReadBlock(x);
-                            int c = len;
-                            if (c > dbsize) c = dbsize;
-                            Buffer.BlockCopy(b, _blockheader.Length + ab.keylen, data, (int)offset, c);
-                            offset += c;
-                            len -= c;
-                        });
-                        if (ab.isCompressed)
-                            data = MiniLZO.Decompress(data);
+                        byte[] data = readblockdata(ab);
 
                         return fastBinaryJSON.BJSON.ToObject(data);
                     }
@@ -253,6 +239,26 @@ namespace RaptorDB
         }
 
         #region [  private methods  ]
+        private byte[] readblockdata(AllocationBlock ab)
+        {
+            byte[] data = new byte[ab.datalength];
+            long offset = 0;
+            int len = ab.datalength;
+            int dbsize = _BlockSize - _blockheader.Length - ab.keylen;
+            ab.Blocks.ForEach(x =>
+            {
+                byte[] b = _datastore.ReadBlock(x);
+                int c = len;
+                if (c > dbsize) c = dbsize;
+                Buffer.BlockCopy(b, _blockheader.Length + ab.keylen, data, (int)offset, c);
+                offset += c;
+                len -= c;
+            });
+            if (ab.isCompressed)
+                data = MiniLZO.Decompress(data);
+            return data;
+        }
+
         private object _dfile = new object();
         private void WriteDirtyFile()
         {
@@ -537,24 +543,112 @@ namespace RaptorDB
             {
                 AllocationBlock ab = FillAllocationBlock(blocknumber);
                 usedblocks = ab.Blocks;
-                byte[] data = new byte[ab.datalength];
-                long offset = 0;
-                int len = ab.datalength;
-                int dbsize = _BlockSize - _blockheader.Length - ab.keylen;
-                ab.Blocks.ForEach(x =>
-                {
-                    byte[] b = _datastore.ReadBlock(x);
-                    int c = len;
-                    if (c > dbsize) c = dbsize;
-                    Buffer.BlockCopy(b, _blockheader.Length + ab.keylen, data, (int)offset, c);
-                    offset += c;
-                    len -= c;
-                });
-                if (ab.isCompressed)
-                    data = MiniLZO.Decompress(data);
+                byte[] data = readblockdata(ab);
 
                 return data;
             }
+        }
+
+        public int Increment(string key, int amount)
+        {
+            byte[] k = Helper.GetBytes(key);
+            if (k.Length > 255)
+            {
+                _log.Error("Key length > 255 : " + key);
+                throw new Exception("Key must be less than 255 characters");
+                //return false;
+            }
+            lock (_lock)
+            {
+                if (_isDirty == false)
+                    WriteDirtyFile();
+
+                AllocationBlock ab = null;
+                int firstblock = 0;
+                if (_keys.Get(key, out firstblock))// key exists already
+                    ab = FillAllocationBlock(firstblock);
+
+                object obj = amount;
+                if (ab.deleteKey == false)
+                {
+                    byte[] data = readblockdata(ab);
+
+                    obj = fastBinaryJSON.BJSON.ToObject(data);
+
+                    // add here
+                    if (obj is int)
+                        obj = ((int)obj) + amount;
+                    else if (obj is long)
+                        obj = ((long)obj) + amount;
+                    else if (obj is decimal)
+                        obj = ((decimal)obj) + amount;
+                    else
+                        return (int)obj;
+                }
+
+                SaveNew(key, k, obj);
+                if (ab != null)
+                {
+                    // free old blocks
+                    ab.Blocks.Add(ab.blocknumber);
+                    _datastore.FreeBlocks(ab.Blocks);
+                }
+                return (int)obj;
+            }
+        }
+
+        public int Decrement(string key, int amount)
+        {
+            return (int)Increment(key, -amount);
+        }
+
+        public decimal Increment(string key, decimal amount)
+        {
+            byte[] k = Helper.GetBytes(key);
+            if (k.Length > 255)
+            {
+                _log.Error("Key length > 255 : " + key);
+                throw new Exception("Key must be less than 255 characters");
+                //return false;
+            }
+            lock (_lock)
+            {
+                if (_isDirty == false)
+                    WriteDirtyFile();
+
+                AllocationBlock ab = null;
+                int firstblock = 0;
+                if (_keys.Get(key, out firstblock))// key exists already
+                    ab = FillAllocationBlock(firstblock);
+
+                object obj = amount;
+                if (ab.deleteKey == false)
+                {
+                    byte[] data = readblockdata(ab);
+
+                    obj = fastBinaryJSON.BJSON.ToObject(data);
+
+                    // add here
+                    if (obj is decimal)
+                        obj = ((decimal)obj) + amount;
+                    else
+                        return (decimal)obj;
+                }
+
+                SaveNew(key, k, obj);
+                if (ab != null)
+                {
+                    // free old blocks
+                    ab.Blocks.Add(ab.blocknumber);
+                    _datastore.FreeBlocks(ab.Blocks);
+                }
+                return (decimal)obj;
+            }
+        }
+
+        public decimal Decrement(string key, decimal amount)
+        {
+            return Increment(key, -amount);
         }
     }
 }
