@@ -171,9 +171,9 @@ namespace RaptorDB
             DateTime dt = FastDateTime.Now;
             // query indexes
             string[] words = filter.Split(' ');
-            bool defaulttoand = true;
-            if (filter.IndexOfAny(new char[] { '+', '-' }, 0) > 0)
-                defaulttoand = false;
+            //bool defaulttoand = true;
+            //if (filter.IndexOfAny(new char[] { '+', '-' }, 0) > 0)
+            //    defaulttoand = false;
 
             WAHBitArray found = null;// WAHBitArray.Fill(maxsize);            
 
@@ -184,17 +184,17 @@ namespace RaptorDB
                 string word = s;
                 if (s == "") continue;
 
-                OPERATION op = OPERATION.OR;
-                if (defaulttoand)
-                    op = OPERATION.AND;
+                OPERATION op = OPERATION.AND;
+                //if (defaulttoand)
+                //    op = OPERATION.AND;
 
-                if (s.StartsWith("+"))
+                if (word.StartsWith("+"))
                 {
-                    op = OPERATION.AND;
+                    op = OPERATION.OR;
                     word = s.Replace("+", "");
                 }
 
-                if (s.StartsWith("-"))
+                if (word.StartsWith("-"))
                 {
                     op = OPERATION.ANDNOT;
                     word = s.Replace("-", "");
@@ -210,7 +210,7 @@ namespace RaptorDB
                     WAHBitArray wildbits = new WAHBitArray();
 
                     // do wildcard search
-                    Regex reg = new Regex("^" + word.Replace("*", ".*").Replace("?", ".")+"$", RegexOptions.IgnoreCase);
+                    Regex reg = new Regex("^" + word.Replace("*", ".*").Replace("?", ".") + "$", RegexOptions.IgnoreCase);
                     foreach (string key in _words.Keys())
                     {
                         if (reg.IsMatch(key))
@@ -230,7 +230,7 @@ namespace RaptorDB
                             found = found.AndNot(wildbits);
                         else if (op == OPERATION.AND)
                             found = found.And(wildbits);
-                        else 
+                        else
                             found = found.Or(wildbits);
                     }
                 }
@@ -240,6 +240,8 @@ namespace RaptorDB
                     WAHBitArray ba = _bitmaps.GetBitmap(c);
                     found = DoBitOperation(found, ba, op, maxsize);
                 }
+                else if (op == OPERATION.AND)
+                    found = null;
             }
             if (found == null)
                 return new WAHBitArray();

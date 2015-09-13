@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>RaptorDB_doc</id>
-        <version>3.2.13</version>
+        <version>3.2.15</version>
         <title>RaptorDB Document Database</title>
         <authors>mgholam</authors>
         <owners />

@@ -1,3 +1,8 @@
+v3.2.15
+-------
+- *breaking change* + in full text search means OR now
+- full text search bug fix edge case
+
 v3.2.14
 -------
 - server keeps track of connected clients count with auto clear every 30 secs
