@@ -1,3 +1,11 @@
+﻿v3.2.16
+-------
+- added support for ushort in views (thanks to dragosc)
+- bug fix FetchHistory() return values in server mode (thanks to DrDeadCrash)
+- bug fix edge case bitmap index commits (thanks to dragosc)
+- bug fix hOOt fulltext index shutdown
+- bug fix FullTextSerach() to filter out json characters before indexing
+
 v3.2.15
 -------
 - *breaking change* + in full text search means OR now

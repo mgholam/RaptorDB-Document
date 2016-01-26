@@ -472,17 +472,28 @@ namespace RaptorDB
             lock (_lock)
             {
                 InternalSave();
-
-                if (_docMode)
+                if(_deleted!=null)
                 {
-                    _docs.Shutdown();
+                    _deleted.SaveIndex();
                     _deleted.Shutdown();
                 }
+
+                if (_bitmaps != null)
+                {					
+                    _bitmaps.Commit(Global.FreeBitmapMemoryOnSave);
+                    _bitmaps.Shutdown();
+                    _bitmaps = null;
+                }
+
+                if (_docMode)
+                    _docs.Shutdown();
             }
         }
 
         public void FreeMemory()
         {
+			if (_deleted != null)
+                _deleted.FreeMemory();
             if (_bitmaps != null)
                 _bitmaps.FreeMemory();
             if (_docs != null)

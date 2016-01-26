@@ -85,8 +85,8 @@ namespace RaptorDB
 
                 foreach (int k in keys)
                 {
-                    var bmp = _cache[k];
-                    if (bmp.isDirty)
+                    WAHBitArray bmp = null;
+                    if (_cache.TryGetValue(k, out bmp) && bmp.isDirty)
                     {
                         SaveBitmap(k, bmp);
                         bmp.FreeMemory();
@@ -388,16 +388,16 @@ namespace RaptorDB
             return bc;
         }
 
-//#pragma warning disable 642
+        //#pragma warning disable 642
         private void CheckInternalOP()
         {
             if (_optimizing)
-              lock (_oplock) { } // yes! this is good
+                lock (_oplock) { } // yes! this is good
             //lock (_que)
             //    _que.Enqueue(1);
             Interlocked.Increment(ref _workingCount);
         }
-//#pragma warning restore 642
+        //#pragma warning restore 642
 
         private void Done()
         {

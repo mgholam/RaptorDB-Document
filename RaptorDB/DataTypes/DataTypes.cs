@@ -50,17 +50,18 @@ namespace RaptorDB
         {
             Type type = typeof(T);
 
-            if (type == typeof(int))            return (IGetBytes<T>)new int_handler<T>();
-            else if (type == typeof(uint))      return (IGetBytes<T>)new uint_handler<T>();
-            else if (type == typeof(long))      return (IGetBytes<T>)new long_handler<T>();
-            else if (type == typeof(Guid))      return (IGetBytes<T>)new guid_handler<T>();
-            else if (type == typeof(string))    return (IGetBytes<T>)new string_handler<T>();
-            else if (type == typeof(DateTime))  return (IGetBytes<T>)new datetime_handler<T>();
-            else if (type == typeof(decimal))   return (IGetBytes<T>)new decimal_handler<T>();
-            else if (type == typeof(short))     return (IGetBytes<T>)new short_handler<T>();
-            else if (type == typeof(float))     return (IGetBytes<T>)new float_handler<T>();
-            else if (type == typeof(byte))      return (IGetBytes<T>)new byte_handler<T>();
-            else if (type == typeof(double))    return (IGetBytes<T>)new double_handler<T>();
+            if (type == typeof(int)) return (IGetBytes<T>)new int_handler<T>();
+            else if (type == typeof(uint)) return (IGetBytes<T>)new uint_handler<T>();
+            else if (type == typeof(long)) return (IGetBytes<T>)new long_handler<T>();
+            else if (type == typeof(Guid)) return (IGetBytes<T>)new guid_handler<T>();
+            else if (type == typeof(string)) return (IGetBytes<T>)new string_handler<T>();
+            else if (type == typeof(DateTime)) return (IGetBytes<T>)new datetime_handler<T>();
+            else if (type == typeof(decimal)) return (IGetBytes<T>)new decimal_handler<T>();
+            else if (type == typeof(short)) return (IGetBytes<T>)new short_handler<T>();
+            else if (type == typeof(ushort)) return (IGetBytes<T>)new ushort_handler<T>();
+            else if (type == typeof(float)) return (IGetBytes<T>)new float_handler<T>();
+            else if (type == typeof(byte)) return (IGetBytes<T>)new byte_handler<T>();
+            else if (type == typeof(double)) return (IGetBytes<T>)new double_handler<T>();
 
             return null;
         }
@@ -167,6 +168,19 @@ namespace RaptorDB
             offset += 4;
 
             return new decimal(i);
+        }
+    }
+
+    internal class ushort_handler<T> : IGetBytes<ushort>
+    {
+        public byte[] GetBytes(ushort obj)
+        {
+            return Helper.GetBytes(obj, false);
+        }
+
+        public ushort GetObject(byte[] buffer, int offset, int count)
+        {
+            return (ushort)Helper.ToInt16(buffer, offset);
         }
     }
 

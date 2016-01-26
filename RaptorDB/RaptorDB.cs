@@ -14,6 +14,13 @@ using System.CodeDom.Compiler;
 using System.Text.RegularExpressions;
 using System.ComponentModel;
 
+// ----- Feature list -------
+// TODO : enum in row schema support
+// TODO : validate view schema with mapper on startup ??
+// TODO : HFKV transaction mode set and rollback handling
+// TODO : fastJSON unsafe string pointer parser
+// TODO : .Between() in predicate support
+
 namespace RaptorDB
 {
     public class RaptorDB : IRaptorDB
@@ -1132,9 +1139,6 @@ namespace RaptorDB
         {
             _log.Debug("Upgrading storage file version from " + ver + " to " + StorageFile<int>._CurrentVersion + " on file : " + filename);
             throw new Exception("not implemented yet - contact the author if you need this functionality");
-            // FEATURE : upgrade from v0 to v1
-
-            // FEATURE : upgrade from v1 to v2
             // read from one file and write to the other 
         }
 
@@ -1195,6 +1199,7 @@ namespace RaptorDB
         }
 
         private object _flock = new object();
+        private Regex _jsonfilter = new Regex("[\\[\\]\"{}:,]", RegexOptions.Compiled);
         void _fulltextTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             if (_shuttingdown)
@@ -1226,6 +1231,7 @@ namespace RaptorDB
                         {
                             // normal string and normal guid 
                             string json = fastJSON.JSON.ToJSON(obj, new fastJSON.JSONParameters { UseEscapedUnicode = false, UseFastGuid = false });
+                            json = _jsonfilter.Replace(json, " "); // filter out json characters
                             _fulltextindex.Set(json, _LastFulltextIndexed);
                         }
                     }

@@ -53,7 +53,7 @@ namespace RaptorDB
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
 
             return (bool)ret.Data;
-        }
+        } 
 
         public int CountHF()
         {
@@ -378,7 +378,8 @@ namespace RaptorDB
             p.Command = "" + COMMANDS.FullText;
             p.Data = new object[] { filter };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (int[])ret.Data;
+            object[] r = (object[])ret.Data;
+            return Array.ConvertAll(r, i => (int)i);
         }
 
         private Packet CreatePacket()
@@ -601,7 +602,8 @@ namespace RaptorDB
             p.Command = "" + COMMANDS.DocHistory;
             p.Docid = docid;
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (int[])ret.Data;
+            object[] r = (object[])ret.Data;
+            return Array.ConvertAll(r, i => (int)i);
         }
 
         /// <summary>
@@ -615,7 +617,8 @@ namespace RaptorDB
             p.Command = "" + COMMANDS.FileHistory;
             p.Docid = fileid;
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
-            return (int[])ret.Data;
+            object[] r = (object[])ret.Data;
+            return Array.ConvertAll(r, i => (int)i);
         }
 
         /// <summary>

@@ -92,7 +92,7 @@ namespace RaptorDB
         }
 
         public WAHBitArray Query(T from, T to, int maxsize)
-        {           
+        {
             // TODO : add BETWEEN code here
             T temp = default(T);
             if (from.CompareTo(to) > 0) // check values order
@@ -119,21 +119,11 @@ namespace RaptorDB
             if (exp == RDBExpression.Equal || exp == RDBExpression.NotEqual)
                 return doEqualOp(exp, key, maxsize);
 
-            // TODO : optimize complement search if page count less for the complement pages
-            //bool found = false;
-            //int last = _pageList.Count - 1;
-            //int pos = FindPageOrLowerPosition(key, ref found);
+            // FEATURE : optimize complement search if page count less for the complement pages
 
             if (exp == RDBExpression.Less || exp == RDBExpression.LessEqual)
             {
-                //long c = (pos+1) * _maxPageItems * 70 / 100; // 70% full pages
-                //long inv = maxsize - c;
-                //if (c < inv)
-                    return doLessOp(exp, key);
-                //else
-                //{
-
-                //}
+                return doLessOp(exp, key);
             }
             else if (exp == RDBExpression.Greater || exp == RDBExpression.GreaterEqual)
             {
@@ -354,7 +344,7 @@ namespace RaptorDB
                 if (exp == RDBExpression.Equal)
                     return _index.GetDuplicateBitmap(bn);
                 else
-                    return _index.GetDuplicateBitmap(bn).Not(maxsize); 
+                    return _index.GetDuplicateBitmap(bn).Not(maxsize);
             }
             else
                 return new WAHBitArray();

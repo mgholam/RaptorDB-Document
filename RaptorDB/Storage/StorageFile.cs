@@ -407,7 +407,7 @@ namespace RaptorDB
                     byte[] metabytes = fastBinaryJSON.BJSON.ToBJSON(meta, new fastBinaryJSON.BJSONParameters { UseExtensions = false });
 
                     // write header info
-                    _datawrite.Write(new byte[] { 1 }, 0, 1); // TODO : add json here, write bson for now
+                    _datawrite.Write(new byte[] { 1 }, 0, 1); // FEATURE : add json here, write bson for now
                     _datawrite.Write(Helper.GetBytes(metabytes.Length, false), 0, 4);
                     _datawrite.Write(metabytes, 0, metabytes.Length);
                     // update pointer
