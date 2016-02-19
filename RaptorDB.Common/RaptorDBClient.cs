@@ -53,7 +53,7 @@ namespace RaptorDB
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
 
             return (bool)ret.Data;
-        } 
+        }
 
         public int CountHF()
         {
@@ -260,7 +260,7 @@ namespace RaptorDB
                 // send close packet
                 Packet p = CreatePacket();
                 p.Command = "_close";
-                ReturnPacket ret = (ReturnPacket)_client.Send(p);    
+                ReturnPacket ret = (ReturnPacket)_client.Send(p);
                 _client.Close();
             }
             catch { }
@@ -533,11 +533,17 @@ namespace RaptorDB
         {
             // FEATURE : dirty hack here to cleanup
             Result<TRowSchema> result = new Result<TRowSchema>();
-            result.Count = res.Count;
-            result.EX = res.EX;
-            result.OK = res.OK;
-            result.TotalCount = res.TotalCount;
-            result.Rows = res.Rows.Cast<TRowSchema>().ToList<TRowSchema>();
+            if (res != null)
+            {
+                result.Count = res.Count;
+                result.EX = res.EX;
+                result.OK = res.OK;
+                result.TotalCount = res.TotalCount;
+                if (res.Rows != null)
+                    result.Rows = res.Rows.Cast<TRowSchema>().ToList<TRowSchema>();
+                else
+                    result.Rows = null;
+            }
             return result;
         }
 

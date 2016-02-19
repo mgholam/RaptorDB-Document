@@ -518,43 +518,62 @@ namespace RaptorDB.Views
         public delegate object RowFill(object o, object[] data);
         public static RowFill CreateRowFillerDelegate(Type objtype)
         {
-            DynamicMethod dynMethod = new DynamicMethod("_", typeof(object), new Type[] { typeof(object), typeof(object[]) });
+            DynamicMethod dynMethod = new DynamicMethod("rowfill", typeof(object), new Type[] { typeof(object), typeof(object[]) });
             ILGenerator il = dynMethod.GetILGenerator();
-            var local = il.DeclareLocal(objtype);
+            var row = il.DeclareLocal(objtype);
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Castclass, objtype);
-            il.Emit(OpCodes.Stloc, local);
+            il.Emit(OpCodes.Stloc, row);
             int i = 1;
-
+            var val = il.DeclareLocal(typeof(object));
             foreach (var c in objtype.GetFields())
             {
-                il.Emit(OpCodes.Ldloc, local);
+                var end = il.DefineLabel();
+     
                 il.Emit(OpCodes.Ldarg_1);
                 if (c.Name != "docid")
-                    il.Emit(OpCodes.Ldc_I4, i++);
+                    il.Emit(OpCodes.Ldc_I4, i);
                 else
                     il.Emit(OpCodes.Ldc_I4, 0);
 
                 il.Emit(OpCodes.Ldelem_Ref);
+                // check if value is not null
+                il.Emit(OpCodes.Stloc, val);
+                il.Emit(OpCodes.Ldloc, val);
+                il.Emit(OpCodes.Brfalse_S, end);
+                il.Emit(OpCodes.Ldloc, row);
+                il.Emit(OpCodes.Ldloc, val);
+
                 il.Emit(OpCodes.Unbox_Any, c.FieldType);
                 il.Emit(OpCodes.Stfld, c);
+                il.MarkLabel(end);
+                i++;
             }
 
             foreach (var c in objtype.GetProperties())
             {
+                var end = il.DefineLabel();
                 MethodInfo setMethod = c.GetSetMethod();
-                il.Emit(OpCodes.Ldloc, local);
                 il.Emit(OpCodes.Ldarg_1);
                 if (c.Name != "docid")
-                    il.Emit(OpCodes.Ldc_I4, i++);
+                    il.Emit(OpCodes.Ldc_I4, i);
                 else
                     il.Emit(OpCodes.Ldc_I4, 0);
                 il.Emit(OpCodes.Ldelem_Ref);
+                // check if value is not null
+                il.Emit(OpCodes.Stloc, val);
+                il.Emit(OpCodes.Ldloc, val);
+                il.Emit(OpCodes.Brfalse_S, end);
+                il.Emit(OpCodes.Ldloc, row);
+                il.Emit(OpCodes.Ldloc, val);
+
                 il.Emit(OpCodes.Unbox_Any, c.PropertyType);
                 il.EmitCall(OpCodes.Callvirt, setMethod, null);
+                il.MarkLabel(end);
+                i++;
             }
 
-            il.Emit(OpCodes.Ldloc, local);
+            il.Emit(OpCodes.Ldloc, row);
             il.Emit(OpCodes.Ret);
 
             return (RowFill)dynMethod.CreateDelegate(typeof(RowFill));

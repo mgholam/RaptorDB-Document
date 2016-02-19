@@ -1,4 +1,9 @@
-﻿v3.2.16
+﻿v3.2.17
+-------
+- bug fix empty rows in GenericResult() in client/server mode
+- bug fix if property/field defined in schema but not in entity hence null error when getting rows
+
+v3.2.16
 -------
 - added support for ushort in views (thanks to dragosc)
 - bug fix FetchHistory() return values in server mode (thanks to DrDeadCrash)
