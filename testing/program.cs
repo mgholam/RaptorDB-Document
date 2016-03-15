@@ -1,19 +1,6 @@
 using System;
-using System.Diagnostics;
-using System.Collections;
 using System.IO;
-using System.Text;
-using System.Threading;
 using RaptorDB;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Reflection;
-using RaptorDB.Views;
-using System.Linq.Expressions;
-using System.Linq;
-using System.Collections.ObjectModel;
-using System.Dynamic;
-using RaptorDB.Common;
 
 namespace testing
 {

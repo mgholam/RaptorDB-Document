@@ -1,4 +1,18 @@
-﻿v3.2.17
+﻿v3.2.18
+-------
+- usings cleanup
+- FreeMemory() in indexes, saves data first
+- added indexed word list to hOOt index
+- hOOt optimize index saves data first
+- hOOt optimize index will block until done
+- hOOt FindDocuments() is now generic
+- added server side function with object[] args
+- added auto build number incrementor
+- bug fix not equal != convert linq to string in queries
+- upgrade to fastJSON v2.1.15
+- upgrade to fastBJSON v1.4.12
+
+v3.2.17
 -------
 - bug fix empty rows in GenericResult() in client/server mode
 - bug fix if property/field defined in schema but not in entity hence null error when getting rows

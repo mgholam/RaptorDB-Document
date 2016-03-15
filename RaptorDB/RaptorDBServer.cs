@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using RaptorDB.Common;
 using System.Reflection;
 using System.IO;
 using System.Threading.Tasks;
-using System.Threading;
 
 namespace RaptorDB
 {
@@ -57,6 +55,7 @@ namespace RaptorDB
         private MethodInfo save = null;
         private SafeDictionary<Type, MethodInfo> _savecache = new SafeDictionary<Type, MethodInfo>();
         private SafeDictionary<string, ServerSideFunc> _ssidecache = new SafeDictionary<string, ServerSideFunc>();
+        private SafeDictionary<string, ServerSideFuncWithArgs> _sswcidecache = new SafeDictionary<string, ServerSideFuncWithArgs>();
         private Dictionary<string, Handler> _handlers = new Dictionary<string, Handler>();
         private const string _RaptorDB_users_config = "RaptorDB-Users.config";
         private SafeDictionary<Guid, bool> _connectedClients = new SafeDictionary<Guid, bool>();
@@ -428,6 +427,28 @@ namespace RaptorDB
                     else
                         ret.Data = _raptor.GetKVHF().Decrement((string)param[0], (decimal)param[1]);
                 });
+
+            _handlers.Add("" + COMMANDS.ServerSideWithArgs,
+                (p, ret) =>
+                {
+                    var param = (object[])p.Data;
+                    ret.OK = true;
+                    ret.Data = _raptor.ServerSide(GetServerSideFuncWithArgsCache(param[0].ToString(), param[1].ToString()), param[2].ToString(), param[3]);
+                });
+        }
+
+        private ServerSideFuncWithArgs GetServerSideFuncWithArgsCache(string type, string method)
+        {
+            ServerSideFuncWithArgs func;
+            _log.Debug("Calling Server side Function with args : " + method + " on type " + type);
+            if (_sswcidecache.TryGetValue(type + method, out func) == false)
+            {
+                Type tt = Type.GetType(type);
+
+                func = (ServerSideFuncWithArgs)Delegate.CreateDelegate(typeof(ServerSideFuncWithArgs), tt, method);
+                _sswcidecache.Add(type + method, func);
+            }
+            return func;
         }
 
         private ServerSideFunc GetServerSideFuncCache(string type, string method)

@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Linq.Expressions;
 
 namespace RaptorDB.Common
 {
     public delegate List<object> ServerSideFunc(IRaptorDB rap, string filter);
+    public delegate List<object> ServerSideFuncWithArgs(IRaptorDB rap, string filter, params object[] args);
 
     public class HistoryInfo
     {
@@ -184,6 +183,21 @@ namespace RaptorDB.Common
         /// <param name="func"></param>
         /// <returns></returns>
         object[] ServerSide<TRowSchema>(ServerSideFunc func, Expression<Predicate<TRowSchema>> filter);
+
+
+        /// <summary>
+        /// Do server side data aggregate queries, so you don't transfer large data rows to clients for processing 
+        /// </summary>
+        /// <param name="func"></param>
+        /// <returns></returns>
+        object[] ServerSide(ServerSideFuncWithArgs func, string filter, params object[] args);
+
+        /// <summary>
+        /// Do server side data aggregate queries, so you don't transfer large data rows to clients for processing 
+        /// </summary>
+        /// <param name="func"></param>
+        /// <returns></returns>
+        object[] ServerSide<TRowSchema>(ServerSideFuncWithArgs func, Expression<Predicate<TRowSchema>> filter, params object[] args);
 
         /// <summary>
         /// Full text search the entire original document

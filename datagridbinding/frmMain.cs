@@ -1,15 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
-using System.Reflection;
-using RaptorDB;
 using RaptorDB.Common;
 using SampleViews;
-using System.Linq.Expressions;
 using System.IO;
 
 namespace datagridbinding
@@ -167,7 +161,7 @@ namespace datagridbinding
 
             DateTime dt = FastDateTime.Now;
 
-            var qq = rap.ServerSide<LineItem>(Views.ServerSide.Sum_Products_based_on_filter,
+            var qq = rap.ServerSide<LineItem>(Views.ServerSide.Sum_Products_based_on_filter_args,
                 //"product = \"prod 1\""
                 //(LineItem l) => (l.Product == c.val || l.Product == prod3 ) 
                 x => x.Product == c.val || x.Product == prod3

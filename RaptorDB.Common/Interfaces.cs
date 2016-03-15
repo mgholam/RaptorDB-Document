@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Linq.Expressions;
 using RaptorDB.Common;
 
@@ -188,6 +186,7 @@ namespace RaptorDB
         GetKeysHF,
         CompactStorageHF,
         IncrementHF,
-        DecrementHF
+        DecrementHF,
+        ServerSideWithArgs
     }
 }

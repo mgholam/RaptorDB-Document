@@ -4,14 +4,8 @@ using System.Collections.Generic;
 #if !SILVERLIGHT
 using System.Data;
 #endif
-using System.Globalization;
 using System.IO;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Xml;
-using System.Text;
 using fastJSON;
-using RaptorDB.Common;
 using System.Collections.Specialized;
 
 namespace fastBinaryJSON
@@ -568,6 +562,9 @@ namespace fastBinaryJSON
 
         private object CreateArray(List<object> data, Type pt, Type bt, Dictionary<string, object> globalTypes)
         {
+            if (bt == null)
+                bt = typeof(object);
+
             Array col = Array.CreateInstance(bt, data.Count);
             // create an array of objects
             for (int i = 0; i < data.Count; i++)// each (object ob in data)

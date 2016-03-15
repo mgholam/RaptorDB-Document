@@ -1,0 +1,65 @@
+using System;
+using System.IO;
+using System.Windows.Forms;
+using System.Text.RegularExpressions;
+
+namespace pp
+{
+	public class pp
+	{
+		public static void Main(string[] args)
+		{
+			if(args.Length<1) return;
+			
+			string filename = args[0];
+			string buildversion = "";
+			int buildnum = 0;
+			
+			
+			StreamReader sr = new StreamReader(filename);
+			
+			string s = sr.ReadToEnd();
+			sr.Close();
+			string buildnumregex = @"\s*//\s*build\s*number\s*=\s*(?<num>\w*)";
+			string buildverregex = @"\s*//\s*build\s*version\s*=\s*(?<vers>[\w.]*)";
+			Regex mr = new Regex(
+				buildnumregex,
+				RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace
+				);
+			
+			Match   m = mr.Match(s);
+			string ss= m.Groups["num"].Value;
+			if(ss !="") 
+			{
+				buildnum = int.Parse(ss);
+				buildnum++;
+				s=mr.Replace(s,"\r\n// build number = "+buildnum.ToString());
+			}
+			
+			mr = new Regex(
+				buildverregex,
+				RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace
+				);
+			
+			m = mr.Match(s);
+			ss =m.Groups["vers"].Value;
+			if(ss !="") buildversion = ss;
+			
+			string currbuild = buildversion+"."+buildnum.ToString();
+			
+			mr = new Regex(
+				@"AssemblyFileVersion\s*\(""(?<ver>[\w.]*"")",
+				RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace
+				);
+			
+			m=mr.Match(s);
+			s=mr.Replace(s,"AssemblyFileVersion(\""+ currbuild + "\"");
+
+			//MessageBox.Show(s);
+			
+			StreamWriter sw = new StreamWriter(args[0]);
+			sw.Write(s);
+			sw.Close();
+		}
+	}
+}

@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System.Threading;
-using System.Collections;
 using RaptorDB.Views;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
 using System.Reflection;
 using RaptorDB.Common;
 using System.IO.Compression;
@@ -1459,6 +1457,18 @@ namespace RaptorDB
         public IKeyStoreHF GetKVHF()
         {
             return _objHF;
+        }
+
+        public object[] ServerSide(ServerSideFuncWithArgs func, string filter, params object[] args)
+        {
+            return func(this, filter, args).ToArray();
+        }
+
+        public object[] ServerSide<TRowSchema>(ServerSideFuncWithArgs func, Expression<Predicate<TRowSchema>> filter, params object[] args)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+            return func(this, ls.sb.ToString(), args).ToArray();
         }
     }
 }

@@ -6,9 +6,6 @@ using System.Data;
 #endif
 using System.Globalization;
 using System.IO;
-using System.Reflection;
-using System.Reflection.Emit;
-using RaptorDB.Common;
 using System.Collections.Specialized;
 
 namespace fastJSON
@@ -764,6 +761,9 @@ namespace fastJSON
 
         private object CreateArray(List<object> data, Type pt, Type bt, Dictionary<string, object> globalTypes)
         {
+            if (bt == null)
+                bt = typeof(object);
+
             Array col = Array.CreateInstance(bt, data.Count);
             // create an array of objects
             for (int i = 0; i < data.Count; i++)
@@ -783,7 +783,6 @@ namespace fastJSON
 
             return col;
         }
-
 
         private object CreateGenericList(List<object> data, Type pt, Type bt, Dictionary<string, object> globalTypes)
         {

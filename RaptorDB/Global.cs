@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RaptorDB
+﻿namespace RaptorDB
 {
     public class Global
     {

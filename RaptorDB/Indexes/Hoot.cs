@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Collections;
 using System.IO;
-using System.Threading;
 using System.Text.RegularExpressions;
 using RaptorDB.Common;
 
@@ -44,6 +42,11 @@ namespace RaptorDB
         private KeyStoreString _docs;
         private bool _docMode = false;
 
+        public string[] Words
+        {
+            get { return _words.Keys(); }
+        }
+
         public int WordCount
         {
             get { return _words.Count; }
@@ -53,6 +56,8 @@ namespace RaptorDB
         {
             get { return _lastDocNum - (int)_deleted.GetBits().CountOnes(); }
         }
+
+        public string IndexPath { get { return _Path; } }
 
         public void Save()
         {
@@ -102,7 +107,7 @@ namespace RaptorDB
             return bits.GetBitIndexes();
         }
 
-        public IEnumerable<Document> FindDocuments(string filter)
+        public IEnumerable<T> FindDocuments<T>(string filter)
         {
             WAHBitArray bits = ExecutionPlan(filter, _docs.RecordCount());
             // enumerate documents
@@ -111,7 +116,7 @@ namespace RaptorDB
                 if (i > _lastDocNum - 1)
                     break;
                 string b = _docs.ReadData(i);
-                Document d = fastJSON.JSON.ToObject<Document>(b);
+                T d = fastJSON.JSON.ToObject<T>(b);
 
                 yield return d;
             }
@@ -159,8 +164,12 @@ namespace RaptorDB
 
         public void OptimizeIndex()
         {
-            _bitmaps.Commit(false);
-            _bitmaps.Optimize();
+            lock (_lock)
+            {
+                InternalSave();
+                //_bitmaps.Commit(false);
+                _bitmaps.Optimize();
+            }
         }
 
         #region [  P R I V A T E   M E T H O D S  ]
@@ -221,7 +230,6 @@ namespace RaptorDB
                             wildbits = DoBitOperation(wildbits, ba, OPERATION.OR, maxsize);
                         }
                     }
-
                     if (found == null)
                         found = wildbits;
                     else
@@ -290,8 +298,12 @@ namespace RaptorDB
             // save docs 
             if (_docMode)
                 _docs.SaveIndex();
+
+            if (_bitmaps != null)
             _bitmaps.Commit(false);
 
+            if (_words != null)
+            {
             MemoryStream ms = new MemoryStream();
             BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
 
@@ -307,6 +319,7 @@ namespace RaptorDB
                 words.Write(b, 0, b.Length);
                 words.Flush();
                 words.Close();
+            }
             }
             _log.Debug("save time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
         }
@@ -472,10 +485,11 @@ namespace RaptorDB
             lock (_lock)
             {
                 InternalSave();
-                if(_deleted!=null)
+                if (_deleted != null)
                 {
                     _deleted.SaveIndex();
                     _deleted.Shutdown();
+                    _deleted = null;
                 }
 
                 if (_bitmaps != null)
@@ -492,12 +506,25 @@ namespace RaptorDB
 
         public void FreeMemory()
         {
-			if (_deleted != null)
-                _deleted.FreeMemory();
-            if (_bitmaps != null)
-                _bitmaps.FreeMemory();
-            if (_docs != null)
-                _docs.FreeMemory();
+            lock (_lock)
+            {
+                InternalSave();
+
+                if (_deleted != null)
+                    _deleted.FreeMemory();
+
+                if (_bitmaps != null)
+                    _bitmaps.FreeMemory();
+
+                if (_docs != null)
+                    _docs.FreeMemory();
+            }
+        }
+
+        internal T Fetch<T>(int docnum)
+        {
+            string b = _docs.ReadData(docnum);
+            return fastJSON.JSON.ToObject<T>(b);
         }
     }
 }

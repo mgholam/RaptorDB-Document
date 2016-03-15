@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -37,9 +36,9 @@ namespace RaptorDB
                 case ExpressionType.Equal:
                     sb.Append(" = ");
                     break;
-                //case ExpressionType.NotEqual:
-                //    sb.Append(" <> ");
-                //    break;
+                case ExpressionType.NotEqual:
+                    sb.Append(" != ");
+                    break;
                 case ExpressionType.LessThan:
                     sb.Append(" < ");
                     break;

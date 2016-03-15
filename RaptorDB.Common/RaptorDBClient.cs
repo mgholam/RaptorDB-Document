@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using RaptorDB.Common;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.IO;
 
 namespace RaptorDB
 {
@@ -343,7 +341,10 @@ namespace RaptorDB
         {
             Packet p = CreatePacket();
             p.Command = "" + COMMANDS.ServerSide;
-            p.Data = new object[] { func.Method.ReflectedType.AssemblyQualifiedName, func.Method.Name, filter };
+            p.Data = new object[] {
+                func.Method.ReflectedType.AssemblyQualifiedName,
+                func.Method.Name,
+                filter };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (object[])ret.Data;
         }
@@ -362,7 +363,10 @@ namespace RaptorDB
 
             Packet p = CreatePacket();
             p.Command = "" + COMMANDS.ServerSide;
-            p.Data = new object[] { func.Method.ReflectedType.AssemblyQualifiedName, func.Method.Name, ls.sb.ToString() };
+            p.Data = new object[] {
+                func.Method.ReflectedType.AssemblyQualifiedName,
+                func.Method.Name,
+                ls.sb.ToString() };
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (object[])ret.Data;
         }
@@ -817,6 +821,35 @@ namespace RaptorDB
         public IKeyStoreHF GetKVHF()
         {
             return _kv;
+        }
+
+        public object[] ServerSide(ServerSideFuncWithArgs func, string filter, params object[] args)
+        {
+            Packet p = CreatePacket();
+            p.Command = "" + COMMANDS.ServerSideWithArgs;
+            p.Data = new object[] {
+                func.Method.ReflectedType.AssemblyQualifiedName,
+                func.Method.Name,
+                filter ,
+                args };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (object[])ret.Data;
+        }
+
+        public object[] ServerSide<TRowSchema>(ServerSideFuncWithArgs func, Expression<Predicate<TRowSchema>> filter, params object[] args)
+        {
+            LINQString ls = new LINQString();
+            ls.Visit(filter);
+
+            Packet p = CreatePacket();
+            p.Command = "" + COMMANDS.ServerSideWithArgs;
+            p.Data = new object[] {
+                func.Method.ReflectedType.AssemblyQualifiedName,
+                func.Method.Name,
+                ls.sb.ToString(),
+                args };
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            return (object[])ret.Data;
         }
     }
 }

@@ -79,6 +79,9 @@
     <PostBuildEvent>md "$(SolutionDir)nuget\net40"
 copy "$(TargetPath)" "$(SolutionDir)nuget\net40\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>"$(SolutionDir)tools\buildversion.exe" "$(SolutionDir)buildversion.cs"</PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

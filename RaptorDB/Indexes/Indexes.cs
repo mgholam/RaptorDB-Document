@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
 using RaptorDB.Common;
 
@@ -130,6 +128,8 @@ namespace RaptorDB
         {
             lock (_lock)
             {
+                SaveIndex();
+                _bits.FreeMemory();
                 // free memory
                 //_bits.FreeMemory();
                 // save to disk

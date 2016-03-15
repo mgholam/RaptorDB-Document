@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
 using System.IO;
 using RaptorDB.Common;
 
@@ -256,7 +253,7 @@ namespace RaptorDB
             PageInfo pi;
             Page<T> page = LoadPage(key, out pi);
             bool b = page.tree.Remove(key);
-            // FIX : reset the first key for page ??
+            // TODO : reset the first key for page ??
             if (b)
             {
                 pi.UniqueCount--;
