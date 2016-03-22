@@ -1,0 +1,36 @@
+<label>Server Side Query Name : </label>
+<select id="viewsel" style="width:200px" onchange="ssquery.schemachanged(this)">
+    <option>aa</option>
+</select>
+<br><br>
+
+<label align="top">Filter:</label>
+<br>
+<select size="6" id="schemasel" style="width:150px" ondblclick="ssquery.schemadbl(this)">
+    <option>aaa</option>
+</select>
+<textarea id="filter" rows=5 cols=80></textarea>
+<br>
+<button style="width:200px;height:40px" onclick="ssquery.run(this)">Run</button>
+<br><br>
+
+<pre id="pre"></pre>
+<div class="pager">
+    <a onclick="query.page(-1, this)">&lt;</a>
+    <label id="pageof">1 of 1</label>
+    <a onclick="query.page(1, this)">&gt;</a>
+    <label style="padding-left:100px">Rows per Page : </label>
+    <a onclick="query.rowsperpage(10, this)">10</a>
+    <a style="padding-left:10px" onclick="query.rowsperpage(25, this)">25</a>
+    <a style="padding-left:10px" onclick="query.rowsperpage(50, this)">50</a>
+    <a style="padding-left:10px" onclick="query.rowsperpage(100, this)">100</a>
+</div>
+
+<div id="data" class="cssTbl">
+</div>
+
+<div class="pager">
+    <a onclick="query.page(-1, this)">&lt;</a>
+    <label id="pageof">1 of 1</label>
+    <a onclick="query.page(1, this)">&gt;</a>
+</div>

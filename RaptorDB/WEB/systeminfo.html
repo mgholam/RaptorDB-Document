@@ -1,0 +1,17 @@
+﻿<button onclick="system.run('$tabname')">Refresh</button><br><br>
+<button onclick="system.action('$tabname','backup')" style="margin-right:20px">Backup data</button>
+<button onclick="system.action('$tabname','compact')"style="margin-right:20px">Compact HF key store</button>
+<!--button onclick="system.action('$tabname','optimize')">Optimize Index</button--><br><br>
+<div class="data">
+    <label>Data Folder Size (bytes): </label><label class="DataFolderSize" style="font-weight:700">0</label><br />
+    <label>Document Object Count : </label><label class="DocumentCount" style="font-weight:700">Count</label><br />
+    <label>File Object Count : </label><label class="FileCount" style="font-weight:700">0</label><br />
+    <label>High Frequncy Items : </label><label class="HighFrequncyItems" style="font-weight:700">0</label><br />
+    <label>Memory Usage : </label><label class="MemoryUsage" style="font-weight:700">0</label><br />
+    <label>Number of Views : </label><label class="NumberOfViews" style="font-weight:700">0</label><br />
+    <label>OS Version : </label><label class="OSVersion" style="font-weight:700">0</label><br />
+    <label>RaptorDB Version : </label><label class="RaptorDBVersion" style="font-weight:700">Author</label><br />
+    <label>Uptime : </label><label class="Uptime" style="font-weight:700">0</label><br />
+    <label>Last Logs:</label>
+    <div class="LogArea"><div class="LogItems"></div></div>
+</div>

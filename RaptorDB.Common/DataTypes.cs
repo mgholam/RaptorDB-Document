@@ -38,7 +38,7 @@ namespace RaptorDB
         public int Count { get; set; }
         public List<T> Rows { get; set; }
 
-
+        public string Title { get; set; }
         // FEATURE : data pending in results
         ///// <summary>
         ///// Data is being indexed, so results will not reflect all documents

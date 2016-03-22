@@ -53,6 +53,7 @@
     <DebugType>Full</DebugType>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>false</Prefer32Bit>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <OutputPath>bin\Release\</OutputPath>
@@ -125,6 +126,7 @@
     <Compile Include="Replication\Packets.cs" />
     <Compile Include="Replication\ReplicationClient.cs" />
     <Compile Include="Replication\ReplicationServer.cs" />
+    <Compile Include="REST\RestServer.cs" />
     <Compile Include="Storage\KeyStore.cs" />
     <Compile Include="RaptorDB.cs" />
     <Compile Include="Storage\KeyStoreHF.cs" />
@@ -157,6 +159,17 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="Replication\msg.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\nav.html" />
+    <EmbeddedResource Include="WEB\query.html" />
+    <EmbeddedResource Include="WEB\raptordb.js" />
+    <EmbeddedResource Include="WEB\raptordb.png" />
+    <EmbeddedResource Include="WEB\ssquery.html" />
+    <EmbeddedResource Include="WEB\style.css" />
+    <EmbeddedResource Include="WEB\testpage.html" />
+    <EmbeddedResource Include="WEB\systeminfo.html" />
+    <EmbeddedResource Include="WEB\configs.html" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

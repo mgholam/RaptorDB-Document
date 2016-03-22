@@ -11,6 +11,7 @@ using System.IO.Compression;
 using System.CodeDom.Compiler;
 using System.Text.RegularExpressions;
 using System.ComponentModel;
+using RaptorDBRest;
 
 // ----- Feature list -------
 // TODO : enum in row schema support
@@ -64,6 +65,29 @@ namespace RaptorDB
             }
         }
 
+        internal long GetDataFolderSize()
+        {
+            // get data folder size
+            return GetDirectorySize(_Path);
+        }
+
+        long GetDirectorySize(string path)
+        {
+            long b = 0;
+            foreach (var p in Directory.GetDirectories(path))
+            {
+                b += GetDirectorySize(p);
+                string[] a = Directory.GetFiles(p, "*.*");
+
+                foreach (string name in a)
+                {
+                    FileInfo info = new FileInfo(name);
+                    b += info.Length;
+                }
+            }
+            return b;
+        }
+
         public static RaptorDB Open(string FolderPath)
         {
             return new RaptorDB(FolderPath);
@@ -95,6 +119,7 @@ namespace RaptorDB
         private CronDaemon _cron;
         private Replication.ReplicationServer _repserver;
         private Replication.ReplicationClient _repclient;
+        private DateTime _startTime = DateTime.Now;
         //private bool _disposed = false;
         //private bool _clientReplicationEnabled;
 
@@ -203,6 +228,16 @@ namespace RaptorDB
             }
         }
 
+        internal TimeSpan Uptime()
+        {
+            return DateTime.Now.Subtract(_startTime);
+        }
+
+        internal object FileCount()
+        {
+            return _fileStore.Count();
+        }
+
         /// <summary>
         /// Query any view -> get all rows
         /// </summary>
@@ -273,6 +308,9 @@ namespace RaptorDB
                 return;
 
             _shuttingdown = true;
+
+            if (_restServer != null)
+                _restServer.Stop();
 
             _processinboxTimer.Enabled = false;
             _saveTimer.Enabled = false;
@@ -1003,6 +1041,11 @@ namespace RaptorDB
                 // if branch.config exists -> start replication client
                 _repclient = new Replication.ReplicationClient(_Path, File.ReadAllText(_Path + "RaptorDB-Branch.config"), _objStore);
             }
+            if (Global.EnableWebStudio)
+            {
+                _log.Debug("Enabling WEBSTUDIO on port : " + Global.WebStudioPort);
+                _restServer = new RestServer(Global.WebStudioPort, this, _Path, Global.LocalOnlyWebStudio);
+            }
         }
 
         object _inboxlock = new object();
@@ -1198,6 +1241,8 @@ namespace RaptorDB
 
         private object _flock = new object();
         private Regex _jsonfilter = new Regex("[\\[\\]\"{}:,]", RegexOptions.Compiled);
+        private RestServer _restServer = null;
+
         void _fulltextTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             if (_shuttingdown)
