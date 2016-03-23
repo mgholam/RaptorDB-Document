@@ -15,7 +15,7 @@ button.accordion {
     color: #eee;
     cursor: pointer;
     padding: 18px;
-    width: 100%;
+    width: 97%;
     border: none;
     text-align: left;
     outline: none;
@@ -27,7 +27,7 @@ button.accordion {
     button.accordion.active {
         background-color: #777777;
         color: black;
-        margin-bottom :0;
+        margin-bottom: 0;
     }
 
     button.accordion:hover {
@@ -60,6 +60,7 @@ div.panel {
         max-height: 500px;
         min-height: 100px;
         padding: 5px;
+        width: 203px;
     }
 
         div.panel.show a {
@@ -155,8 +156,8 @@ li.active div, li.active {
     color: #333;
 }
 
-/*----------------------------------------------------container-------------------------------------------------------*/
 
+/*----------------------------------------------------container-------------------------------------------------------*/
 .Container {
     width: 100%;
     backface-visibility: hidden;
@@ -310,3 +311,36 @@ li.active div, li.active {
     white-space: pre;
     font-size: smaller;
 }
+
+/*---------------------------------------------------------------------*/
+.JSONArea {
+    border-style: solid;
+    border-color: gray;
+    background-color: white;
+    padding: 5px;
+    min-height : 500px;
+}
+
+.JSON {
+    font-family: "Courier New", monospace;
+    white-space: pre;
+    font-size: smaller;
+}
+
+/*---------------------------------------------------------------------*/
+.ListBox {
+    border-style: solid;
+    border-color: gray;
+    background-color: white;
+    padding: 5px;
+    height: 500px;
+    overflow: scroll;
+}
+
+    .ListBox a {
+        display: block;
+        padding : 2px;
+    }
+    .ListBox a:hover {
+        background-color : #c0c0c0;
+    }

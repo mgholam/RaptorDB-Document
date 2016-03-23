@@ -6,10 +6,10 @@
 
 <label align="top">Filter:</label>
 <br>
-<select size="6" id="schemasel" style="width:150px" ondblclick="query.schemadbl(this)">
+<select size="6" id="schemasel" style="width:150px; height:100px" ondblclick="query.schemadbl(this)">
     <option>aaa</option>
 </select>
-<textarea id="filter" rows=5 cols=80></textarea>
+<textarea id="filter" rows=5 cols=80 style="height:100px"></textarea>
 <br>
 <button style="width:200px;height:40px" onclick="query.run(this)">Run</button>
 <button style="width:200px;height:40px" onclick="query.excel(this)">Export to Excel</button>
@@ -17,21 +17,21 @@
 
 <pre id="pre"></pre>
 <div class="pager">
-    <a onclick="query.page(-1, this)">&lt;</a>
+    <a onclick="query.page(-1, '$tabname')">&lt;</a>
     <label id="pageof">1 of 1</label>
-    <a onclick="query.page(1, this)">&gt;</a>
+    <a onclick="query.page(1, '$tabname')">&gt;</a>
     <label style="padding-left:100px">Rows per Page : </label>
-    <a onclick="query.rowsperpage(10, this)">10</a>
-    <a style="padding-left:10px" onclick="query.rowsperpage(25, this)">25</a>
-    <a style="padding-left:10px" onclick="query.rowsperpage(50, this)">50</a>
-    <a style="padding-left:10px" onclick="query.rowsperpage(100, this)">100</a>
+    <a onclick="query.rowsperpage(10, '$tabname')">10</a>
+    <a style="padding-left:10px" onclick="query.rowsperpage(25, '$tabname')">25</a>
+    <a style="padding-left:10px" onclick="query.rowsperpage(50, '$tabname')">50</a>
+    <a style="padding-left:10px" onclick="query.rowsperpage(100, '$tabname')">100</a>
 </div>
 
 <div id="data" class="cssTbl">
 </div>
 
 <div class="pager">
-    <a onclick="query.page(-1, this)">&lt;</a>
+    <a onclick="query.page(-1, '$tabname')">&lt;</a>
     <label id="pageof">1 of 1</label>
-    <a onclick="query.page(1, this)">&gt;</a>
+    <a onclick="query.page(1, '$tabname')">&gt;</a>
 </div>

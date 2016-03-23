@@ -1,0 +1,33 @@
+﻿<label align="top">docid:</label>
+<input id="docid" autofocus style="width:400px" onkeypress="if ((event.keyCode || event.which) == 13) { docview.fillhistory('$tabname'); return false; } return true;" />
+<button style="width:50px;" onclick="docview.fillhistory('$tabname')">Get</button>
+<br><br>
+<label align="top">Document Revisions : </label><label id="revisions" style="font-weight: 700"></label>
+<label style="color:red" id="err"></label>
+<div class="disp" style="display">
+    <table style="width:100%">
+        <tr>
+            <td style="width:30%">
+                <div>
+                    <a href="">&lt;</a> 1 of 1 <a href="">&gt;</a>
+                </div>
+            </td>
+            <td>
+                <div>
+                    <label style="color:red;" id="err"></label>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top">
+                <div id="versions" class="ListBox">
+                </div>
+            </td>
+            <td valign="top">
+                <div class="JSONArea">
+                    <div class="JSON" id="data"></div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>

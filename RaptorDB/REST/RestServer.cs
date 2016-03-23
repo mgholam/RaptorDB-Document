@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.IO.Compression;
-using System.ComponentModel;
 using System.Diagnostics;
 
 namespace RaptorDBRest
@@ -217,9 +216,43 @@ namespace RaptorDBRest
                             WriteResponse(ctx, 200, "\"Done\"");
                             break;
                         case "getconfigs":
-                            WriteResponse(ctx, 200, File.ReadAllText(_path+"raptordb.config"));
+                            WriteResponse(ctx, 200, File.ReadAllText(_path + "raptordb.config"));
                             break;
                     }
+                });
+
+            _handler.Add("docget", // takes : guid 
+                (ctx, o) =>
+                {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
+                    var g = Guid.Parse(qry);
+                    _log.Debug("docid = " + qry);
+                    var s = fastJSON.JSON.ToNiceJSON(_rdb.Fetch(g), new fastJSON.JSONParameters { UseExtensions = true, UseFastGuid = false, UseEscapedUnicode = false });
+                    ctx.Response.ContentType = "application/json";
+                    WriteResponse(ctx, 200, s);
+                });
+
+            _handler.Add("dochistory", // takes : guid 
+                (ctx, o) =>
+                {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
+                    var g = Guid.Parse(qry);
+                    var h = _rdb.FetchHistoryInfo(g);
+                    _log.Debug("docid = " + qry);
+                    var s = fastJSON.JSON.ToJSON(h, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, UseEscapedUnicode = false });
+                    ctx.Response.ContentType = "application/json";
+                    WriteResponse(ctx, 200, s);
+                });
+
+            _handler.Add("docversion", // takes : version
+                (ctx, o) =>
+                {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
+                    var v = int.Parse(qry);
+                    var oo = _rdb.FetchVersion(v);
+                    var s = fastJSON.JSON.ToNiceJSON(oo, new fastJSON.JSONParameters { UseExtensions = true, UseFastGuid = false, UseEscapedUnicode = false });
+                    ctx.Response.ContentType = "application/json";
+                    WriteResponse(ctx, 200, s);
                 });
         }
 
@@ -254,8 +287,6 @@ namespace RaptorDBRest
                 ps.RedirectStandardOutput = true;
                 ps.CreateNoWindow = true;
                 ps.UseShellExecute = false;
-                //_log.Debug("process name : " + fname);
-                //_log.Debug("command : " + ps.Arguments);
                 var p = Process.Start(ps);
                 if (p.WaitForExit(1000))
                 {

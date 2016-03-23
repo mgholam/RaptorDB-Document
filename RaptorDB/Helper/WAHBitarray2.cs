@@ -115,19 +115,22 @@ namespace RaptorDB
         {
             set
             {
-                if (_state == TYPE.Indexes)
+                lock (_lock)
                 {
-                    // ignore
-                    return;
-                }
-                CheckBitArray();
-                int c = value >> 5;
-                c++;
-                if (c > _uncompressed.Length)
-                {
-                    uint[] ar = new uint[c];
-                    _uncompressed.CopyTo(ar, 0);
-                    _uncompressed = ar;
+                    if (_state == TYPE.Indexes)
+                    {
+                        // ignore
+                        return;
+                    }
+                    CheckBitArray();
+                    int c = value >> 5;
+                    c++;
+                    if (c > _uncompressed.Length)
+                    {
+                        uint[] ar = new uint[c];
+                        _uncompressed.CopyTo(ar, 0);
+                        _uncompressed = ar;
+                    }
                 }
             }
             get
