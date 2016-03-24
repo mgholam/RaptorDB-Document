@@ -1,0 +1,12 @@
+﻿<label align="top">fileid:</label>
+<input id="docid" autofocus style="width:400px" onkeypress="if ((event.keyCode || event.which) == 13) { fileview.get('$tabname'); return false; } return true;" />
+<button style="width:50px;" onclick="fileview.get('$tabname')">Get</button>
+<br><br>
+<label style="color:red" id="err"></label>
+<div class="disp" style="display:none">
+    <label align="top">File Revisions : </label><label id="revisions" style="font-weight: 700"></label><a href="" style="margin-left:5px" onclick="fileview.history('$tabname'); event.preventDefault();">See Revisions</a><br>
+    <label>File data :</label>
+    <div class="JSONArea">
+        <div class="JSON" id="data"></div>
+    </div>
+</div>

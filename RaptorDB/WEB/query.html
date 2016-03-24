@@ -6,10 +6,9 @@
 
 <label align="top">Filter:</label>
 <br>
-<select size="6" id="schemasel" style="width:150px; height:100px" ondblclick="query.schemadbl(this)">
-    <option>aaa</option>
-</select>
-<textarea id="filter" rows=5 cols=80 style="height:100px"></textarea>
+<div id="columns" style="height:150px;width:150px;display:inline-block" class="ListBox">
+</div>
+<textarea id="filter" cols=80 style="height:150px;resize:none;"></textarea>
 <br>
 <button style="width:200px;height:40px" onclick="query.run(this)">Run</button>
 <button style="width:200px;height:40px" onclick="query.excel(this)">Export to Excel</button>

@@ -75,7 +75,7 @@ namespace RaptorDBRest
             Task.Factory.StartNew(() => Start(), TaskCreationOptions.LongRunning);
         }
 
-        delegate void Handler(HttpListenerContext ctx, List<object> output);
+        delegate void Handler(HttpListenerContext ctx, string args, List<object> output);
 
         private Dictionary<string, string> _WebCache = new Dictionary<string, string>();
         private string _S = Path.DirectorySeparatorChar.ToString();
@@ -162,23 +162,22 @@ namespace RaptorDBRest
         private void InitializeCommandHandler()
         {
             _handler.Add("getroutes",
-                (ctx, o) =>
+                (ctx, args, o) =>
                 {
                     foreach (var rr in _routing)
                         o.Add(new { URL = rr.Value.URL, Description = rr.Value.ToString() });
                 });
 
             _handler.Add("getviews",
-                (ctx, o) =>
+                (ctx, args, o) =>
                 {
                     foreach (var v in _rdb.GetViews())
                         o.Add(new { Name = v.Name, Description = v.Description, BackgroundIndexing = v.BackgroundIndexing, Version = v.Version, isPrimaryList = v.isPrimaryList });
                 });
 
             _handler.Add("getschema",
-                (ctx, o) =>
+                (ctx, qry, o) =>
                 {
-                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     if (qry == "")
                     {
                         WriteResponse(ctx, 404, "GetSchema requires a viewname to be defined e.g. ?view=customerview");
@@ -193,7 +192,7 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("systeminfo",
-                (ctx, o) =>
+                (ctx, args, o) =>
                 {
                     var oo = GetInfo();
                     var s = fastJSON.JSON.ToJSON(oo, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, EnableAnonymousTypes = true });
@@ -202,9 +201,8 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("action",
-                (ctx, o) =>
+                (ctx, action, o) =>
                 {
-                    string action = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     switch (action)
                     {
                         case "backup":
@@ -222,9 +220,8 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("docget", // takes : guid 
-                (ctx, o) =>
+                (ctx, qry, o) =>
                 {
-                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     var g = Guid.Parse(qry);
                     _log.Debug("docid = " + qry);
                     var s = fastJSON.JSON.ToNiceJSON(_rdb.Fetch(g), new fastJSON.JSONParameters { UseExtensions = true, UseFastGuid = false, UseEscapedUnicode = false });
@@ -233,9 +230,8 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("dochistory", // takes : guid 
-                (ctx, o) =>
+                (ctx, qry, o) =>
                 {
-                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     var g = Guid.Parse(qry);
                     var h = _rdb.FetchHistoryInfo(g);
                     _log.Debug("docid = " + qry);
@@ -245,15 +241,129 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("docversion", // takes : version
-                (ctx, o) =>
+                (ctx, qry, o) =>
                 {
-                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     var v = int.Parse(qry);
                     var oo = _rdb.FetchVersion(v);
                     var s = fastJSON.JSON.ToNiceJSON(oo, new fastJSON.JSONParameters { UseExtensions = true, UseFastGuid = false, UseEscapedUnicode = false });
                     ctx.Response.ContentType = "application/json";
                     WriteResponse(ctx, 200, s);
                 });
+
+            _handler.Add("fileget", // takes : guid 
+                (ctx, qry, o) =>
+                {
+                    var g = Guid.Parse(qry);
+                    _log.Debug("fileid = " + qry);
+                    var s = fastJSON.JSON.ToNiceJSON(_rdb.FetchBytes(g), new fastJSON.JSONParameters { UseExtensions = true, UseFastGuid = false, UseEscapedUnicode = false });
+                    ctx.Response.ContentType = "application/json";
+                    WriteResponse(ctx, 200, s);
+                });
+
+            _handler.Add("filehistory", // takes : guid 
+                (ctx, qry, o) =>
+                {
+                    var g = Guid.Parse(qry);
+                    var h = _rdb.FetchBytesHistoryInfo(g);
+                    _log.Debug("fileid = " + qry);
+                    var s = fastJSON.JSON.ToJSON(h, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, UseEscapedUnicode = false });
+                    ctx.Response.ContentType = "application/json";
+                    WriteResponse(ctx, 200, s);
+                });
+
+            _handler.Add("fileversion", // takes : version
+                (ctx, qry, o) =>
+                {
+                    var v = int.Parse(qry);
+                    var oo = _rdb.FetchBytesVersion(v);
+                    var s = fastJSON.JSON.ToNiceJSON(oo, new fastJSON.JSONParameters { UseExtensions = true, UseFastGuid = false, UseEscapedUnicode = false });
+                    ctx.Response.ContentType = "application/json";
+                    WriteResponse(ctx, 200, s);
+                });
+
+            _handler.Add("docsearch", // takes : string & count =x &start=y
+                (ctx, qry, o) =>
+                {
+                    int start = 0;
+                    int count = -1;
+
+                    var m = _start_regex.Match(qry);
+                    if (m.Success)
+                    {
+                        start = int.Parse(m.Groups["start"].Value);
+                        qry = qry.Replace(m.Value, "");
+                    }
+                    m = _count_regex.Match(qry);
+                    if (m.Success)
+                    {
+                        count = int.Parse(m.Groups["count"].Value);
+                        qry = qry.Replace(m.Value, "");
+                    }
+                    var h = _rdb.FullTextSearch(qry);
+                    List<int> list = new List<int>();
+                    _log.Debug("search = " + qry);
+                    if (count > -1 && h.Length>0)
+                    {
+                        int c = list.Count;
+                        for (int i = start; i < start + count; i++)
+                            list.Add(h[i]);
+                    }
+                    var obj = new
+                    {
+                        Items = list,
+                        Count = count,
+                        TotalCount= h.Length
+                    };
+                    var s = fastJSON.JSON.ToJSON(obj, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, UseEscapedUnicode = false, EnableAnonymousTypes=true });
+                    ctx.Response.ContentType = "application/json";
+                    WriteResponse(ctx, 200, s);
+                });
+
+            _handler.Add("hfkeys", // takes : count =x &start=y
+                (ctx, qry, o) =>
+                {
+                    int start = 0;
+                    int count = -1;
+
+                    var m = _start_regex.Match(qry);
+                    if (m.Success)
+                    {
+                        start = int.Parse(m.Groups["start"].Value);
+                        qry = qry.Replace(m.Value, "");
+                    }
+                    m = _count_regex.Match(qry);
+                    if (m.Success)
+                    {
+                        count = int.Parse(m.Groups["count"].Value);
+                        qry = qry.Replace(m.Value, "");
+                    }
+                    var h = _rdb.GetKVHF().GetKeysHF();
+                    List<string> list = new List<string>();
+                    if (count > -1 && h.Length>0)
+                    {
+                        for (int i = start; i < start + count; i++)
+                            list.Add(h[i]);
+                    }
+                    var obj = new
+                    {
+                        Items = list,
+                        Count = count,
+                        TotalCount = h.Length
+                    };
+                    var s = fastJSON.JSON.ToJSON(obj, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, UseEscapedUnicode = false, EnableAnonymousTypes = true });
+                    ctx.Response.ContentType = "application/json";
+                    WriteResponse(ctx, 200, s);
+                });
+
+            _handler.Add("hfget", // takes : string 
+                (ctx, qry, o) =>
+                {
+                    var h = _rdb.GetKVHF().GetObjectHF(qry);
+                    var s = fastJSON.JSON.ToJSON(h, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, UseEscapedUnicode = false, EnableAnonymousTypes = true });
+                    ctx.Response.ContentType = "application/json";
+                    WriteResponse(ctx, 200, s);
+                });
+
         }
 
         private object GetInfo()
@@ -510,7 +620,8 @@ namespace RaptorDBRest
 
                     if (_handler.TryGetValue(command, out handler))
                     {
-                        handler(ctx, o);
+                        string args = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
+                        handler(ctx, args, o);
 
                         if (o.Count > 0)
                         {

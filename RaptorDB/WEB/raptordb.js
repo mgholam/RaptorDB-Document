@@ -172,7 +172,6 @@ var nav = {
                     function (res) {
                         var tname = "docv" + Math.uuid(4, 16);
                         nav.createTab(tname, "Document View", res.replace(/\$tabname/g, tname));
-                        //docview.configs(tname);
                         if (func != null)
                             func(tname);
                     });
@@ -183,6 +182,48 @@ var nav = {
                     function (res) {
                         var tname = "doch" + Math.uuid(4, 16);
                         nav.createTab(tname, "Document History", res.replace(/\$tabname/g, tname));
+                        if (func != null)
+                            func(tname);
+                    });
+                break;
+
+            case "docsearch":
+                $.load("docsearch.html",
+                    function (res) {
+                        var tname = "doch" + Math.uuid(4, 16);
+                        models[tname] = new modelobj();
+                        var m = models[tname];
+                        m.count = 20;
+                        m.start = 0;
+                        m.page = 1;
+                        m.pages = 1;
+                        nav.createTab(tname, "Document Search", res.replace(/\$tabname/g, tname));
+                        if (func != null)
+                            func(tname);
+                    });
+                break;
+
+            case "hfview":
+                $.load("hfbrowse.html",
+                    function (res) {
+                        var tname = "hfv" + Math.uuid(4, 16);
+                        models[tname] = new modelobj();
+                        var m = models[tname];
+                        m.count = 20;
+                        m.start = 0;
+                        m.page = 1;
+                        m.pages = 1;
+                        nav.createTab(tname, "HF Browse", res.replace(/\$tabname/g, tname));
+                        if (func != null)
+                            func(tname);
+                    });
+                break;
+
+            case "fileview":
+                $.load("fileview.html",
+                    function (res) {
+                        var tname = "filev" + Math.uuid(4, 16);
+                        nav.createTab(tname, "File View", res.replace(/\$tabname/g, tname));
                         //docview.configs(tname);
                         if (func != null)
                             func(tname);
@@ -349,21 +390,18 @@ var query = {
             });
     },
 
-    rowsperpage: function (c, tabname) {//element) {
-        //var tabname = element.parentElement.parentElement.id;
+    rowsperpage: function (c, tabname) {
         models[tabname].count = c;
         models[tabname].page = 1;
         this.doquery(tabname);
     },
 
-    page: function (i, tabname){// element) {
-        //var tabname = element.parentElement.parentElement.id;
+    page: function (i, tabname) {
         var m = models[tabname];
         m.page += i;
         if (m.page == 0) m.page = 1;
         if (m.page > m.pages) m.page = m.pages;
         this.doquery(tabname);
-        //document.location = "#";
     },
 
     schemachanged: function (element) {
@@ -377,14 +415,20 @@ var query = {
         // fill schema
         $.ajax(server + 'RaptorDB/GetSchema?view=' + x,
             function () {
-                var sel = $('#' + tabname + ' #schemasel').nodes[0];
-                sel.options.length = 0;
+                //var sel = $('#' + tabname + ' #schemasel').nodes[0];
+                var d = $('#' + tabname + ' #columns').nodes[0];
+                d.innerHTML = "";
+                //sel.options.length = 0;
                 for (var i = 0; i < data.Rows.length; i++) {
-                    var opt = document.createElement('option');
+                   // var opt = document.createElement('option');
                     var it = data.Rows[i];
-                    opt.innerHTML = it.ColumnName;
-                    opt.value = opt.innerHTML;
-                    sel.appendChild(opt);
+                    //opt.innerHTML = it.ColumnName;
+                    //opt.value = opt.innerHTML;
+                    //sel.appendChild(opt);
+                    var dv = document.createElement("a");
+                    dv.innerHTML = '<a href="" style="display:block" onclick="query.columnadd(\'' + tabname.trim() +
+                        '\',\'' + it.ColumnName + '\'); event.preventDefault();">' + it.ColumnName + '</a>';
+                    d.appendChild(dv);
                 }
             });
     },
@@ -438,11 +482,10 @@ var query = {
         $("#" + tabname + " .pager").hide();
     },
 
-    schemadbl: function (element) {
-        var tabname = element.parentElement.id;
-        var x = $("#" + tabname + " #schemasel").nodes[0].value;
+    columnadd: function(tabname, col){
         var f = $("#" + tabname + " #filter").nodes[0];
-        f.value += " " + x + " ";
+        f.value += " " + col + " ";
+        f.value = f.value.trim();
     },
 
     sortcol: function (colname, tabname) {
@@ -464,6 +507,7 @@ var query = {
 
 //------------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------- ssquery ----------------------------------------------------------------
+/*
 var ssquery = {
     createDataTable: function (url, tabname) {
         var startTime = new Date().getTime();
@@ -606,7 +650,7 @@ var ssquery = {
         this.doquery(tabname);
     }
 };
-
+*/
 
 
 //------------------------------------------------------------------------------------------------------------------------
@@ -631,6 +675,8 @@ var system = {
         });
     }
 };
+
+
 //---------------------------------------------------------------------
 //----------------------------docview----------------------------------
 var docview = {
@@ -685,17 +731,69 @@ var docview = {
 
                    for (var i = 0; i < data.length; i++) {
                        var dv = document.createElement("a");
-                       dv.innerHTML = '<a href="" style="display:block" onclick="docview.getversion(\'' + name.trim() + '\',this); event.preventDefault();" id="' + data[i].Version + '">Version = ' + data[i].Version + ', Date = ' + data[i].ChangeDate + '</a>';
+                       dv.innerHTML = '<a href="" style="display:block" onclick="docview.getversion(\'' + name.trim() +
+                           '\',this); event.preventDefault();" id="' + data[i].Version +
+                           '">Version = ' + data[i].Version +
+                           ', Date = ' + data[i].ChangeDate.replace("T", " ").replace("Z", "") +
+                           '</a>';
                        n.appendChild(dv);
                    }
                }
-               else
-               {
+               else {
                    err.innerText = "docid not found."
                    $("#" + name + " #data").nodes[0].innerText = "";
                    $("#" + name + " #revisions").nodes[0].innerText = "";
                }
            });
+    },
+
+    search: function (name) {
+        var docid = $('#' + name + ' #docid').nodes[0].value;
+        var m = models[name];
+        if (m.pages == 0) m.pages = 1;
+        $('#' + name + ' #pageof').each(function (i) { this.innerHTML = "" + m.page + " of " + m.pages });
+        var s = m.page - 1;
+        if (s < 0) s = 0;
+        s = s * m.count;
+        $.ajax("/raptordb/docsearch?" + docid + "&start=" + s + "&count=" + m.count,
+           function () {
+               m.rows = data.TotalCount;
+               m.pages = Math.ceil(m.rows / m.count);
+               if (m.pages == 0) m.pages = 1;
+               $('#' + name + ' #pageof').each(function (i) { this.innerHTML = "" + m.page + " of " + m.pages });
+               var s = m.page - 1;
+               if (s < 0) s = 0;
+               s = s * m.count;
+               var n = $("#" + name + " #versions").nodes[0];
+               n.innerHTML = "";
+               var err = $("#" + name + " #err").nodes[0];
+               err.innerText = "";
+               if (data != "") {
+                   $("#" + name + " #revisions").nodes[0].innerText = data.TotalCount;
+
+                   for (var i = 0; i < data.Items.length; i++) {
+                       var dv = document.createElement("a");
+                       dv.innerHTML = '<a href="" style="display:block" onclick="docview.getversion(\'' + name.trim() +
+                           '\',this); event.preventDefault();" id="' + data.Items[i] +
+                           '">Document number = ' + data.Items[i] +
+                           '</a>';
+                       n.appendChild(dv);
+                   }
+               }
+               else {
+                   err.innerText = "Documents not found."
+                   $("#" + name + " #data").nodes[0].innerText = "";
+                   $("#" + name + " #revisions").nodes[0].innerText = "";
+               }
+           });
+    },
+
+    page: function (i, tabname) {
+        var m = models[tabname];
+        m.page += i;
+        if (m.page == 0) m.page = 1;
+        if (m.page > m.pages) m.page = m.pages;
+        docview.search(tabname);
     },
 
     history: function (tabname) {
@@ -706,9 +804,160 @@ var docview = {
             docview.fillhistory(name);
         });
     }
+};
+
+//---------------------------------------------------------------------
+//----------------------------hfview----------------------------------
+var hfview = {
+
+    search: function (name) {
+        var docid = $('#' + name + ' #docid').nodes[0].value;
+        var m = models[name];
+        if (m.pages == 0) m.pages = 1;
+        $('#' + name + ' #pageof').each(function (i) { this.innerHTML = "" + m.page + " of " + m.pages });
+        var s = m.page - 1;
+        if (s < 0) s = 0;
+        s = s * m.count;
+        $.ajax("/raptordb/hfkeys?" + docid + "&start=" + s + "&count=" + m.count,
+           function () {
+               m.rows = data.TotalCount;
+               m.pages = Math.ceil(m.rows / m.count);
+               if (m.pages == 0) m.pages = 1;
+               $('#' + name + ' #pageof').each(function (i) { this.innerHTML = "" + m.page + " of " + m.pages });
+               var s = m.page - 1;
+               if (s < 0) s = 0;
+               s = s * m.count;
+               var n = $("#" + name + " #versions").nodes[0];
+               n.innerHTML = "";
+               var err = $("#" + name + " #err").nodes[0];
+               err.innerText = "";
+               if (data != "") {
+                   $("#" + name + " #revisions").nodes[0].innerText = data.TotalCount;
+
+                   for (var i = 0; i < data.Items.length; i++) {
+                       var dv = document.createElement("a");
+                       dv.innerHTML = '<a href="" style="display:block" onclick="hfview.get(\'' + name.trim() +
+                           '\',this); event.preventDefault();" id="' + data.Items[i] +
+                           '">Key = ' + data.Items[i] +
+                           '</a>';
+                       n.appendChild(dv);
+                   }
+               }
+               else {
+                   err.innerText = "Documents not found."
+                   $("#" + name + " #data").nodes[0].innerText = "";
+                   $("#" + name + " #revisions").nodes[0].innerText = "";
+               }
+           });
+    },
+
+    page: function (i, tabname) {
+        var m = models[tabname];
+        m.page += i;
+        if (m.page == 0) m.page = 1;
+        if (m.page > m.pages) m.page = m.pages;
+        hfview.search(tabname);
+    },
+
+    get: function (tabname, el) {
+        var key = el.id;
+        $.load("/raptordb/hfget?" + key,
+            function (res) {
+                $("#" + tabname + " #data").nodes[0].innerText = res;
+            });
+    },
+
+    getkey: function (tabname) {
+        var docid = $('#' + tabname + ' #docid').nodes[0].value;
+        $.load("/raptordb/hfget?" + docid,
+            function (res) {
+                $("#" + tabname + " #data").nodes[0].innerText = res;
+            });
+    }
 
 };
 
+
+//---------------------------------------------------------------------
+//----------------------------fileview----------------------------------
+var fileview = {
+
+    get: function (tabname) {
+        var docid = $('#' + tabname + ' #docid').nodes[0].value;
+        $.load("/raptordb/fileget?" + docid,
+            function (res) {
+                var err = $("#" + tabname + " #err").nodes[0];
+                err.innerText = "";
+                $("#" + tabname + " #data").nodes[0].innerText = res;
+                var n = $("#" + tabname + " .disp").nodes[0];
+                if (res == "") {
+                    n.style.display = "none";
+                    err.innerText = "fileid not found."
+                }
+                else {
+                    n.style.display = "";
+                    $.ajax("/raptordb/filehistory?" + docid,
+                        function () {
+                            $("#" + tabname + " #revisions").nodes[0].innerText = data.length;
+                        });
+                }
+            });
+    },
+
+    getversion: function (tabname, el) {
+        var ver = el.id;
+        $.load("/raptordb/fileversion?" + ver,
+            function (res) {
+                $("#" + tabname + " #data").nodes[0].innerText = res;
+            });
+    },
+
+    show: function (docid) {
+        nav.loadtab("fileview", function (tabname) {
+            $('#' + tabname + ' #docid').nodes[0].value = docid;
+            fileview.get(tabname);
+        });
+    },
+
+    fillhistory: function (name) {
+        var docid = $('#' + name + ' #docid').nodes[0].value;
+        $.ajax("/raptordb/filehistory?" + docid,
+           function () {
+               var n = $("#" + name + " #versions").nodes[0];
+               n.innerHTML = "";
+               var err = $("#" + name + " #err").nodes[0];
+               err.innerText = "";
+               if (data != "") {
+                   $("#" + name + " #revisions").nodes[0].innerText = data.length;
+
+                   for (var i = 0; i < data.length; i++) {
+                       var dv = document.createElement("a");
+                       dv.innerHTML = '<a href="" style="display:block" onclick="docview.getversion(\'' + name.trim() +
+                           '\',this); event.preventDefault();" id="' + data[i].Version +
+                           '">Id = ' + data[i].Version +
+                           ', Date = ' + data[i].ChangeDate.replace("T", " ").replace("Z", "") +
+                           '</a>';
+                       n.appendChild(dv);
+                   }
+               }
+               else {
+                   err.innerText = "fileid not found."
+                   $("#" + name + " #data").nodes[0].innerText = "";
+                   $("#" + name + " #revisions").nodes[0].innerText = "";
+               }
+           });
+    },
+
+    history: function (tabname) {
+        var docid = $('#' + tabname + ' #docid').nodes[0].value;
+        // open new tab page
+        nav.loadtab("filehistory", function (name) {
+            $('#' + name + ' #docid').nodes[0].value = docid;
+            fileview.fillhistory(name);
+        });
+    }
+
+};
 
 //------------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------- extensions -------------------------------------------------------------

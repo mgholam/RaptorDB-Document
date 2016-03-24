@@ -166,6 +166,15 @@
   <ItemGroup>
     <EmbeddedResource Include="WEB\dochistory.html" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\fileview.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\docsearch.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\hfbrowse.html" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>md "$(SolutionDir)nuget\net40"
