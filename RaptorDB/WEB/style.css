@@ -308,7 +308,7 @@ li.active div, li.active {
 
 .LogItems {
     font-family: "Courier New", monospace;
-    white-space: pre;
+    white-space: pre-wrap;
     font-size: smaller;
 }
 
@@ -323,7 +323,7 @@ li.active div, li.active {
 
 .JSON {
     font-family: "Courier New", monospace;
-    white-space: pre;
+    white-space: pre-wrap;
     font-size: smaller;
 }
 

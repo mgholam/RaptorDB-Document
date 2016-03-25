@@ -177,35 +177,35 @@ namespace datagridbinding
             var kv = rap.GetKVHF();
             
             DateTime dt = DateTime.Now;
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 var o = CreateInvoice(i);
                 kv.SetObjectHF(i.ToString(), o);// new byte[100000]);
             }
             MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
 
-            var g = kv.GetObjectHF("1009");
+            var g = kv.GetObjectHF("109");
 
-            for (int i = 0; i < 100000; i++)
-                kv.DeleteKeyHF(i.ToString());
+            //for (int i = 0; i < 100000; i++)
+                //kv.DeleteKeyHF(i.ToString());
             
-            g = kv.GetObjectHF("1009");
-            MessageBox.Show(""+kv.CountHF());
+            //g = kv.GetObjectHF("1009");
+            //MessageBox.Show(""+kv.CountHF());
 
-            foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
-            {
-                kv.SetObjectHF(f, File.ReadAllBytes(f));
-            }
+            //foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
+            //{
+                //kv.SetObjectHF(f, File.ReadAllBytes(f));
+            //}
             
-            kv.CompactStorageHF();
+            //kv.CompactStorageHF();
 
-            foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
-            {
-                var o = kv.GetObjectHF(f);
-                File.WriteAllBytes(f.Replace("\\pp\\", "\\ppp\\"), o as byte[]);
-            }
-            bool b = kv.ContainsHF("aa");
-            var keys = kv.GetKeysHF();
+            //foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
+            //{
+            //    var o = kv.GetObjectHF(f);
+            //    File.WriteAllBytes(f.Replace("\\pp\\", "\\ppp\\"), o as byte[]);
+            //}
+            //bool b = kv.ContainsHF("aa");
+            //var keys = kv.GetKeysHF();
             //foreach(var o in r.KVHF.EnumerateObjects())
             //{
             //    string s = o.GetType().ToString();
@@ -215,7 +215,7 @@ namespace datagridbinding
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GC.Collect(2);
-            //KVHFtest();
+            KVHFtest();
             var ss = rap.FullTextSearch("woodland -oak");
 
             int c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < 100);

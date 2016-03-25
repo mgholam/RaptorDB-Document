@@ -359,7 +359,7 @@ namespace RaptorDBRest
                 (ctx, qry, o) =>
                 {
                     var h = _rdb.GetKVHF().GetObjectHF(qry);
-                    var s = fastJSON.JSON.ToJSON(h, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, UseEscapedUnicode = false, EnableAnonymousTypes = true });
+                    var s = fastJSON.JSON.ToNiceJSON(h, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, UseEscapedUnicode = false, EnableAnonymousTypes = true });
                     ctx.Response.ContentType = "application/json";
                     WriteResponse(ctx, 200, s);
                 });

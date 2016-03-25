@@ -5,11 +5,17 @@
 <br><br>
 
 <label align="top">Filter:</label>
-<br>
-<div id="columns" style="height:150px;width:150px;display:inline-block" class="ListBox">
-</div>
-<textarea id="filter" cols=80 style="height:150px;resize:none;"></textarea>
-<br>
+<table>
+    <tr>
+        <td>
+            <div id="columns" style="height:150px;width:150px;display:inline-block" class="ListBox">
+            </div>
+        </td>
+        <td>
+            <textarea id="filter" cols=80 style="height:150px;resize:none;"></textarea>
+        </td>
+    </tr>
+</table>
 <button style="width:200px;height:40px" onclick="query.run(this)">Run</button>
 <button style="width:200px;height:40px" onclick="query.excel(this)">Export to Excel</button>
 <br><br>
