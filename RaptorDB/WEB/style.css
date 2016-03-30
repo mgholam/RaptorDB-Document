@@ -11,7 +11,7 @@ body {
 
 /* ------------------------------new nav-----------------------------------*/
 button.accordion {
-    background-color: #333;
+    background-color: #333333;
     color: #eee;
     cursor: pointer;
     padding: 18px;
@@ -25,7 +25,7 @@ button.accordion {
 }
 
     button.accordion.active {
-        background-color: #777777;
+        background-color: #666666;
         color: black;
         margin-bottom: 0;
     }
@@ -37,7 +37,7 @@ button.accordion {
     button.accordion:after {
         content: '\02795';
         font-size: 13px;
-        color: #777;
+        color: #666666;
         float: right;
         margin-left: 5px;
     }
@@ -119,7 +119,7 @@ div.panel {
         padding: 9px 15px;
         display: inline-block;
         border-radius: 5px 5px 0px 0px;
-        background: #333;
+        background: #333333;
         font-size: 16px;
         font-weight: 600;
         color: #999999;
@@ -134,7 +134,7 @@ div.panel {
 
             .tab-links div #close:hover {
                 background: red;
-                color: #FFFFFF;
+                color: white;
                 text-align: center;
                 -webkit-border-radius: 15px;
                 -moz-border-radius: 15px;
@@ -209,7 +209,7 @@ li.active div, li.active {
     }
 
     .cssTbl th {
-        background-color: #303030;
+        background-color: #333333;
         padding: 5px;
     }
 
@@ -276,8 +276,8 @@ li.active div, li.active {
     }
 
 .close {
-    background: #606061;
-    color: #FFFFFF;
+    background: #606060;
+    color: white;
     line-height: 25px;
     position: absolute;
     right: -12px;

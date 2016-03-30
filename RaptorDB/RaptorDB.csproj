@@ -151,32 +151,60 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="WEB\nav.html" />
-    <EmbeddedResource Include="WEB\query.html" />
-    <EmbeddedResource Include="WEB\raptordb.js" />
+    <EmbeddedResource Include="WEB\pages\query.html" />
+    <EmbeddedResource Include="WEB\JS\raptordb.js" />
     <EmbeddedResource Include="WEB\raptordb.png" />
-    <EmbeddedResource Include="WEB\ssquery.html" />
+    <EmbeddedResource Include="WEB\pages\ssquery.html" />
     <EmbeddedResource Include="WEB\style.css" />
-    <EmbeddedResource Include="WEB\testpage.html" />
-    <EmbeddedResource Include="WEB\systeminfo.html" />
-    <EmbeddedResource Include="WEB\configs.html" />
+    <EmbeddedResource Include="WEB\app.html" />
+    <EmbeddedResource Include="WEB\pages\systeminfo.html" />
+    <EmbeddedResource Include="WEB\pages\configs.html" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="WEB\docview.html" />
+    <EmbeddedResource Include="WEB\pages\docview.html" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="WEB\dochistory.html" />
+    <EmbeddedResource Include="WEB\pages\dochistory.html" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="WEB\fileview.html" />
+    <EmbeddedResource Include="WEB\pages\fileview.html" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="WEB\docsearch.html" />
+    <EmbeddedResource Include="WEB\pages\docsearch.html" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="WEB\hfbrowse.html" />
+    <EmbeddedResource Include="WEB\pages\hfbrowse.html" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="WEB\favicon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\JS\nav.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\JS\query.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\JS\docview.js" />
+    <EmbeddedResource Include="WEB\JS\system.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\JS\hfview.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\JS\weld.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\JS\extensions.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\JS\ssquery.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\pages\schema.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\JS\schema.js" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
