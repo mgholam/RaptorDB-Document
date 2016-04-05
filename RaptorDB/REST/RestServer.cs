@@ -302,7 +302,7 @@ namespace RaptorDBRest
                     var h = _rdb.FullTextSearch(qry);
                     List<int> list = new List<int>();
                     _log.Debug("search = " + qry);
-                    if (count > -1 && h.Length>0)
+                    if (count > -1 && h.Length > 0)
                     {
                         int c = list.Count;
                         for (int i = start; i < start + count; i++)
@@ -312,9 +312,9 @@ namespace RaptorDBRest
                     {
                         Items = list,
                         Count = count,
-                        TotalCount= h.Length
+                        TotalCount = h.Length
                     };
-                    var s = fastJSON.JSON.ToJSON(obj, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, UseEscapedUnicode = false, EnableAnonymousTypes=true });
+                    var s = fastJSON.JSON.ToJSON(obj, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, UseEscapedUnicode = false, EnableAnonymousTypes = true });
                     ctx.Response.ContentType = "application/json";
                     WriteResponse(ctx, 200, s);
                 });
@@ -339,7 +339,7 @@ namespace RaptorDBRest
                     }
                     var h = _rdb.GetKVHF().GetKeysHF();
                     List<string> list = new List<string>();
-                    if (count > -1 && h.Length>0)
+                    if (count > -1 && h.Length > 0)
                     {
                         for (int i = start; i < start + count; i++)
                             list.Add(h[i]);
@@ -364,6 +364,47 @@ namespace RaptorDBRest
                     WriteResponse(ctx, 200, s);
                 });
 
+            _handler.Add("viewinfo", // takes : viewname
+                (ctx, qry, o) =>
+                {
+                    if (qry == "")
+                    {
+                        WriteResponse(ctx, 404, "ViewInfo requires a viewname to be defined e.g. ?customerview");
+                    }
+                    else
+                    {
+                        var vi = GetViewInfo(qry);
+                        if (vi == "")
+                            WriteResponse(ctx, 500, "View not found.");
+                        else {
+                            ctx.Response.ContentType = "application/json";
+                            WriteResponse(ctx, 200, vi);
+                        }
+                    }
+                });
+        }
+
+        internal string GetViewInfo(string name)
+        {
+            var v = _rdb.GetViews().Find(x => x.Name.ToLower() == name.ToLower());
+            if (v == null)
+                return "";
+
+            var p = new Dictionary<string, string>();
+
+            foreach (var pr in v.Schema.GetProperties())
+                p.Add(pr.Name, pr.PropertyType.ToString());
+
+            foreach (var pr in v.Schema.GetFields())
+                p.Add(pr.Name, pr.FieldType.ToString());
+
+            var obj = new
+            {
+                View = v,
+                Schema = p
+            };
+            var s = fastJSON.JSON.ToJSON(obj, new fastJSON.JSONParameters { UseFastGuid = false, UseEscapedUnicode = false, EnableAnonymousTypes = true });
+            return s;
         }
 
         private object GetInfo()
@@ -558,16 +599,10 @@ namespace RaptorDBRest
                 string s = r.Replace(name, "");
                 if (s.StartsWith("WEB"))
                 {
-                    s = s.Replace("WEB.", "");
-                    string folder = "WEB\\";
-                    if (s.StartsWith("images"))
-                    {
-                        s = s.Replace("images.", "");
-                        folder += "images\\";
-                    }
-                    string p = folder.Replace("\\", "/") + s;
-                    //_log.Debug("  adding : " + p);
-                    _WebCache.Add(p, r);
+                    var ext = Path.GetExtension(s);
+                    s = s.Replace(ext, "").Replace(".", "/");
+                    var p = s + ext;
+                    _WebCache.Add(p.ToLower(), r);
                     //if (Global.useWEBresources == false && File.Exists(folder + s) == false)
                     //{
                     //    using (MemoryStream ms = new MemoryStream())
@@ -661,7 +696,7 @@ namespace RaptorDBRest
                     //    else
                     //        ProcessGET(_rdb, ctx, path, r);
                     //}
-                    if (_WebCache.ContainsKey(webpath + path))// File.Exists(webpath + path)) // FIX : path here
+                    if (_WebCache.ContainsKey((webpath + path).ToLower()))// File.Exists(webpath + path)) // FIX : path here
                     {
                         switch (Path.GetExtension(path).ToLower())
                         {
@@ -677,13 +712,13 @@ namespace RaptorDBRest
 
                         }
                         _log.Debug("serving file : " + webpath + path);
-                        WriteResponse(ctx, 200, ReadFromStream(_WebCache[webpath + path]), true);// File.ReadAllBytes(webpath + path), true);
+                        WriteResponse(ctx, 200, ReadFromStream(_WebCache[(webpath + path).ToLower()]), true);// File.ReadAllBytes(webpath + path), true);
                     }
                     else if (path == "")
                     {
                         ctx.Response.ContentType = "text/html";
-                        _log.Debug("serving file : " + webpath + "testpage.html");
-                        WriteResponse(ctx, 200, ReadFromStream(_WebCache[webpath + "testpage.html"]), true);
+                        _log.Debug("serving file : " + webpath + "app.html");
+                        WriteResponse(ctx, 200, ReadFromStream(_WebCache[(webpath + "app.html").ToLower()]), true);
                     }
                     else
                         WriteResponse(ctx, 404, "route path not found : " + ctx.Request.Url.GetComponents(UriComponents.Path, UriFormat.Unescaped));

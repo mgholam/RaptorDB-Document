@@ -114,23 +114,23 @@ var query = {
     },
 
     hookup: function (tabname) {
-        var q = this;
         $.ajax(server + 'RaptorDB/GetViews',
-        function () {
-            //console.log(tabname);
-            var sel = $('#' + tabname + ' #viewsel').first();
-            sel.options.length = 0;
-            for (var i = 0; i < data.Rows.length; i++) {
-                var opt = document.createElement('option');
-                var it = data.Rows[i];
-                opt.innerHTML = it.Name;
-                opt.value = opt.innerHTML;
-                sel.appendChild(opt);
-                if (i == 0)
-                    models[tabname].vname = it.Name;
-            }
-            q.schemaselected(tabname);
-        });
+            function () {
+                //console.log(tabname);
+                var sel = $('#' + tabname + ' #viewsel').first();
+                sel.options.length = 0;
+                for (var i = 0; i < data.Rows.length; i++) {
+                    var opt = document.createElement('option');
+                    var it = data.Rows[i];
+                    opt.innerHTML = it.Name;
+                    opt.value = opt.innerHTML;
+                    sel.appendChild(opt);
+                    if (i == 0)
+                        models[tabname].vname = it.Name;
+                }
+                query.schemaselected(tabname);
+                //query.doquery(tabname);
+            });
         $("#" + tabname + " .pager").hide();
     },
 

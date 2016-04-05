@@ -318,7 +318,7 @@ li.active div, li.active {
     border-color: gray;
     background-color: white;
     padding: 5px;
-    min-height : 500px;
+    min-height: 500px;
 }
 
 .JSON {
@@ -339,8 +339,27 @@ li.active div, li.active {
 
     .ListBox a {
         display: block;
-        padding : 2px;
+        padding: 2px;
     }
-    .ListBox a:hover {
-        background-color : #c0c0c0;
-    }
+
+        .ListBox a:hover {
+            background-color: #c0c0c0;
+        }
+
+/***********************************************************************/
+.schema_def table {
+    border-style: solid;
+}
+
+.schema_def th {
+    background-color: #cccccc;
+}
+
+.schema_def td:nth-child(odd) {
+    font-weight: bold;
+    text-align: right;
+}
+
+.schema_def td:nth-child(even) {
+    color: green;
+}

@@ -206,6 +206,9 @@
   <ItemGroup>
     <EmbeddedResource Include="WEB\JS\schema.js" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="WEB\pages\schemadata.html" />
+  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>md "$(SolutionDir)nuget\net40"

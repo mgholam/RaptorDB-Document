@@ -33,7 +33,7 @@ $.prototype = {
         if (this.nodes != null)
             return this.nodes[0];
     }
-}
+};
 
 $.ajax = function (url, callback, error) {
     request = new XMLHttpRequest();
@@ -57,7 +57,7 @@ $.ajax = function (url, callback, error) {
         $.showDialog("Sorry", "<p>Connection Failed!</p>");
     }
     request.send();
-}
+};
 
 $.load = function (url, callback, error) {
     request = new XMLHttpRequest();
@@ -77,28 +77,29 @@ $.load = function (url, callback, error) {
         $.showDialog("Sorry", "<p>Connection Failed!</p>");
     }
     request.send();
-}
+};
+
+$.closemodal = function () {
+    var d = $("openModal");
+    if (d != null) {
+        document.body.removeChild(d);
+        document.onkeypress = null;
+        document.location = "#";
+    }
+};
 
 $.showDialog = function (caption, innerhtml) {
     var body = document.body;
     var d = document.createElement('div');
     d.id = "openModal";
     d.className = "modalDialog";
-    d.innerHTML = '<div><a onclick="$.closemodal()" title="Close" class="close">X</a><h2>' + caption + '</h2>' + innerhtml + '</div>';
+    d.innerHTML = '<div><a onclick="$.closemodal(); event.preventDefault();" title="Close" class="close">X</a><h2>' + caption + '</h2>' + innerhtml + '</div>';
     body.appendChild(d);
     document.location = "#openModal";
     document.onkeypress = function () {
         $.closemodal();
     };
-}
-
-$.closemodal = function () {
-    var d = $("openModal").first();
-    if (d != null) {
-        document.body.removeChild(d);
-        document.onkeypress = null;
-    }
-}
+};
 
 
 //------------------------------------------------------------------------------------------------------------------------
@@ -150,7 +151,6 @@ $.closemodal = function () {
 (function () {
     // Private array of chars to use
     var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
-    console.log("here");
     $.uuid = function (len, radix) {
         var chars = CHARS, uuid = [], i;
         radix = radix || chars.length;
@@ -207,48 +207,47 @@ $.closemodal = function () {
     };
 }());
 
-//var _tmplCache = {}
-//this.parseTemplate = function (str, data) {
-//    //    <script id="StockListTemplate" type="text/html">
-//    //      <# for(var i=0; i < stocks.length; i++)     
-//    //         {         
-//    //           var stock = stocks[i]; #>
-//    //           <div>
-//    //             <div><#= stock.company  #> ( <#= stock.symbol #>)</div>
-//    //             <div><#= stock.lastprice.formatNumber("c") #></div>
-//    //           </div>
-//    //      <# } #>
-//    //    </script>    
-//    //
-//    //     <script id="ItemTemplate" type="text/html">
-//    //         <div>
-//    //             <div><#= name #></div>
-//    //             <div><#= address.street #></div>
-//    //         </div>
-//    //     </script>
-//    // 
-//    //  usage : parseTemplate($("ItemTemplate").innerHTML, { name: "rick", address: { street: "32 kaiea", city: "paia"} } );
-//    // 
-//    var err = "";
-//    try {
-//        var func = _tmplCache[str];
-//        if (!func) {
-//            var strFunc =
-//            "var p=[],print=function(){p.push.apply(p,arguments);};" +
-//                        "with(obj){p.push('" +
-//            str.replace(/[\r\t\n]/g, " ")
-//               .replace(/'(?=[^#]*#>)/g, "\t")
-//               .split("'").join("\\'")
-//               .split("\t").join("'")
-//               .replace(/<#=(.+?)#>/g, "',$1,'")
-//               .split("<#").join("');")
-//               .split("#>").join("p.push('")
-//               + "');}return p.join('');";
+var _tmplCache = {}
+this.parseTemplate = function (str, data) {
+    //    <script id="StockListTemplate" type="text/html">
+    //      <# for(var i=0; i < stocks.length; i++)     
+    //         {         
+    //           var stock = stocks[i]; #>
+    //           <div>
+    //             <div><#= stock.company  #> ( <#= stock.symbol #>)</div>
+    //             <div><#= stock.lastprice.formatNumber("c") #></div>
+    //           </div>
+    //      <# } #>
+    //    </script>    
+    //
+    //     <script id="ItemTemplate" type="text/html">
+    //         <div>
+    //             <div><#= name #></div>
+    //             <div><#= address.street #></div>
+    //         </div>
+    //     </script>
+    // 
+    //  usage : parseTemplate($("ItemTemplate").innerHTML, { name: "rick", address: { street: "32 kaiea", city: "paia"} } );
+    // 
+    var err = "";
+    try {
+        var func = _tmplCache[str];
+        if (!func) {
+            var strFunc =
+            "var p=[],print=function(){p.push.apply(p,arguments);};with(obj){p.push('" +
+            str.replace(/[\r\t\n]/g, " ")
+               .replace(/'(?=[^#]*#>)/g, "\t")
+               .split("'").join("\\'")
+               .split("\t").join("'")
+               .replace(/<#=(.+?)#>/g, "',$1,'")
+               .split("<#").join("');")
+               .split("#>").join("p.push('")
+               + "');}return p.join('');";
 
-//            func = new Function("obj", strFunc);
-//            _tmplCache[str] = func;
-//        }
-//        return func(data);
-//    } catch (e) { err = e.message; }
-//    return "< # ERROR: " + err.htmlEncode() + " # >";
-//}
+            func = new Function("obj", strFunc);
+            _tmplCache[str] = func;
+        }
+        return func(data);
+    } catch (e) { err = e.message; }
+    return "< # ERROR: " + err.htmlEncode() + " # >";
+}

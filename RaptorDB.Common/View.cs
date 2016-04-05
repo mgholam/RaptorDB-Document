@@ -25,6 +25,7 @@ namespace RaptorDB
         /// <summary>
         /// Column definitions for the view storage 
         /// </summary>
+        [XmlIgnore]
         public Type Schema { get; set; }
         
         /// <summary>

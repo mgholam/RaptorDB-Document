@@ -111,7 +111,7 @@
         /// </summary>
         public static short WebStudioPort = 91;
         /// <summary>
-        /// Local machine access only Web Studio - no network access (deafult = true)
+        /// Local machine access only Web Studio - no network access (default = true)
         /// </summary>
         public static bool LocalOnlyWebStudio = true;
     }

@@ -90,7 +90,7 @@ namespace RaptorDB
 
         internal void SeekBlock(int blocknumber)
         {
-            long offset = (long)_fileheader.Length + blocknumber * _BLOCKSIZE;
+            long offset = (long)_fileheader.Length + (long)blocknumber * _BLOCKSIZE;
             _datawrite.Seek(offset, SeekOrigin.Begin);// wiil seek past the end of file on fs.Write will zero the difference
         }
 

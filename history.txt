@@ -1,8 +1,8 @@
-﻿v3.3.0 *
+﻿v3.3.0
 ------
 - added WEB Studio interface
 - logger keeps last 100 logs for recall
--  
+- bug fix HF storage file seek position overflow 
 
 v3.2.18
 -------
