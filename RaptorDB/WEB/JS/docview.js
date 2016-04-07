@@ -33,6 +33,14 @@ var docview = {
             });
     },
 
+    getsearch: function (tabname, el) {
+        var ver = el.id;
+        $.load("/raptordb/docversion?" + ver,
+            function (res) {
+                $("#" + tabname + " #data").first().innerText = res;
+            });
+    },
+
     show: function (docid) {
         nav.loadtab("docview", function (tabname) {
             $('#' + tabname + ' #docid').first().value = docid;
@@ -70,7 +78,7 @@ var docview = {
     },
 
     search: function (name) {
-        var docid = $('#' + name + ' #docid').first().value;
+        var docid = $('#' + name + ' #search').first().value;
         var m = models[name];
         if (m.pages == 0) m.pages = 1;
         $('#' + name + ' #pageof').each(function (i) { this.innerHTML = "" + m.page + " of " + m.pages });
@@ -95,7 +103,7 @@ var docview = {
 
                    for (var i = 0; i < data.Items.length; i++) {
                        var dv = document.createElement("a");
-                       dv.innerHTML = '<a href="" style="display:block" onclick="docview.getversion(\'' + name.trim() +
+                       dv.innerHTML = '<a href="" style="display:block" onclick="docview.getsearch(\'' + name.trim() +
                            '\',this); event.preventDefault();" id="' + data.Items[i] +
                            '">Document number = ' + data.Items[i] +
                            '</a>';

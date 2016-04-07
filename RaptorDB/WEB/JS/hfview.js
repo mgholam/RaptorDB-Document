@@ -56,7 +56,7 @@ var hfview = {
         $.load("/raptordb/hfget?" + key,
             function (res) {
                 $("#" + tabname + " #data").first().innerText = res;
-                $("#" + tabname + " #docid").first().value = key;
+                //$("#" + tabname + " #docid").first().value = key;
             });
     },
 
