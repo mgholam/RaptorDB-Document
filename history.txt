@@ -1,4 +1,8 @@
-﻿v3.3.0
+﻿v3.3.1
+------
+- bug fix mixed property and fields in view schema definition (invalid cast exception on query)
+
+v3.3.0
 ------
 - added WEB Studio interface
 - logger keeps last 100 logs for recall

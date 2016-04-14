@@ -53,8 +53,8 @@ namespace SampleViews
         public DateTime Date;
         public string Address;
         public int Serial;
-        public byte Status;
-        public bool? Approved;
+        public byte Status;//{ get; set; }
+        public bool? Approved;// { get; set; }
         //public State InvoiceState;
     }
 

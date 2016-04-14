@@ -9,7 +9,7 @@ namespace RaptorDB
     internal class TypeIndexes<T> : MGIndex<T>, IIndex where T : IComparable<T>
     {
         public TypeIndexes(string path, string filename, byte keysize)
-            : base(path, filename + ".mgidx", keysize, Global.PageItemCount, true)
+            : base(path, filename + ".mgidx", keysize, /*Global.PageItemCount,*/ true)
         {
 
         }
@@ -276,7 +276,7 @@ namespace RaptorDB
     internal class EnumIndex<T> : MGIndex<string>, IIndex //where T : IComparable<T>
     {
         public EnumIndex(string path, string filename)
-            : base(path, filename + ".mgidx", 30, Global.PageItemCount, true)
+            : base(path, filename + ".mgidx", 30, /*Global.PageItemCount,*/ true)
         {
 
         }

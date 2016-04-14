@@ -49,7 +49,6 @@ namespace RaptorDB
         private ILog log = LogManager.GetLogger(typeof(BitmapIndex));
         private bool _optimizing = false;
         private bool _shutdownDone = false;
-        //private Queue _que = new Queue();
         private int _workingCount = 0;
 
         #region [  P U B L I C  ]

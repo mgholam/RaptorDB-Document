@@ -9,6 +9,7 @@ using System.Reflection.Emit;
 using RaptorDB.Common;
 using System.Threading;
 using fastJSON;
+using fastBinaryJSON;
 
 namespace RaptorDB.Views
 {
@@ -148,7 +149,7 @@ namespace RaptorDB.Views
             // load indexes here
             CreateLoadIndexes(_schema);
 
-            _deletedRows = new BoolIndex(_Path, _view.Name , ".deleted");
+            _deletedRows = new BoolIndex(_Path, _view.Name, ".deleted");
 
             _viewData = new StorageFile<Guid>(_Path + view.Name + ".mgdat");
 
@@ -504,14 +505,14 @@ namespace RaptorDB.Views
 
         private void CreateResultRowFiller()
         {
-            _rowfiller = (RowFill)CreateRowFillerDelegate(_view.Schema);
+            _rowfiller = CreateRowFillerDelegate(_view.Schema, _schema);
             // init the row create 
             _createrow = null;
             FastCreateObject(_view.Schema);
         }
 
         public delegate object RowFill(object o, object[] data);
-        public static RowFill CreateRowFillerDelegate(Type objtype)
+        public static RowFill CreateRowFillerDelegate(Type objtype, ViewRowDefinition schema)
         {
             DynamicMethod dynMethod = new DynamicMethod("rowfill", typeof(object), new Type[] { typeof(object), typeof(object[]) });
             ILGenerator il = dynMethod.GetILGenerator();
@@ -521,57 +522,90 @@ namespace RaptorDB.Views
             il.Emit(OpCodes.Stloc, row);
             int i = 1;
             var val = il.DeclareLocal(typeof(object));
-            foreach (var c in objtype.GetFields())
+            var fields = objtype.GetFields();
+            var properties = objtype.GetProperties();
+            foreach (var col in schema.Columns)
             {
-                var end = il.DefineLabel();
-     
-                il.Emit(OpCodes.Ldarg_1);
-                if (c.Name != "docid")
-                    il.Emit(OpCodes.Ldc_I4, i);
-                else
-                    il.Emit(OpCodes.Ldc_I4, 0);
+                FieldInfo c = null;
+                PropertyInfo p = null;
+                if (isField(fields, col.Key, out c)) 
+                {
+                    var end = il.DefineLabel();
 
-                il.Emit(OpCodes.Ldelem_Ref);
-                // check if value is not null
-                il.Emit(OpCodes.Stloc, val);
-                il.Emit(OpCodes.Ldloc, val);
-                il.Emit(OpCodes.Brfalse_S, end);
-                il.Emit(OpCodes.Ldloc, row);
-                il.Emit(OpCodes.Ldloc, val);
+                    il.Emit(OpCodes.Ldarg_1);
+                    if (col.Key != "docid")
+                        il.Emit(OpCodes.Ldc_I4, i);
+                    else
+                        il.Emit(OpCodes.Ldc_I4, 0);
 
-                il.Emit(OpCodes.Unbox_Any, c.FieldType);
-                il.Emit(OpCodes.Stfld, c);
-                il.MarkLabel(end);
-                i++;
+                    il.Emit(OpCodes.Ldelem_Ref);
+                    // check if value is not null
+                    il.Emit(OpCodes.Stloc, val);
+                    il.Emit(OpCodes.Ldloc, val);
+                    il.Emit(OpCodes.Brfalse_S, end);
+                    il.Emit(OpCodes.Ldloc, row);
+                    il.Emit(OpCodes.Ldloc, val);
+
+                    il.Emit(OpCodes.Unbox_Any, c.FieldType);
+                    il.Emit(OpCodes.Stfld, c);
+                    il.MarkLabel(end);
+                    i++;
+                }
+                else if (isProperty(properties, col.Key, out p))
+                {
+                    var end = il.DefineLabel();
+                    MethodInfo setMethod = p.GetSetMethod();
+                    il.Emit(OpCodes.Ldarg_1);
+                    if (col.Key != "docid")
+                        il.Emit(OpCodes.Ldc_I4, i);
+                    else
+                        il.Emit(OpCodes.Ldc_I4, 0);
+
+                    il.Emit(OpCodes.Ldelem_Ref);
+                    // check if value is not null
+                    il.Emit(OpCodes.Stloc, val);
+                    il.Emit(OpCodes.Ldloc, val);
+                    il.Emit(OpCodes.Brfalse_S, end);
+                    il.Emit(OpCodes.Ldloc, row);
+                    il.Emit(OpCodes.Ldloc, val);
+
+                    il.Emit(OpCodes.Unbox_Any, p.PropertyType);
+                    if (!p.DeclaringType.IsValueType)
+                        il.EmitCall(OpCodes.Callvirt, setMethod, null);
+                    else
+                        il.EmitCall(OpCodes.Call, setMethod, null);
+                    il.MarkLabel(end);
+                    i++;
+                }
             }
-
-            foreach (var c in objtype.GetProperties())
-            {
-                var end = il.DefineLabel();
-                MethodInfo setMethod = c.GetSetMethod();
-                il.Emit(OpCodes.Ldarg_1);
-                if (c.Name != "docid")
-                    il.Emit(OpCodes.Ldc_I4, i);
-                else
-                    il.Emit(OpCodes.Ldc_I4, 0);
-                il.Emit(OpCodes.Ldelem_Ref);
-                // check if value is not null
-                il.Emit(OpCodes.Stloc, val);
-                il.Emit(OpCodes.Ldloc, val);
-                il.Emit(OpCodes.Brfalse_S, end);
-                il.Emit(OpCodes.Ldloc, row);
-                il.Emit(OpCodes.Ldloc, val);
-
-                il.Emit(OpCodes.Unbox_Any, c.PropertyType);
-                il.EmitCall(OpCodes.Callvirt, setMethod, null);
-                il.MarkLabel(end);
-                i++;
-            }
-
             il.Emit(OpCodes.Ldloc, row);
             il.Emit(OpCodes.Ret);
 
             return (RowFill)dynMethod.CreateDelegate(typeof(RowFill));
+        }
+
+        private static bool isProperty(PropertyInfo[] properties, string key, out PropertyInfo p)
+        {
+            foreach (var i in properties)
+                if (i.Name == key)
+                {
+                    p = i;
+                    return true;
+                }
+            p = null;
+            return false;
+        }
+
+        private static bool isField(FieldInfo[] fields, string key, out FieldInfo c)
+        {
+            foreach (var i in fields)
+                if (i.Name == key)
+                {
+                    c = i;
+                    return true;
+                }
+            c = null;
+            return false;
         }
 
         private Result<object> ReturnRows<T>(WAHBitArray ba, List<T> trows, int start, int count, List<int> orderby, bool descending)
@@ -777,7 +811,7 @@ namespace RaptorDB.Views
 
                 int c = docs.RecordCount();
                 int dc = 0;
-                
+
                 for (int i = 0; i < c; i++)
                 {
                     StorageItem<Guid> meta = null;
@@ -829,9 +863,9 @@ namespace RaptorDB.Views
         private object CreateObject(byte[] b)
         {
             if (b[0] < 32)
-                return fastBinaryJSON.BJSON.ToObject(b);
+                return BJSON.ToObject(b);
             else
-                return fastJSON.JSON.ToObject(Encoding.ASCII.GetString(b));
+                return JSON.ToObject(Encoding.ASCII.GetString(b));
         }
 
         private void CreateLoadIndexes(ViewRowDefinition viewRowDefinition)
@@ -956,7 +990,7 @@ namespace RaptorDB.Views
                 object[] r = new object[row.Length + 1];
                 r[0] = guid;
                 Array.Copy(row, 0, r, 1, row.Length);
-                byte[] b = fastBinaryJSON.BJSON.ToBJSON(r);
+                byte[] b = BJSON.ToBJSON(r);
 
                 int rownum = (int)_viewData.WriteRawData(b);
 
@@ -1030,7 +1064,7 @@ namespace RaptorDB.Views
             }
 
             else if (type == typeof(bool) || type == typeof(bool?))
-                return new BoolIndex(_Path, name , ".idx");
+                return new BoolIndex(_Path, name, ".idx");
 
             else if (type.IsEnum)
                 return (IIndex)Activator.CreateInstance(

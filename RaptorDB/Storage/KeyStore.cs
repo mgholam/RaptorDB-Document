@@ -311,7 +311,7 @@ namespace RaptorDB
         private MGIndex<T> _index;
         private string _datExtension = ".mgdat";
         private string _idxExtension = ".mgidx";
-        IGetBytes<T> _T = null;
+        private IGetBytes<T> _T = null;
         private System.Timers.Timer _savetimer;
         private BoolIndex _deleted;
 
@@ -477,7 +477,7 @@ namespace RaptorDB
 
             //LogManager.Configure(_Path + Path.DirectorySeparatorChar + _FileName + ".txt", 500, false);
 
-            _index = new MGIndex<T>(_Path, _FileName + _idxExtension, _MaxKeySize, Global.PageItemCount, AllowDuplicateKeys);
+            _index = new MGIndex<T>(_Path, _FileName + _idxExtension, _MaxKeySize, /*Global.PageItemCount,*/ AllowDuplicateKeys);
 
             if (Global.SaveAsBinaryJSON)
                 _archive = new StorageFile<T>(db, SF_FORMAT.BSON, false);

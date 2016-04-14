@@ -685,28 +685,8 @@ namespace RaptorDB
 
         internal int GetFirst()
         {
-            if (_state == TYPE.Indexes)
-            {
-                return (int)GetOffsets()[0];
-            }
-            else
-            {
-                CheckBitArray();
-                int count = _uncompressed.Length;
-
-                for (int i = 0; i < count; i++)
-                {
-                    if (_uncompressed[i] > 0)
-                    {
-                        for (int j = 0; j < 32; j++)
-                        {
-                            bool b = internalGet((i << 5) + j);
-                            if (b == true)// ones)
-                                return (i << 5) + j;
-                        }
-                    }
-                }
-            }
+            foreach (var i in GetBitIndexes())
+                return i;
             return 0;
         }
     }

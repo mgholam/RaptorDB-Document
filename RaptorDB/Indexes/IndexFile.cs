@@ -40,7 +40,7 @@ namespace RaptorDB
         private KeyStoreHF _strings;
         private bool _externalStrings = false;
 
-        public IndexFile(string filename, byte maxKeySize, ushort pageNodeCount)
+        public IndexFile(string filename, byte maxKeySize)//, ushort pageNodeCount)
         {
             _T = RDBDataType<T>.ByteHandler();
             if (typeof(T) == typeof(string) && Global.EnableOptimizedStringIndex)
@@ -51,7 +51,7 @@ namespace RaptorDB
             else
                 _maxKeySize = maxKeySize;
 
-            _PageNodeCount = pageNodeCount;
+            _PageNodeCount = Global.PageItemCount;// pageNodeCount;
             _rowSize = (_maxKeySize + 1 + 4 + 4);
 
             string path = Path.GetDirectoryName(filename);
