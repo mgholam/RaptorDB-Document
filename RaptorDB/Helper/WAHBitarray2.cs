@@ -303,10 +303,8 @@ namespace RaptorDB
             }
             else if (_uncompressed == null)
                 return new uint[] { 0 };
-            uint[] data = _uncompressed;
-            Compress(data);
-            uint[] d = new uint[_compressed.Length];
-            _compressed.CopyTo(d, 0);
+
+            uint[] d = Compress(_uncompressed);
             return d;
         }
 
@@ -435,7 +433,7 @@ namespace RaptorDB
                 return;
             int c = index >> 5;
             c++;
-            if(_uncompressed == null)
+            if (_uncompressed == null)
             {
                 _uncompressed = new uint[c];
                 return;
@@ -517,13 +515,14 @@ namespace RaptorDB
             return (uint)ret;
         }
 
-        private void Compress(uint[] data)
+        private uint[] Compress(uint[] data)
         {
             List<uint> compressed = new List<uint>();
             uint zeros = 0;
             uint ones = 0;
             int count = data.Length << 5;
-            for (int i = 0; i < count; )
+            int i = 0;
+            while (i < count)//for (int i = 0; i < count;)
             {
                 uint num = Take31Bits(data, i);
                 i += 31;
@@ -546,7 +545,7 @@ namespace RaptorDB
             }
             FlushOnes(compressed, ref ones);
             FlushZeros(compressed, ref zeros);
-            _compressed = compressed.ToArray();
+            return compressed.ToArray();
         }
 
         private void FlushOnes(List<uint> compressed, ref uint ones)
@@ -607,7 +606,7 @@ namespace RaptorDB
             }
             else
             {
-                list[pointer] |= (uint)((0xffffffff << ccount) >> off);
+                list[pointer] |= (uint)((0xffffffff << (31 - ccount)) >> off);
                 ccount = 0;
             }
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using RaptorDB.Common;
 
 namespace RaptorDB
 {
@@ -169,6 +168,7 @@ namespace RaptorDB
                 {
                     bw.Write(i);
                 }
+                bw.Flush();
                 File.WriteAllBytes(_path + _filename, ms.ToArray());
             }
         }
@@ -176,17 +176,18 @@ namespace RaptorDB
         private void ReadFile()
         {
             byte[] b = File.ReadAllBytes(_path + _filename);
+            MemoryStream ms = new MemoryStream(b);
+            BinaryReader br = new BinaryReader(ms);
             WAHBitArray.TYPE t = WAHBitArray.TYPE.WAH;
-            int j = 0;
             if (b.Length % 4 > 0) // new format with the data type byte
             {
-                t = (WAHBitArray.TYPE)Enum.ToObject(typeof(WAHBitArray.TYPE), b[0]);
-                j = 1;
+                byte tb = br.ReadByte();
+                t = (WAHBitArray.TYPE)Enum.ToObject(typeof(WAHBitArray.TYPE), tb);
             }
             List<uint> ints = new List<uint>();
             for (int i = 0; i < b.Length / 4; i++)
             {
-                ints.Add((uint)Helper.ToInt32(b, (i * 4) + j));
+                ints.Add((uint)br.ReadInt32());
             }
             _bits = new WAHBitArray(t, ints.ToArray());
         }
@@ -227,7 +228,7 @@ namespace RaptorDB
         {
             base.Index(recnum, (string)key);
             if (_sortable)
-                _idx.Set(key, recnum); 
+                _idx.Set(key, recnum);
         }
 
         public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
@@ -252,7 +253,7 @@ namespace RaptorDB
             if (_sortable)
                 return _idx.GetKeys(); // support get keys 
             else
-                return new object[] { }; 
+                return new object[] { };
         }
         void IIndex.FreeMemory()
         {
@@ -268,7 +269,7 @@ namespace RaptorDB
             if (_sortable)
                 _idx.Shutdown();
         }
-        
+
     }
     #endregion
 

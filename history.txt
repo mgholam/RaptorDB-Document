@@ -1,4 +1,8 @@
-﻿v3.3.1
+﻿v3.3.2
+------
+- bug fix edge case duplicates showing in queries 
+
+v3.3.1
 ------
 - bug fix mixed property and fields in view schema definition (invalid cast exception on query)
 
