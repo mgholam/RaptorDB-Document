@@ -104,7 +104,10 @@ namespace RaptorDB.Common
         public void Add(T key, V val)
         {
             lock (_padlock)
-                _list.Add(key, val);
+                if (_list.ContainsKey(key) == false)
+                    _list.Add(key, val);
+                else
+                    _list[key] = val;
         }
 
         public void Remove(T key)

@@ -24,7 +24,7 @@ namespace RaptorDB
             {
                 _docs = new KeyStoreString(_Path + "files.docs", false);
                 // read deleted
-                _deleted = new BoolIndex(_Path, "_deleted" , ".hoot");
+                _deleted = new BoolIndex(_Path, "_deleted", ".hoot");
                 _lastDocNum = (int)_docs.Count();
             }
             _bitmaps = new BitmapIndex(_Path, _FileName + "_hoot.bmp");
@@ -300,26 +300,26 @@ namespace RaptorDB
                 _docs.SaveIndex();
 
             if (_bitmaps != null)
-            _bitmaps.Commit(false);
+                _bitmaps.Commit(false);
 
             if (_words != null)
             {
-            MemoryStream ms = new MemoryStream();
-            BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
+                MemoryStream ms = new MemoryStream();
+                BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
 
-            // save words and bitmaps
-            using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Create))
-            {
-                foreach (string key in _words.Keys())
+                // save words and bitmaps
+                using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Create))
                 {
-                    bw.Write(key);
-                    bw.Write(_words[key]);
+                    foreach (string key in _words.Keys())
+                    {
+                        bw.Write(key);
+                        bw.Write(_words[key]);
+                    }
+                    byte[] b = ms.ToArray();
+                    words.Write(b, 0, b.Length);
+                    words.Flush();
+                    words.Close();
                 }
-                byte[] b = ms.ToArray();
-                words.Write(b, 0, b.Length);
-                words.Flush();
-                words.Close();
-            }
             }
             _log.Debug("save time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
         }
@@ -398,7 +398,7 @@ namespace RaptorDB
             while (index < count)
             {
                 char c = chars[index++];
-                if (!(char.IsLetterOrDigit(c) || char.IsPunctuation(c) )) // rdb specific
+                if (!(char.IsLetterOrDigit(c) || char.IsPunctuation(c))) // rdb specific
                 {
                     if (run != -1)
                     {
@@ -408,7 +408,7 @@ namespace RaptorDB
                 }
                 else
                     if (run == -1)
-                        run = index - 1;
+                    run = index - 1;
             }
 
             if (run != -1)
@@ -493,7 +493,7 @@ namespace RaptorDB
                 }
 
                 if (_bitmaps != null)
-                {					
+                {
                     _bitmaps.Commit(Global.FreeBitmapMemoryOnSave);
                     _bitmaps.Shutdown();
                     _bitmaps = null;

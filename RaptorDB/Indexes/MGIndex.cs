@@ -65,7 +65,7 @@ namespace RaptorDB
         private int _LastIndexedRecordNumber = 0;
         //private int _maxPageItems = 0;
 
-        public MGIndex(string path, string filename, byte keysize, /*ushort maxcount,*/ bool allowdups) 
+        public MGIndex(string path, string filename, byte keysize, /*ushort maxcount,*/ bool allowdups)
         {
             _AllowDuplicates = allowdups;
             _index = new IndexFile<T>(path + Path.DirectorySeparatorChar + filename, keysize);//, maxcount);
@@ -183,8 +183,8 @@ namespace RaptorDB
 
         public void SaveIndex()
         {
-            _log.Debug("Total split time (s) = " + _totalsplits);
-            _log.Debug("Total pages = " + _pageList.Count);
+            //_log.Debug("Total split time (s) = " + _totalsplits);
+            //_log.Debug("Total pages = " + _pageList.Count);
             int[] keys = _cache.Keys();
             Array.Sort(keys);
             // save index to disk
@@ -198,7 +198,7 @@ namespace RaptorDB
                 }
             }
             _index.SavePageList(_pageList, _pageListDiskPages);
-            _index.BitmapFlush();
+            _index.BitmapFlush(); 
         }
 
         public void Shutdown()

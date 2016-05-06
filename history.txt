@@ -1,4 +1,9 @@
-﻿v3.3.2
+﻿v3.3.3
+------
+- bug fix SafeSortedList.Add()
+- bug fix WAHBitArray.FreeMemory()
+
+v3.3.2
 ------
 - bug fix edge case duplicates showing in queries 
 

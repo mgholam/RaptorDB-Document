@@ -36,12 +36,12 @@ namespace RaptorDB
         private string _bmpExt = ".mgbmp";
         private string _FileName = "";
         private string _Path = "";
-        private Stream _bitmapFileWriteOrg;
+        private FileStream _bitmapFileWriteOrg;
         private BufferedStream _bitmapFileWrite;
-        private Stream _bitmapFileRead;
-        private Stream _recordFileRead;
-        private Stream _recordFileWriteOrg;
-        private Stream _recordFileWrite;
+        private FileStream _bitmapFileRead;
+        private FileStream _recordFileRead;
+        private FileStream _recordFileWriteOrg;
+        private BufferedStream _recordFileWrite;
         private long _lastBitmapOffset = 0;
         private int _lastRecordNumber = 0;
         private SafeDictionary<int, WAHBitArray> _cache = new SafeDictionary<int, WAHBitArray>();
@@ -77,6 +77,7 @@ namespace RaptorDB
         {
             using (new L(this))
             {
+                log.Debug("writing "+_FileName);
                 int[] keys = _cache.Keys();
                 Array.Sort(keys);
 
@@ -94,6 +95,7 @@ namespace RaptorDB
                 if (freeMemory)
                 {
                     _cache = new SafeDictionary<int, WAHBitArray>();
+                    log.Debug("  freeing cache");
                 }
             }
         }
@@ -253,16 +255,22 @@ namespace RaptorDB
         {
             if (_shutdownDone)
                 return;
+
             if (_recordFileWrite != null)
                 _recordFileWrite.Flush();
+
             if (_bitmapFileWrite != null)
                 _bitmapFileWrite.Flush();
+
             if (_recordFileRead != null)
                 _recordFileRead.Flush();
+
             if (_bitmapFileRead != null)
                 _bitmapFileRead.Flush();
+
             if (_bitmapFileWriteOrg != null)
                 _bitmapFileWriteOrg.Flush();
+
             if (_recordFileWriteOrg != null)
                 _recordFileWriteOrg.Flush();
         }
@@ -361,7 +369,7 @@ namespace RaptorDB
 
             List<uint> ar = new List<uint>();
             WAHBitArray.TYPE type = WAHBitArray.TYPE.WAH;
-            Stream bmp = _bitmapFileRead;
+            FileStream bmp = _bitmapFileRead;
             {
                 bmp.Seek(offset, SeekOrigin.Begin);
 
@@ -390,17 +398,12 @@ namespace RaptorDB
         {
             if (_optimizing)
                 lock (_oplock) { } // yes! this is good
-            //lock (_que)
-            //    _que.Enqueue(1);
             Interlocked.Increment(ref _workingCount);
         }
         //#pragma warning restore 642
 
         private void Done()
         {
-            //lock (_que)
-            //    if (_que.Count > 0)
-            //        _que.Dequeue();
             Interlocked.Decrement(ref _workingCount);
         }
         #endregion
@@ -419,7 +422,9 @@ namespace RaptorDB
                 foreach (int i in free)
                     _cache.Remove(i);
             }
-            catch { }
+            catch (Exception ex){
+                log.Error(ex);
+            }
         }
     }
 }
