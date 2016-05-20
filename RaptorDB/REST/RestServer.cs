@@ -127,38 +127,45 @@ namespace RaptorDBRest
 
         private void Start()
         {
-            WriteResources();
 
-            InitializeCommandHandler();
-            //// compile _path\Routing\*.route files and register
-            //Directory.CreateDirectory(_path + _S + "Routing");
-            //// delete existing compiled files
-            //foreach (var f in Directory.GetFiles(_path + _S + "Routing", "*.dll"))
-            //    File.Delete(f);
-            //// compile route files
-            //CompileAndRegisterScriptRoutes(_path + _S + "Routing");
-
-            //_jsonstore = new KeyStore<Guid>(_path + _S + "Datajson" + _S + "json.mgdat", true);
-
-            _server = new HttpListener();
-            //_server.AuthenticationSchemes = AuthenticationSchemes.Basic;
-            if (_localonly)
+            try
             {
-                _server.Prefixes.Add("http://localhost:" + _port + "/");
-                _server.Prefixes.Add("http://127.0.0.1:" + _port + "/");
-                _server.Prefixes.Add("http://" + Environment.MachineName + ":" + _port + "/");
+                WriteResources();
+
+                InitializeCommandHandler();
+                //// compile _path\Routing\*.route files and register
+                //Directory.CreateDirectory(_path + _S + "Routing");
+                //// delete existing compiled files
+                //foreach (var f in Directory.GetFiles(_path + _S + "Routing", "*.dll"))
+                //    File.Delete(f);
+                //// compile route files
+                //CompileAndRegisterScriptRoutes(_path + _S + "Routing");
+
+                //_jsonstore = new KeyStore<Guid>(_path + _S + "Datajson" + _S + "json.mgdat", true);
+
+                _server = new HttpListener();
+                //_server.AuthenticationSchemes = AuthenticationSchemes.Basic;
+                if (_localonly)
+                {
+                    _server.Prefixes.Add("http://localhost:" + _port + "/");
+                    _server.Prefixes.Add("http://127.0.0.1:" + _port + "/");
+                    _server.Prefixes.Add("http://" + Environment.MachineName + ":" + _port + "/");
+                }
+                else
+                    _server.Prefixes.Add("http://*:" + _port + "/");
+
+                _server.Start();
+                while (_run)
+                {
+                    var context = _server.BeginGetContext(new AsyncCallback(ListenerCallback), _server);
+                    context.AsyncWaitHandle.WaitOne();
+                }
             }
-            else
-                _server.Prefixes.Add("http://*:" + _port + "/");
-
-            _server.Start();
-            while (_run)
+            catch (Exception ex)
             {
-                var context = _server.BeginGetContext(new AsyncCallback(ListenerCallback), _server);
-                context.AsyncWaitHandle.WaitOne();
+                _log.Error(ex);
             }
         }
-
         private void InitializeCommandHandler()
         {
             _handler.Add("getroutes",

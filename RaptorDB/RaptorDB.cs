@@ -1322,7 +1322,7 @@ namespace RaptorDB
                 _objStore.FreeMemory();
                 _fileStore.FreeMemory();
                 _objHF.FreeMemory();
-                GC.Collect(2);
+                GC.Collect(GC.MaxGeneration);
             }
         }
 
@@ -1496,6 +1496,7 @@ namespace RaptorDB
         {
             return _viewManager.GetAssemblyForView(viewname, out typename);
         }
+
         #endregion
     }
 }

@@ -6,21 +6,21 @@ using System.Linq;
 
 namespace RaptorDB
 {
-    internal class AllocationBlock
-    {
-        public string key;
-        public byte keylen;
-        public int datalength;
-        public bool isCompressed;
-        public bool isBinaryJSON;
-        public bool deleteKey;
-        public List<int> Blocks = new List<int>();
-        public int blocknumber;
-    }
-
     // high frequency key value store
     internal class KeyStoreHF : IKeyStoreHF
     {
+        internal class AllocationBlock
+        {
+            public string key;
+            public byte keylen;
+            public int datalength;
+            public bool isCompressed;
+            public bool isBinaryJSON;
+            public bool deleteKey;
+            public List<int> Blocks = new List<int>();
+            public int blocknumber;
+        }
+
         MGIndex<string> _keys;
         StorageFileHF _datastore;
         object _lock = new object();
@@ -60,7 +60,7 @@ namespace RaptorDB
 
         // mgindex special storage for strings ctor -> no idx file
         //    use SaveData() GetData()
-        public KeyStoreHF(string folder, string filename) 
+        public KeyStoreHF(string folder, string filename)
         {
             _Path = folder;
             Directory.CreateDirectory(_Path);

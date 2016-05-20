@@ -59,9 +59,9 @@
         /// </summary>
         public static int BackgroundFullTextIndexBatchSize = 10000;
         /// <summary>
-        /// Free memory checking timer (default = 1800 sec ~ 30 min)
+        /// Free memory checking timer (default = 300 sec ~ 5 min)
         /// </summary>
-        public static int FreeMemoryTimerSeconds = 1800;
+        public static int FreeMemoryTimerSeconds = 5 * 60;// 1800;
         /// <summary>
         /// Memory usage limit for internal caching (default = 100 Mb) [using GC.GetTotalMemory()]
         /// </summary>

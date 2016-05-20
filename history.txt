@@ -1,4 +1,16 @@
-﻿v3.3.3
+﻿v3.3.4
+------
+- streamlined shutdown process (no extra index saves)
+- web ui content height set to browser height
+- memory usage reduction in BimapIndex (removed record cache)
+- memory usage reduction in WAHBitArray (offset Dictionary -> SortedList)
+- memory usage reduction in MGIndex (cache Dictionary -> SortedList)
+- memory usage reduction in Hoot (words Dictionary -> SortedList)
+- log error if web server started when not run as administrator
+- frmMain form close handles shutdown correctly
+- changed default Globals.FreeMemoryTimerSeconds to 5 mins from 30 mins
+
+v3.3.3
 ------
 - bug fix SafeSortedList.Add()
 - bug fix WAHBitArray.FreeMemory()

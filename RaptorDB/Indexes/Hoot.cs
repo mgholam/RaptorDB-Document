@@ -32,7 +32,8 @@ namespace RaptorDB
             LoadWords();
         }
 
-        private SafeDictionary<string, int> _words = new SafeDictionary<string, int>();
+        //private SafeDictionary<string, int> _words = new SafeDictionary<string, int>();
+        private SafeSortedList<string, int> _words = new SafeSortedList<string, int>();
         private BitmapIndex _bitmaps;
         private BoolIndex _deleted;
         private ILog _log = LogManager.GetLogger(typeof(Hoot));
@@ -41,20 +42,21 @@ namespace RaptorDB
         private string _Path = "";
         private KeyStoreString _docs;
         private bool _docMode = false;
+        private bool _loaded = false;
 
         public string[] Words
         {
-            get { return _words.Keys(); }
+            get { checkloaded(); return _words.Keys(); }
         }
 
         public int WordCount
         {
-            get { return _words.Count; }
+            get { checkloaded(); return _words.Count; }
         }
 
         public int DocumentCount
         {
-            get { return _lastDocNum - (int)_deleted.GetBits().CountOnes(); }
+            get { checkloaded(); return _lastDocNum - (int)_deleted.GetBits().CountOnes(); }
         }
 
         public string IndexPath { get { return _Path; } }
@@ -67,16 +69,19 @@ namespace RaptorDB
 
         public void Index(int recordnumber, string text)
         {
+            checkloaded();
             AddtoIndex(recordnumber, text);
         }
 
         public WAHBitArray Query(string filter, int maxsize)
         {
+            checkloaded();
             return ExecutionPlan(filter, maxsize);
         }
 
         public int Index(Document doc, bool deleteold)
         {
+            checkloaded();
             _log.Debug("indexing doc : " + doc.FileName);
             DateTime dt = FastDateTime.Now;
 
@@ -102,6 +107,7 @@ namespace RaptorDB
 
         public IEnumerable<int> FindRows(string filter)
         {
+            checkloaded();
             WAHBitArray bits = ExecutionPlan(filter, _docs.RecordCount());
             // enumerate records
             return bits.GetBitIndexes();
@@ -109,6 +115,7 @@ namespace RaptorDB
 
         public IEnumerable<T> FindDocuments<T>(string filter)
         {
+            checkloaded();
             WAHBitArray bits = ExecutionPlan(filter, _docs.RecordCount());
             // enumerate documents
             foreach (int i in bits.GetBitIndexes())
@@ -124,6 +131,7 @@ namespace RaptorDB
 
         public IEnumerable<string> FindDocumentFileNames(string filter)
         {
+            checkloaded();
             WAHBitArray bits = ExecutionPlan(filter, _docs.RecordCount());
             // enumerate documents
             foreach (int i in bits.GetBitIndexes())
@@ -173,6 +181,14 @@ namespace RaptorDB
         }
 
         #region [  P R I V A T E   M E T H O D S  ]
+
+        private void checkloaded()
+        {
+            if (_loaded == false)
+            {
+                LoadWords();
+            }
+        }
 
         private WAHBitArray ExecutionPlan(string filter, int maxsize)
         {
@@ -302,7 +318,7 @@ namespace RaptorDB
             if (_bitmaps != null)
                 _bitmaps.Commit(false);
 
-            if (_words != null)
+            if (_words != null && _loaded == true)
             {
                 MemoryStream ms = new MemoryStream();
                 BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
@@ -326,26 +342,32 @@ namespace RaptorDB
 
         private void LoadWords()
         {
-            if (File.Exists(_Path + _FileName + ".words") == false)
-                return;
-            // load words
-            byte[] b = File.ReadAllBytes(_Path + _FileName + ".words");
-            if (b.Length == 0)
-                return;
-            MemoryStream ms = new MemoryStream(b);
-            BinaryReader br = new BinaryReader(ms, Encoding.UTF8);
-            string s = br.ReadString();
-            while (s != "")
+            lock (_lock)
             {
-                int off = br.ReadInt32();
-                _words.Add(s, off);
-                try
+                if (_words == null)
+                    _words = new SafeSortedList<string, int>();
+                if (File.Exists(_Path + _FileName + ".words") == false)
+                    return;
+                // load words
+                byte[] b = File.ReadAllBytes(_Path + _FileName + ".words");
+                if (b.Length == 0)
+                    return;
+                MemoryStream ms = new MemoryStream(b);
+                BinaryReader br = new BinaryReader(ms, Encoding.UTF8);
+                string s = br.ReadString();
+                while (s != "")
                 {
-                    s = br.ReadString();
+                    int off = br.ReadInt32();
+                    _words.Add(s, off);
+                    try
+                    {
+                        s = br.ReadString();
+                    }
+                    catch { s = ""; }
                 }
-                catch { s = ""; }
+                _log.Debug("Word Count = " + _words.Count);
+                _loaded = true;
             }
-            _log.Debug("Word Count = " + _words.Count);
         }
 
         private void AddtoIndex(int recnum, string text)
@@ -518,6 +540,9 @@ namespace RaptorDB
 
                 if (_docs != null)
                     _docs.FreeMemory();
+
+                //_words = null;// new SafeSortedList<string, int>();
+                //_loaded = false;
             }
         }
 

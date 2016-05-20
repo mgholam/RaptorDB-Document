@@ -4,7 +4,6 @@ using System.Linq;
 using System.Windows.Forms;
 using RaptorDB.Common;
 using SampleViews;
-using System.IO;
 
 namespace datagridbinding
 {
@@ -22,7 +21,7 @@ namespace datagridbinding
         {
             dataGridView1.DoubleBuffered(true);
             frmStartup f = new frmStartup();
-            if (f.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (f.ShowDialog() == DialogResult.OK)
             {
                 rap = f._rap;
 
@@ -83,9 +82,14 @@ namespace datagridbinding
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            this.Close();// shutdown();
+        }
+
+        private void shutdown()
+        {
             if (rap != null)
                 rap.Shutdown();
-            this.Close();
+            //this.Close();
         }
 
         private object _lock = new object();
@@ -243,6 +247,11 @@ namespace datagridbinding
             //string s = q.Rows[0].CustomerName;
 
             //perftest();
+        }
+
+        private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            shutdown();
         }
 
         //private void perftest()

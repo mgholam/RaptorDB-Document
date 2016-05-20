@@ -58,7 +58,8 @@ namespace RaptorDB
     {
         ILog _log = LogManager.GetLogger(typeof(MGIndex<T>));
         private SafeSortedList<T, PageInfo> _pageList = new SafeSortedList<T, PageInfo>();
-        private SafeDictionary<int, Page<T>> _cache = new SafeDictionary<int, Page<T>>();
+        //private SafeDictionary<int, Page<T>> _cache = new SafeDictionary<int, Page<T>>();
+        private SafeSortedList<int, Page<T>> _cache = new SafeSortedList<int, Page<T>>();
         private List<int> _pageListDiskPages = new List<int>();
         private IndexFile<T> _index;
         private bool _AllowDuplicates = true;
@@ -198,14 +199,14 @@ namespace RaptorDB
                 }
             }
             _index.SavePageList(_pageList, _pageListDiskPages);
-            _index.BitmapFlush(); 
+            _index.BitmapFlush();
         }
 
         public void Shutdown()
         {
             SaveIndex();
             // save page list
-            _index.SavePageList(_pageList, _pageListDiskPages);
+            //_index.SavePageList(_pageList, _pageListDiskPages);
             // shutdown
             _index.Shutdown();
         }

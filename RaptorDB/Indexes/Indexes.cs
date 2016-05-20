@@ -50,7 +50,7 @@ namespace RaptorDB
 
         void IIndex.Shutdown()
         {
-            base.SaveIndex();
+            //base.SaveIndex();
             base.Shutdown();
         }
 

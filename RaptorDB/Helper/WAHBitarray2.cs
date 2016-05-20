@@ -32,7 +32,8 @@ namespace RaptorDB
                     _uncompressed = ints;
                     break;
                 case TYPE.Indexes:
-                    _offsets = new Dictionary<uint, bool>();
+                    _offsets = new SortedList<uint, bool>(); 
+                            //new Dictionary<uint, bool>();
                     foreach (var i in ints)
                         _offsets.Add(i, true);
                     break;
@@ -41,7 +42,8 @@ namespace RaptorDB
 
         private uint[] _compressed;
         private uint[] _uncompressed;
-        private Dictionary<uint, bool> _offsets = new Dictionary<uint, bool>();
+        //private Dictionary<uint, bool> _offsets = new Dictionary<uint, bool>();
+        private SortedList<uint, bool> _offsets = new SortedList<uint, bool>();
         private uint _curMax = 0;
         private TYPE _state;
         public bool isDirty = false;
@@ -422,7 +424,8 @@ namespace RaptorDB
                 foreach (var i in _offsets.Keys)
                     Set((int)i, true);
                 // clear list
-                _offsets = new Dictionary<uint, bool>();
+                _offsets = new SortedList<uint, bool>();
+                 //new Dictionary<uint, bool>();
             }
         }
 

@@ -44,14 +44,16 @@ namespace RaptorDB
         private BufferedStream _recordFileWrite;
         private long _lastBitmapOffset = 0;
         private int _lastRecordNumber = 0;
-        private SafeDictionary<int, WAHBitArray> _cache = new SafeDictionary<int, WAHBitArray>();
-        private SafeDictionary<int, long> _offsetCache = new SafeDictionary<int, long>();
+        //private SafeDictionary<int, WAHBitArray> _cache = new SafeDictionary<int, WAHBitArray>();
+        private SafeSortedList<int, WAHBitArray> _cache = new SafeSortedList<int, WAHBitArray>();
+        //private SafeDictionary<int, long> _offsetCache = new SafeDictionary<int, long>();
         private ILog log = LogManager.GetLogger(typeof(BitmapIndex));
         private bool _optimizing = false;
         private bool _shutdownDone = false;
         private int _workingCount = 0;
+        private bool _isDirty = false;
 
-        #region [  P U B L I C  ]
+        #region
         public void Shutdown()
         {
             using (new L(this))
@@ -75,6 +77,8 @@ namespace RaptorDB
 
         public void Commit(bool freeMemory)
         {
+            if (_isDirty == false)
+                return;
             using (new L(this))
             {
                 log.Debug("writing "+_FileName);
@@ -94,9 +98,11 @@ namespace RaptorDB
                 Flush();
                 if (freeMemory)
                 {
-                    _cache = new SafeDictionary<int, WAHBitArray>();
+                    _cache = //new SafeDictionary<int, WAHBitArray>();
+                        new SafeSortedList<int, WAHBitArray>();
                     log.Debug("  freeing cache");
                 }
+                _isDirty = false;
             }
         }
 
@@ -109,6 +115,7 @@ namespace RaptorDB
                 ba = internalGetBitmap(bitmaprecno); //GetBitmap(bitmaprecno);
 
                 ba.Set(record, true);
+                _isDirty = true;
             }
         }
 
@@ -173,6 +180,25 @@ namespace RaptorDB
                         Initialize();
                         _optimizing = false;
                     }
+        }
+
+        internal void FreeMemory()
+        {
+            try
+            {
+                List<int> free = new List<int>();
+                foreach (var b in _cache)
+                {
+                    if (b.Value.isDirty == false)
+                        free.Add(b.Key);
+                }
+                log.Debug("releasing bmp count = " + free.Count + " out of " + _cache.Count);
+                foreach (int i in free)
+                    _cache.Remove(i);
+            }
+            catch (Exception ex){
+                log.Error(ex);
+            }
         }
         #endregion
 
@@ -291,10 +317,10 @@ namespace RaptorDB
                 else
                 {
                     long offset = 0;
-                    if (_offsetCache.TryGetValue(recno, out offset) == false)
+                    //if (_offsetCache.TryGetValue(recno, out offset) == false)
                     {
                         offset = ReadRecordOffset(recno);
-                        _offsetCache.Add(recno, offset);
+                       // _offsetCache.Add(recno, offset);
                     }
                     ba = LoadBitmap(offset);
 
@@ -311,11 +337,11 @@ namespace RaptorDB
             lock (_writelock)
             {
                 long offset = SaveBitmapToFile(bmp);
-                long v;
-                if (_offsetCache.TryGetValue(recno, out v))
-                    _offsetCache[recno] = offset;
-                else
-                    _offsetCache.Add(recno, offset);
+                //long v;
+                //if (_offsetCache.TryGetValue(recno, out v))
+                //    _offsetCache[recno] = offset;
+                //else
+                //    _offsetCache.Add(recno, offset);
 
                 long pointer = ((long)recno) * 8;
                 _recordFileWrite.Seek(pointer, SeekOrigin.Begin);
@@ -408,23 +434,6 @@ namespace RaptorDB
         }
         #endregion
 
-        internal void FreeMemory()
-        {
-            try
-            {
-                List<int> free = new List<int>();
-                foreach (var b in _cache)
-                {
-                    if (b.Value.isDirty == false)
-                        free.Add(b.Key);
-                }
-                log.Debug("releasing bmp count = " + free.Count + " out of " + _cache.Count);
-                foreach (int i in free)
-                    _cache.Remove(i);
-            }
-            catch (Exception ex){
-                log.Error(ex);
-            }
-        }
+
     }
 }
