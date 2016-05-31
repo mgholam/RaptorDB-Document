@@ -74,10 +74,10 @@ namespace SampleViews
 
             this.Schema = typeof(SalesInvoiceViewRowSchema);
 
-            this.FullTextColumns.Add("customername"); // this or the attribute
-            this.FullTextColumns.Add("address");
+            this.FullTextColumns.Add(nameof(SalesInvoiceViewRowSchema.CustomerName));// "customername"); // this or the attribute
+            this.FullTextColumns.Add(nameof(SalesInvoiceViewRowSchema.Address));// "address");
 
-            this.CaseInsensitiveColumns.Add("nocase"); // this or the attribute
+            this.CaseInsensitiveColumns.Add(nameof(SalesInvoiceViewRowSchema.NoCase));// "nocase"); // this or the attribute
             //this.StringIndexLength.Add("nocase", 255);
 
             this.Mapper = (api, docid, doc) =>

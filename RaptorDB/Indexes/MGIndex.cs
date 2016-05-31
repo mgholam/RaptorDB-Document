@@ -345,7 +345,12 @@ namespace RaptorDB
                     return _index.GetDuplicateBitmap(bn).Not(maxsize);
             }
             else
-                return new WAHBitArray();
+            {
+                if (exp == RDBExpression.NotEqual)
+                    return new WAHBitArray().Not(maxsize);
+                else
+                    return new WAHBitArray();
+            }
         }
 
         private void doPageOperation(ref WAHBitArray res, int pageidx)

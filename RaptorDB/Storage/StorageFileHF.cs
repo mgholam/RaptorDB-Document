@@ -11,6 +11,8 @@ namespace RaptorDB
     {
         FileStream _datawrite;
         WAHBitArray _freeList;
+        Action<WAHBitArray> _savefreeList;
+        Func<WAHBitArray> _readfreeList;
 
         private string _filename = "";
         private object _readlock = new object();
@@ -29,8 +31,15 @@ namespace RaptorDB
                                               1    // 7 -- key type 0 = guid, 1 = string
                                            };
 
-        public StorageFileHF(string filename, ushort blocksize)
+        public StorageFileHF(string filename, ushort blocksize) : this(filename, blocksize, null, null)
         {
+        }
+
+        // used for bitmapindexhf
+        public StorageFileHF(string filename, ushort blocksize, Func<WAHBitArray> readfreelist, Action<WAHBitArray> savefreelist)
+        {
+            _savefreeList = savefreelist;
+            _readfreeList = readfreelist;
             _Path = Path.GetDirectoryName(filename);
             if (_Path.EndsWith(_S) == false) _Path += _S;
             _filename = Path.GetFileNameWithoutExtension(filename);
@@ -42,7 +51,10 @@ namespace RaptorDB
         {
             FlushClose(_datawrite);
             // write free list 
-            WriteFreeListBMPFile(_Path + _filename + ".free");
+            if (_savefreeList != null)
+                _savefreeList(_freeList);
+            else
+                WriteFreeListBMPFile(_Path + _filename + ".free");
 
             _datawrite = null;
         }
@@ -153,12 +165,17 @@ namespace RaptorDB
                 _lastBlockNumber = (int)((_datawrite.Length - _fileheader.Length) / _BLOCKSIZE);
                 _lastBlockNumber++;
             }
-            _freeList = new WAHBitArray();
-            if (File.Exists(_Path + _filename + ".free"))
+            if (_readfreeList != null)
+                _freeList = _readfreeList();
+            else
             {
-                ReadFreeListBMPFile(_Path + _filename + ".free");
-                // delete file so if failure no big deal on restart
-                File.Delete(_Path + _filename + ".free");
+                _freeList = new WAHBitArray();
+                if (File.Exists(_Path + _filename + ".free"))
+                {
+                    ReadFreeListBMPFile(_Path + _filename + ".free");
+                    // delete file so if failure no big deal on restart
+                    File.Delete(_Path + _filename + ".free");
+                }
             }
         }
 

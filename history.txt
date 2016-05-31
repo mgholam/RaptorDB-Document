@@ -1,4 +1,10 @@
-﻿v3.3.4
+﻿v3.3.5
+------
+- bug fix != in query return all rows if RH expression not found (thanks to Lutz Wellhausen)
+- linq (x => true) predicate returns all rows
+- linq (x => false) predicate returns no rows
+
+v3.3.4
 ------
 - streamlined shutdown process (no extra index saves)
 - web ui content height set to browser height

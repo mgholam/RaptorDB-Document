@@ -220,6 +220,8 @@ namespace datagridbinding
         {
             GC.Collect(2);
             KVHFtest();
+
+            var t = rap.Query<SalesInvoiceViewRowSchema>(x => false);
             var ss = rap.FullTextSearch("woodland -oak");
 
             int c = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < 100);

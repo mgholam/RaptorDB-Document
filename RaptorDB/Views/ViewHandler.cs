@@ -315,8 +315,18 @@ namespace RaptorDB.Views
                 }
                 QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
                 qv.Visit(le.Body);
-
-                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+                if (qv._bitmap.Count > 0)
+                {
+                    WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
+                    ba = qbits.AndNot(delbits);
+                }
+                else if (qv._stack.Count > 0)
+                {
+                    var val = Convert.ToBoolean(qv._stack.Pop());
+                    if (val == true)
+                        ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
+                }
+                //ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
             }
             else
                 ba = WAHBitArray.Fill(_viewData.Count()).AndNot(delbits);
@@ -350,7 +360,18 @@ namespace RaptorDB.Views
             QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
             qv.Visit(filter);
             var delbits = _deletedRows.GetBits();
-            ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+            if (qv._bitmap.Count > 0)
+            {
+                WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
+                ba = qbits.AndNot(delbits);
+            }
+            else if (qv._stack.Count > 0)
+            {
+                var val = Convert.ToBoolean(qv._stack.Pop());
+                if (val == true)
+                    ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
+            }
+            //ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
             List<T> trows = null;
             if (_viewmanager.inTransaction())
             {
@@ -528,7 +549,7 @@ namespace RaptorDB.Views
             {
                 FieldInfo c = null;
                 PropertyInfo p = null;
-                if (isField(fields, col.Key, out c)) 
+                if (isField(fields, col.Key, out c))
                 {
                     var end = il.DefineLabel();
 
@@ -1107,7 +1128,18 @@ namespace RaptorDB.Views
                 QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
                 qv.Visit(filter);
                 var delbits = _deletedRows.GetBits();
-                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+                if (qv._bitmap.Count > 0)
+                {
+                    WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
+                    ba = qbits.AndNot(delbits);
+                }
+                else if (qv._stack.Count > 0)
+                {
+                    var val = Convert.ToBoolean(qv._stack.Pop());
+                    if (val == true)
+                        ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
+                }
+                //ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
 
                 totcount = (int)ba.CountOnes();
             }
@@ -1137,7 +1169,18 @@ namespace RaptorDB.Views
                 QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
                 qv.Visit(le.Body);
                 var delbits = _deletedRows.GetBits();
-                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+                if (qv._bitmap.Count > 0)
+                {
+                    WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
+                    ba = qbits.AndNot(delbits);
+                }
+                else if (qv._stack.Count > 0)
+                {
+                    var val = Convert.ToBoolean(qv._stack.Pop());
+                    if (val == true)
+                        ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
+                }
+                //ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
 
                 totcount = (int)ba.CountOnes();
             }
@@ -1175,6 +1218,12 @@ namespace RaptorDB.Views
             {
                 WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
                 ba = qbits.AndNot(delbits);
+            }
+            else if (qv._stack.Count > 0)
+            {
+                var val = Convert.ToBoolean(qv._stack.Pop());
+                if (val == true)
+                    ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
             }
             List<T> trows = null;
             if (_viewmanager.inTransaction())
@@ -1230,8 +1279,18 @@ namespace RaptorDB.Views
                 }
                 QueryVisitor qv = new QueryVisitor(QueryColumnExpression);
                 qv.Visit(le.Body);
-
-                ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+                if (qv._bitmap.Count > 0)
+                {
+                    WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
+                    ba = qbits.AndNot(delbits);
+                }
+                else if (qv._stack.Count > 0)
+                {
+                    var val = Convert.ToBoolean(qv._stack.Pop());
+                    if (val == true)
+                        ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
+                }
+                //ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
             }
             else
                 ba = WAHBitArray.Fill(_viewData.Count()).AndNot(delbits);
