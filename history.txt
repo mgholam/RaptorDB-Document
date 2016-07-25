@@ -1,4 +1,13 @@
-﻿v3.3.5
+﻿v3.3.6
+------
+- upgrade to fastJSON v2.1.18
+- upgrade to fastBinaryJSON v1.4.15
+- changed default view.ConsistentSaveToThisView = true
+- changed default view.isPrimaryList = true
+- re-factored web server
+- restructured nav.js
+
+v3.3.5
 ------
 - bug fix != in query return all rows if RH expression not found (thanks to Lutz Wellhausen)
 - linq (x => true) predicate returns all rows

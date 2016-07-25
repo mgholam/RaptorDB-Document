@@ -33,7 +33,7 @@ var nav = {
                     function (res) {
                         var tname = "query" + $.uuid(4, 16);
                         models[tname] = new modelobj();
-                        nav.createTab(tname, "Query", res.replace(/\$tabname/g, tname));
+                        nav.createTab(tname, "Query", res);
                         query.hookup(tname);
                         if (func != null)
                             func(tname);
@@ -44,7 +44,7 @@ var nav = {
                 $.load("pages/systeminfo.html",
                     function (res) {
                         var tname = "info" + $.uuid(4, 16);
-                        nav.createTab(tname, "System Information", res.replace(/\$tabname/g, tname));
+                        nav.createTab(tname, "System Information", res);
                         system.run(tname);
                         if (func != null)
                             func(tname);
@@ -55,7 +55,7 @@ var nav = {
                 $.load("pages/configs.html",
                     function (res) {
                         var tname = "conf" + $.uuid(4, 16);
-                        nav.createTab(tname, "System Configs", res.replace(/\$tabname/g, tname));
+                        nav.createTab(tname, "System Configs", res);
                         system.configs(tname);
                         if (func != null)
                             func(tname);
@@ -70,7 +70,7 @@ var nav = {
                 $.load("pages/docview.html",
                     function (res) {
                         var tname = "docv" + $.uuid(4, 16);
-                        nav.createTab(tname, "Document View", res.replace(/\$tabname/g, tname));
+                        nav.createTab(tname, "Document View", res);
                         if (func != null)
                             func(tname);
                     });
@@ -80,7 +80,7 @@ var nav = {
                 $.load("pages/dochistory.html",
                     function (res) {
                         var tname = "doch" + $.uuid(4, 16);
-                        nav.createTab(tname, "Document History", res.replace(/\$tabname/g, tname));
+                        nav.createTab(tname, "Document History", res);
                         if (func != null)
                             func(tname);
                     });
@@ -96,7 +96,7 @@ var nav = {
                         m.start = 0;
                         m.page = 1;
                         m.pages = 1;
-                        nav.createTab(tname, "Document Search", res.replace(/\$tabname/g, tname));
+                        nav.createTab(tname, "Document Search", res);
                         if (func != null)
                             func(tname);
                     });
@@ -112,7 +112,7 @@ var nav = {
                         m.start = 0;
                         m.page = 1;
                         m.pages = 1;
-                        nav.createTab(tname, "HF Browse", res.replace(/\$tabname/g, tname));
+                        nav.createTab(tname, "HF Browse", res);
                         hfview.search(tname);
                         if (func != null)
                             func(tname);
@@ -123,7 +123,7 @@ var nav = {
                 $.load("pages/fileview.html",
                     function (res) {
                         var tname = "filev" + $.uuid(4, 16);
-                        nav.createTab(tname, "File View", res.replace(/\$tabname/g, tname));
+                        nav.createTab(tname, "File View", res);
                         if (func != null)
                             func(tname);
                     });
@@ -134,7 +134,7 @@ var nav = {
                     function (res) {
                         var tname = "schm" + $.uuid(4, 16);
                         models[tname] = new modelobj();
-                        nav.createTab(tname, "Schema", res.replace(/\$tabname/g, tname));
+                        nav.createTab(tname, "Schema", res);
                         schema.hookup(tname);
                         if (func != null)
                             func(tname);
@@ -148,6 +148,7 @@ var nav = {
     },
 
     createTab: function (name, text, inner) {
+        inner = inner.replace(/\$tabname/g, name);
         var tl = $(".tab-links").first();
         var li = document.createElement("li");
         li.innerHTML = '<div onclick="nav.tabmenuclick(\'' + name + '\', this)"><a>' + text + '</a><a id="close" onclick="nav.closetab(\'' + name + '\',event)">X</a></div>';

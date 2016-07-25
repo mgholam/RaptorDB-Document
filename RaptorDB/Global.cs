@@ -81,7 +81,7 @@
         /// <summary>
         /// Process inbox timer (default = 60 sec)
         /// </summary>
-        public static int ProcessInboxTimerSeconds = 10;
+        public static int ProcessInboxTimerSeconds = 60;
         /// <summary>
         /// Split the data storage files in MegaBytes (default 0 = off) [500 = 500mb]
         /// <para> - You can set and unset this value anytime and it will operate from that point on.</para>

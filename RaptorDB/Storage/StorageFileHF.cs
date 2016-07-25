@@ -49,13 +49,12 @@ namespace RaptorDB
 
         public void Shutdown()
         {
-            FlushClose(_datawrite);
             // write free list 
             if (_savefreeList != null)
                 _savefreeList(_freeList);
             else
                 WriteFreeListBMPFile(_Path + _filename + ".free");
-
+            FlushClose(_datawrite);
             _datawrite = null;
         }
 
@@ -100,6 +99,22 @@ namespace RaptorDB
                 return Interlocked.Increment(ref _lastBlockNumber);//++;
         }
 
+        internal void Initialize()
+        {
+            if (_readfreeList != null)
+                _freeList = _readfreeList();
+            else
+            {
+                _freeList = new WAHBitArray();
+                if (File.Exists(_Path + _filename + ".free"))
+                {
+                    ReadFreeListBMPFile(_Path + _filename + ".free");
+                    // delete file so if failure no big deal on restart
+                    File.Delete(_Path + _filename + ".free");
+                }
+            }
+        }
+
         internal void SeekBlock(int blocknumber)
         {
             long offset = (long)_fileheader.Length + (long)blocknumber * _BLOCKSIZE;
@@ -115,16 +130,19 @@ namespace RaptorDB
 
         private void WriteFreeListBMPFile(string filename)
         {
-            WAHBitArray.TYPE t;
-            uint[] ints = _freeList.GetCompressed(out t);
-            MemoryStream ms = new MemoryStream();
-            BinaryWriter bw = new BinaryWriter(ms);
-            bw.Write((byte)t);// write new format with the data type byte
-            foreach (var i in ints)
+            if (_freeList != null)
             {
-                bw.Write(i);
+                WAHBitArray.TYPE t;
+                uint[] ints = _freeList.GetCompressed(out t);
+                MemoryStream ms = new MemoryStream();
+                BinaryWriter bw = new BinaryWriter(ms);
+                bw.Write((byte)t);// write new format with the data type byte
+                foreach (var i in ints)
+                {
+                    bw.Write(i);
+                }
+                File.WriteAllBytes(filename, ms.ToArray());
             }
-            File.WriteAllBytes(filename, ms.ToArray());
         }
 
         private void ReadFreeListBMPFile(string filename)
@@ -165,18 +183,18 @@ namespace RaptorDB
                 _lastBlockNumber = (int)((_datawrite.Length - _fileheader.Length) / _BLOCKSIZE);
                 _lastBlockNumber++;
             }
-            if (_readfreeList != null)
-                _freeList = _readfreeList();
-            else
-            {
-                _freeList = new WAHBitArray();
-                if (File.Exists(_Path + _filename + ".free"))
-                {
-                    ReadFreeListBMPFile(_Path + _filename + ".free");
-                    // delete file so if failure no big deal on restart
-                    File.Delete(_Path + _filename + ".free");
-                }
-            }
+            //if (_readfreeList != null)
+            //    _freeList = _readfreeList();
+            //else
+            //{
+            //    _freeList = new WAHBitArray();
+            //    if (File.Exists(_Path + _filename + ".free"))
+            //    {
+            //        ReadFreeListBMPFile(_Path + _filename + ".free");
+            //        // delete file so if failure no big deal on restart
+            //        File.Delete(_Path + _filename + ".free");
+            //    }
+            //}
         }
 
         private void ReadFileHeader()

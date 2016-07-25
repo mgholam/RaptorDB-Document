@@ -57,7 +57,6 @@ namespace RaptorDB.Common
         /// <returns></returns>
         bool Save<T>(Guid docID, T document);
 
-
         /// <summary>
         /// Query all data in a view
         /// </summary>
@@ -205,7 +204,6 @@ namespace RaptorDB.Common
         /// <param name="filter"></param>
         /// <returns></returns>
         int[] FullTextSearch(string filter);
-
 
         // new query model
         /// <summary>

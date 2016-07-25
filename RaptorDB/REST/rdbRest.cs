@@ -1,17 +1,14 @@
-﻿using System;
-using RaptorDB.Common;
-using System.Net;
-using System.Text;
-using System.IO;
-using System.Threading.Tasks;
-using RaptorDB;
-using System.Reflection;
-using System.Text.RegularExpressions;
+﻿using RaptorDB.Common;
+using System;
 using System.Collections.Generic;
-using System.IO.Compression;
 using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 
-namespace RaptorDBRest
+namespace RaptorDB
 {
     #region [    rdb rest helper classes    ]
     public class RDBRoute
@@ -54,16 +51,10 @@ namespace RaptorDBRest
     }
     #endregion
 
-
-    // TODO : add back routing support
-    // TODO : add security check on connection
-
-    public class RestServer : IRouteAPI
+    class rdbRest : aWebServer, IRouteAPI
     {
-        public RestServer(int HttpPort, RaptorDB.RaptorDB rdb, string routingpath, bool localonly)
+        public rdbRest(int HttpPort, RaptorDB rdb, string routingpath, bool localonly) : base(HttpPort, localonly, System.Net.AuthenticationSchemes.None, "raptordb")
         {
-            _localonly = localonly;
-            _port = HttpPort;
             _rdb = rdb;
             //save = _rdb.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
             //register = _rdb.GetType().GetMethod("RegisterView", BindingFlags.Instance | BindingFlags.Public);
@@ -71,29 +62,17 @@ namespace RaptorDBRest
                 _path = routingpath.Replace("\\", "/");
             else
                 _path = routingpath;
-
-            Task.Factory.StartNew(() => Start(), TaskCreationOptions.LongRunning);
         }
-
-        delegate void Handler(HttpListenerContext ctx, string args, List<object> output);
-
-        private Dictionary<string, string> _WebCache = new Dictionary<string, string>();
         private string _S = Path.DirectorySeparatorChar.ToString();
-        private ILog _log = LogManager.GetLogger(typeof(RestServer));
-        private bool _run = true;
-        private RaptorDB.RaptorDB _rdb;
-        private int _port;
+        private RaptorDB _rdb;
         private string _path;
         private SafeDictionary<string, RDBRoute> _routing = new SafeDictionary<string, RDBRoute>();
-        private HttpListener _server;
         //private KeyStore<Guid> _jsonstore;
-        private bool _localonly = false;
-        private Dictionary<string, Handler> _handler = new Dictionary<string, Handler>();
 
 
-        public void Stop()
+        public new void Stop()
         {
-            _run = false;
+            base.Stop();
             //_jsonstore.Shutdown();
             //_rdb.Shutdown();
         }
@@ -111,95 +90,47 @@ namespace RaptorDBRest
             _rdb.RegisterView(view);
         }
 
-        void IRouteAPI.AddRoute(RDBRoute route)
-        {
-            AddRoute(route);
-        }
-
-        void IRouteAPI.RegisterView<T>(View<T> view)
-        {
-            RegisterView(view);
-        }
-
-        public IRaptorDB RDB { get { return _rdb; } }
-
-        #region [   private   ]
-
-        private void Start()
-        {
-
-            try
-            {
-                WriteResources();
-
-                InitializeCommandHandler();
-                //// compile _path\Routing\*.route files and register
-                //Directory.CreateDirectory(_path + _S + "Routing");
-                //// delete existing compiled files
-                //foreach (var f in Directory.GetFiles(_path + _S + "Routing", "*.dll"))
-                //    File.Delete(f);
-                //// compile route files
-                //CompileAndRegisterScriptRoutes(_path + _S + "Routing");
-
-                //_jsonstore = new KeyStore<Guid>(_path + _S + "Datajson" + _S + "json.mgdat", true);
-
-                _server = new HttpListener();
-                //_server.AuthenticationSchemes = AuthenticationSchemes.Basic;
-                if (_localonly)
-                {
-                    _server.Prefixes.Add("http://localhost:" + _port + "/");
-                    _server.Prefixes.Add("http://127.0.0.1:" + _port + "/");
-                    _server.Prefixes.Add("http://" + Environment.MachineName + ":" + _port + "/");
-                }
-                else
-                    _server.Prefixes.Add("http://*:" + _port + "/");
-
-                _server.Start();
-                while (_run)
-                {
-                    var context = _server.BeginGetContext(new AsyncCallback(ListenerCallback), _server);
-                    context.AsyncWaitHandle.WaitOne();
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex);
-            }
-        }
-        private void InitializeCommandHandler()
+        public override void InitializeCommandHandler(Dictionary<string, Handler> _handler)
         {
             _handler.Add("getroutes",
-                (ctx, args, o) =>
+                (ctx) =>
                 {
+                    List<object> o = new List<object>();
                     foreach (var rr in _routing)
                         o.Add(new { URL = rr.Value.URL, Description = rr.Value.ToString() });
+                    OutputJsonData(ctx, o);
                 });
 
             _handler.Add("getviews",
-                (ctx, args, o) =>
+                (ctx) =>
                 {
+                    List<object> o = new List<object>();
                     foreach (var v in _rdb.GetViews())
                         o.Add(new { Name = v.Name, Description = v.Description, BackgroundIndexing = v.BackgroundIndexing, Version = v.Version, isPrimaryList = v.isPrimaryList });
+                    OutputJsonData(ctx, o);
                 });
 
             _handler.Add("getschema",
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     if (qry == "")
                     {
                         WriteResponse(ctx, 404, "GetSchema requires a viewname to be defined e.g. ?view=customerview");
                     }
                     else
                     {
+                        List<object> o = new List<object>();
                         string view = qry.Split('=')[1];
                         var sc = _rdb.GetSchema(view);
                         foreach (var i in sc.Columns)
                             o.Add(new { ColumnName = i.Key, Type = i.Value.Name });
+                        OutputJsonData(ctx, o);
                     }
                 });
 
             _handler.Add("systeminfo",
-                (ctx, args, o) =>
+                (ctx) =>
                 {
                     var oo = GetInfo();
                     var s = fastJSON.JSON.ToJSON(oo, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, EnableAnonymousTypes = true });
@@ -208,8 +139,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("action",
-                (ctx, action, o) =>
+                (ctx) =>
                 {
+                    string action = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     switch (action)
                     {
                         case "backup":
@@ -227,8 +159,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("docget", // takes : guid 
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     var g = Guid.Parse(qry);
                     _log.Debug("docid = " + qry);
                     var s = fastJSON.JSON.ToNiceJSON(_rdb.Fetch(g), new fastJSON.JSONParameters { UseExtensions = true, UseFastGuid = false, UseEscapedUnicode = false });
@@ -237,8 +170,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("dochistory", // takes : guid 
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     var g = Guid.Parse(qry);
                     var h = _rdb.FetchHistoryInfo(g);
                     _log.Debug("docid = " + qry);
@@ -248,8 +182,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("docversion", // takes : version
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     var v = int.Parse(qry);
                     var oo = _rdb.FetchVersion(v);
                     var s = fastJSON.JSON.ToNiceJSON(oo, new fastJSON.JSONParameters { UseExtensions = true, UseFastGuid = false, UseEscapedUnicode = false });
@@ -258,8 +193,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("fileget", // takes : guid 
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     var g = Guid.Parse(qry);
                     _log.Debug("fileid = " + qry);
                     var s = fastJSON.JSON.ToNiceJSON(_rdb.FetchBytes(g), new fastJSON.JSONParameters { UseExtensions = true, UseFastGuid = false, UseEscapedUnicode = false });
@@ -268,8 +204,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("filehistory", // takes : guid 
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     var g = Guid.Parse(qry);
                     var h = _rdb.FetchBytesHistoryInfo(g);
                     _log.Debug("fileid = " + qry);
@@ -279,8 +216,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("fileversion", // takes : version
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     var v = int.Parse(qry);
                     var oo = _rdb.FetchBytesVersion(v);
                     var s = fastJSON.JSON.ToNiceJSON(oo, new fastJSON.JSONParameters { UseExtensions = true, UseFastGuid = false, UseEscapedUnicode = false });
@@ -289,8 +227,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("docsearch", // takes : string & count =x &start=y
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     int start = 0;
                     int count = -1;
 
@@ -327,8 +266,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("hfkeys", // takes : count =x &start=y
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     int start = 0;
                     int count = -1;
 
@@ -363,8 +303,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("hfget", // takes : string 
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     var h = _rdb.GetKVHF().GetObjectHF(qry);
                     var s = fastJSON.JSON.ToNiceJSON(h, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, UseEscapedUnicode = false, EnableAnonymousTypes = true });
                     ctx.Response.ContentType = "application/json";
@@ -372,8 +313,9 @@ namespace RaptorDBRest
                 });
 
             _handler.Add("viewinfo", // takes : viewname
-                (ctx, qry, o) =>
+                (ctx) =>
                 {
+                    string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
                     if (qry == "")
                     {
                         WriteResponse(ctx, 404, "ViewInfo requires a viewname to be defined e.g. ?customerview");
@@ -383,15 +325,37 @@ namespace RaptorDBRest
                         var vi = GetViewInfo(qry);
                         if (vi == "")
                             WriteResponse(ctx, 500, "View not found.");
-                        else {
+                        else
+                        {
                             ctx.Response.ContentType = "application/json";
                             WriteResponse(ctx, 200, vi);
                         }
                     }
                 });
+
+            _handler.Add("excelexport",
+                (ctx) =>
+                {
+                    string path = ctx.Request.Url.GetComponents(UriComponents.Path, UriFormat.Unescaped).ToLower();
+
+                    var data = DoQuery(_rdb, ctx, path.Replace("raptordb/excelexport/", ""), null);
+                    ctx.Response.AddHeader("content-disposition", "attachment;filename='" + data.Title + ".csv'");
+                    ctx.Response.AddHeader("Content-Type", "application/vnd.ms-excel");
+                    _log.Debug("exporting to excel rows : " + data.Rows.Count);
+                    WriteResponse(ctx, 200, WriteCsv(data.Rows), true);
+                });
+
+            _handler.Add("views",
+                (ctx) =>
+                {
+                    string path = ctx.Request.Url.GetComponents(UriComponents.Path, UriFormat.Unescaped).ToLower();
+                    ProcessGET(_rdb, ctx, path.Replace("raptordb/views/", ""), null);
+                });
         }
 
-        internal string GetViewInfo(string name)
+
+        #region [  private  ]
+        private string GetViewInfo(string name)
         {
             var v = _rdb.GetViews().Find(x => x.Name.ToLower() == name.ToLower());
             if (v == null)
@@ -456,38 +420,39 @@ namespace RaptorDBRest
             return "Unable to get memory usage";
         }
 
-        public void WriteCsv(List<object> data, Stream stream)
+        private string WriteCsv(List<object> data)//, Stream stream)
         {
-            TextWriter output = new StreamWriter(stream, UTF8Encoding.UTF8);
+            //TextWriter output = new StreamWriter(stream, UTF8Encoding.UTF8);
+            StringBuilder output = new StringBuilder();
             var o = data[0];
 
             foreach (var prop in o.GetType().GetProperties())
             {
-                output.Write(prop.Name); // header
-                output.Write(",");
+                output.Append(prop.Name); // header
+                output.Append(",");
             }
             foreach (var prop in o.GetType().GetFields())
             {
-                output.Write(prop.Name); // header
-                output.Write(",");
+                output.Append(prop.Name); // header
+                output.Append(",");
             }
 
-            output.WriteLine();
+            output.AppendLine();
             foreach (var item in data)
             {
                 foreach (var prop in o.GetType().GetProperties())
                 {
-                    output.Write("\"" + prop.GetValue(item, null));
-                    output.Write("\",");
+                    output.Append("\"" + prop.GetValue(item, null));
+                    output.Append("\",");
                 }
                 foreach (var prop in o.GetType().GetFields())
                 {
-                    output.Write("\"" + prop.GetValue(item));
-                    output.Write("\",");
+                    output.Append("\"" + prop.GetValue(item));
+                    output.Append("\",");
                 }
-                output.WriteLine();
+                output.AppendLine();
             }
-            output.Flush();
+            return output.ToString();
         }
 
         //private MethodInfo register = null;
@@ -592,254 +557,16 @@ namespace RaptorDBRest
         //    }
         //}
 
-        private void WriteResources()
+        private void OutputJsonData(HttpListenerContext ctx, List<object> o)
         {
-            _log.Debug("Initializing web cache...");
-            //if (Global.useWEBresources == false)
-            //{
-            //    Directory.CreateDirectory("WEB");
-            //    Directory.CreateDirectory("WEB\\images");
-            //}
-            string name = this.GetType().Assembly.GetName().Name + ".";
-            foreach (var r in this.GetType().Assembly.GetManifestResourceNames())
-            {
-                string s = r.Replace(name, "");
-                if (s.StartsWith("WEB"))
-                {
-                    var ext = Path.GetExtension(s);
-                    s = s.Replace(ext, "").Replace(".", "/");
-                    var p = s + ext;
-                    _WebCache.Add(p.ToLower(), r);
-                    //if (Global.useWEBresources == false && File.Exists(folder + s) == false)
-                    //{
-                    //    using (MemoryStream ms = new MemoryStream())
-                    //    {
-                    //        Assembly.GetExecutingAssembly().GetManifestResourceStream(r).CopyTo(ms);
-                    //        File.WriteAllBytes(folder + s, ms.ToArray());
-                    //    }
-                    //}
-                }
-            }
+            Result<object> resf = new Result<object>(true);
+            resf.Rows = o;
+            resf.TotalCount = o.Count;
+            resf.Count = o.Count;
+            var s = fastJSON.JSON.ToJSON(resf, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, EnableAnonymousTypes = true });
+            ctx.Response.ContentType = "application/json";
+            WriteResponse(ctx, 200, s);
         }
-
-        private byte[] ReadFromStream(string name)
-        {
-            using (MemoryStream ms = new MemoryStream())
-            {
-                Assembly.GetExecutingAssembly().GetManifestResourceStream(name).CopyTo(ms);
-                return ms.ToArray();
-            }
-        }
-
-        private void ListenerCallback(IAsyncResult ar)
-        {
-            var listener = ar.AsyncState as HttpListener;
-
-            var ctx = listener.EndGetContext(ar);
-
-            try
-            {
-                //do some stuff
-                string path = ctx.Request.Url.GetComponents(UriComponents.Path, UriFormat.Unescaped).ToLower();
-                _log.Debug("WEB request : " + path);
-                //RDBRoute r = null;
-                ctx.Response.ContentEncoding = UTF8Encoding.UTF8;
-                string webpath = "WEB\\";
-                //if (_S == "/")
-                webpath = webpath.Replace("\\", "/");
-                bool handled = false;
-                //_log.Debug("path = " + path);
-                if (path.StartsWith("raptordb"))
-                {
-                    string command = path.Replace("raptordb/", "");
-                    if (command.Contains("?"))
-                    {
-                        command = command.Substring(0, command.IndexOf('?') - 1);
-                    }
-                    //_log.Debug("command = " + command);
-                    Handler handler = null;
-                    List<object> o = new List<object>();
-
-                    if (_handler.TryGetValue(command, out handler))
-                    {
-                        string args = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
-                        handler(ctx, args, o);
-
-                        if (o.Count > 0)
-                        {
-                            Result<object> resf = new Result<object>(true);
-                            resf.Rows = o;
-                            resf.TotalCount = o.Count;
-                            resf.Count = o.Count;
-                            var s = fastJSON.JSON.ToJSON(resf, new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false, EnableAnonymousTypes = true });
-                            ctx.Response.ContentType = "application/json";
-                            WriteResponse(ctx, 200, s);
-                        }
-                        handled = true;
-                    }
-                    else if (command.StartsWith("views"))
-                    {
-                        ProcessGET(_rdb, ctx, path.Replace("raptordb/views/", ""), null);
-                        handled = true;
-                    }
-                    else if (command.StartsWith("excelexport"))
-                    {
-                        var data = DoQuery(_rdb, ctx, path.Replace("raptordb/excelexport/", ""), null);
-                        ctx.Response.AddHeader("content-disposition", "attachment;filename='" + data.Title + ".csv'");
-                        ctx.Response.AddHeader("Content-Type", "application/vnd.ms-excel");
-                        _log.Debug("exporting to excel rows : " + data.Rows.Count);
-                        WriteCsv(data.Rows, ctx.Response.OutputStream);
-                        handled = true;
-                    }
-                }
-
-                if (!handled)
-                {
-                    //if (_routing.TryGetValue(path, out r)) // lower case search 
-                    //{
-                    //    string mth = ctx.Request.HttpMethod;
-                    //    if (mth == "POST" || mth == "PUT")
-                    //        ProcessPOST(_rdb, ctx, path, r);
-                    //    else
-                    //        ProcessGET(_rdb, ctx, path, r);
-                    //}
-                    if (_WebCache.ContainsKey((webpath + path).ToLower()))// File.Exists(webpath + path)) // FIX : path here
-                    {
-                        switch (Path.GetExtension(path).ToLower())
-                        {
-                            case ".js":
-                                ctx.Response.ContentType = "application/javascript"; break;
-                            case ".css":
-                                ctx.Response.ContentType = "text/css"; break;
-                            case ".html":
-                            case ".htm":
-                                ctx.Response.ContentType = "text/html"; break;
-                            default:
-                                ctx.Response.ContentType = "application/octet-stream"; break;
-
-                        }
-                        _log.Debug("serving file : " + webpath + path);
-                        WriteResponse(ctx, 200, ReadFromStream(_WebCache[(webpath + path).ToLower()]), true);// File.ReadAllBytes(webpath + path), true);
-                    }
-                    else if (path == "")
-                    {
-                        ctx.Response.ContentType = "text/html";
-                        _log.Debug("serving file : " + webpath + "app.html");
-                        WriteResponse(ctx, 200, ReadFromStream(_WebCache[(webpath + "app.html").ToLower()]), true);
-                    }
-                    else
-                        WriteResponse(ctx, 404, "route path not found : " + ctx.Request.Url.GetComponents(UriComponents.Path, UriFormat.Unescaped));
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex);
-            }
-            finally
-            {
-                ctx.Response.OutputStream.Close();
-            }
-        }
-
-        //private void ProcessPOST(IRaptorDB rdb, HttpListenerContext ctx, string path, RDBRoute route)
-        //{
-        //    try
-        //    {
-        //        Guid docid = Guid.Empty;
-        //        string qry = ctx.Request.Url.GetComponents(UriComponents.Query, UriFormat.Unescaped);
-        //        if (qry == "")
-        //        {
-        //            _log.Error("POST-ing requires a GUID in route : " + route.URL);
-        //            WriteResponse(ctx, 404, "POST-ing requires a GUID in route : " + route.URL);
-        //            return;
-        //        }
-        //        else // parse out guid from url 
-        //        {
-        //            string[] s = qry.Split('=');
-        //            docid = Guid.Parse(s[1].Trim().Replace("\"", "").Replace("\'", ""));
-        //        }
-
-        //        if (route.EntityType == null)
-        //        {
-        //            _log.Error("POST-ing to an undefined entity in route : " + route.URL);
-        //            WriteResponse(ctx, 404, "POST-ing to an undefined entity in route : " + route.URL);
-        //            return;
-        //        }
-
-        //        using (var reader = new StreamReader(ctx.Request.InputStream, ctx.Request.ContentEncoding))
-        //        {
-        //            string text = reader.ReadToEnd();
-
-        //            // create a container
-        //            RDBJsonContainer c = new RDBJsonContainer();
-        //            c.date = FastDateTime.Now;
-        //            c.json = text;
-        //            c.URL = path;
-        //            c.docid = docid;
-        //            // TODO : save useragent info
-
-        //            // convert json to object   
-        //            object obj = fastJSON.JSON.ToObject(text, route.EntityType);
-
-        //            // save object to RDB and handle transaction
-        //            var m = GetSave(obj.GetType());
-        //            bool ret = (bool)m.Invoke(_rdb, new object[] { docid, obj });
-        //            if (ret)
-        //            {
-        //                // save json container to keystore
-        //                _jsonstore.SetObject(docid, c);
-        //                WriteResponse(ctx, 200, "posted : " + docid);
-        //            }
-        //            else
-        //                WriteResponse(ctx, 500, "unable to save : " + text);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _log.Error(ex);
-        //        WriteResponse(ctx, 500, "" + ex);
-        //    }
-        //}
-
-        private void WriteResponse(HttpListenerContext ctx, int code, string msg)
-        {
-            WriteResponse(ctx, code, Encoding.UTF8.GetBytes(msg), false);
-        }
-
-        private void WriteResponse(HttpListenerContext ctx, int code, byte[] data, bool skipcompress)
-        {
-            ctx.Response.StatusCode = code;
-            ctx.Response.AppendHeader("Access-Control-Allow-Origin", "*");
-            byte[] b = data;// Encoding.UTF8.GetBytes(msg);
-            if (skipcompress == false && b.Length > 100 * 1024)
-            {
-                _log.Debug("original data size : " + b.Length.ToString("#,0"));
-                using (var ms = new MemoryStream())
-                {
-                    using (var zip = new GZipStream(ms, CompressionMode.Compress, true))
-                        zip.Write(b, 0, b.Length);
-                    b = ms.ToArray();
-                }
-                _log.Debug("compressed size : " + b.Length.ToString("#,0"));
-                ctx.Response.AddHeader("Content-Encoding", "gzip");
-            }
-            ctx.Response.ContentLength64 = b.LongLength;
-            ctx.Response.OutputStream.Write(b, 0, b.Length);
-        }
-
-        //private MethodInfo save = null;
-        //private SafeDictionary<Type, MethodInfo> _savecache = new SafeDictionary<Type, MethodInfo>();
-
-        //private MethodInfo GetSave(Type type)
-        //{
-        //    MethodInfo m = null;
-        //    if (_savecache.TryGetValue(type, out m))
-        //        return m;
-
-        //    m = save.MakeGenericMethod(new Type[] { type });
-        //    _savecache.Add(type, m);
-        //    return m;
-        //}
 
         private Regex _start_regex = new Regex(@"[\?\&]?\s*start\s*\=\s*[-+]?(?<start>\d*)", RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.Compiled);
         private Regex _count_regex = new Regex(@"[\?\&]?\s*count\s*\=\s*[-+]?(?<count>\d*)", RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.Compiled);

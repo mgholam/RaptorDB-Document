@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Reflection.Emit;
 using System.Reflection;
 using System.Collections;
-using System.Linq;
+using System.Text;
 using RaptorDB.Common;
-using System.Collections.Specialized;
+using System.Linq;
+#if !SILVERLIGHT
 using System.Data;
+#endif
+using System.Collections.Specialized;
 
 namespace fastJSON
 {
@@ -87,7 +89,7 @@ namespace fastJSON
         private SafeDictionary<Type, Type[]> _genericTypes = new SafeDictionary<Type, Type[]>();
         private SafeDictionary<Type, Type> _genericTypeDef = new SafeDictionary<Type, Type>();
 
-        #region bjson specific
+        #region bjson custom types
         internal UnicodeEncoding unicode = new UnicodeEncoding();
         internal UTF8Encoding utf8 = new UTF8Encoding();
         #endregion
@@ -96,6 +98,7 @@ namespace fastJSON
         // JSON custom
         internal SafeDictionary<Type, Serialize> _customSerializer = new SafeDictionary<Type, Serialize>();
         internal SafeDictionary<Type, Deserialize> _customDeserializer = new SafeDictionary<Type, Deserialize>();
+
         internal object CreateCustom(string v, Type type)
         {
             Deserialize d;
@@ -110,7 +113,7 @@ namespace fastJSON
                 _customSerializer.Add(type, serializer);
                 _customDeserializer.Add(type, deserializer);
                 // reset property cache
-                Reflection.Instance.ResetPropertyCache();
+                Instance.ResetPropertyCache();
             }
         }
 
@@ -149,7 +152,7 @@ namespace fastJSON
             }
         }
 
-        public Dictionary<string, myPropInfo> Getproperties(Type type, string typename, bool customType)
+        public Dictionary<string, myPropInfo> Getproperties(Type type, string typename)
         {
             Dictionary<string, myPropInfo> sd = null;
             if (_propertycache.TryGetValue(typename, out sd))
@@ -166,8 +169,7 @@ namespace fastJSON
                     {// Property is an indexer
                         continue;
                     }
-                    myPropInfo d = CreateMyProp(p.PropertyType, p.Name, customType);
-
+                    myPropInfo d = CreateMyProp(p.PropertyType, p.Name);
                     d.setter = Reflection.CreateSetMethod(type, p);
                     if (d.setter != null)
                         d.CanWrite = true;
@@ -177,7 +179,7 @@ namespace fastJSON
                 FieldInfo[] fi = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
                 foreach (FieldInfo f in fi)
                 {
-                    myPropInfo d = CreateMyProp(f.FieldType, f.Name, customType);
+                    myPropInfo d = CreateMyProp(f.FieldType, f.Name);
                     if (f.IsLiteral == false)
                     {
                         d.setter = Reflection.CreateSetField(type, f);
@@ -193,7 +195,7 @@ namespace fastJSON
             }
         }
 
-        private myPropInfo CreateMyProp(Type t, string name, bool customType)
+        private myPropInfo CreateMyProp(Type t, string name)
         {
             myPropInfo d = new myPropInfo();
             myPropInfoType d_type = myPropInfoType.Unknown;
@@ -217,7 +219,7 @@ namespace fastJSON
             }
             else if (t.Name.Contains("Dictionary"))
             {
-                d.GenericTypes = Reflection.Instance.GetGenericArguments(t);// t.GetGenericArguments();
+                d.GenericTypes = Reflection.Instance.GetGenericArguments(t);
                 if (d.GenericTypes.Length > 0 && d.GenericTypes[0] == typeof(string))
                     d_type = myPropInfoType.StringKeyDictionary;
                 else
@@ -228,7 +230,7 @@ namespace fastJSON
             else if (t == typeof(DataSet)) d_type = myPropInfoType.DataSet;
             else if (t == typeof(DataTable)) d_type = myPropInfoType.DataTable;
 #endif
-            else if (customType)
+            else if (IsTypeRegistered(t))
                 d_type = myPropInfoType.Custom;
 
             if (t.IsValueType && !t.IsPrimitive && !t.IsEnum && t != typeof(decimal))
@@ -253,7 +255,7 @@ namespace fastJSON
         private Type GetChangeType(Type conversionType)
         {
             if (conversionType.IsGenericType && conversionType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
-                return Reflection.Instance.GetGenericArguments(conversionType)[0];// conversionType.GetGenericArguments()[0];
+                return Reflection.Instance.GetGenericArguments(conversionType)[0];
 
             return conversionType;
         }
@@ -503,7 +505,7 @@ namespace fastJSON
             return (GenericGetter)getter.CreateDelegate(typeof(GenericGetter));
         }
 
-        public Getters[] GetGetters(Type type, bool ShowReadOnlyProperties, List<Type> IgnoreAttributes)//   JSONParameters param)
+        public Getters[] GetGetters(Type type, bool ShowReadOnlyProperties, List<Type> IgnoreAttributes)
         {
             Getters[] val = null;
             if (_getterscache.TryGetValue(type, out val))
@@ -517,7 +519,8 @@ namespace fastJSON
                 {// Property is an indexer
                     continue;
                 }
-                if (!p.CanWrite && ShowReadOnlyProperties == false) continue;
+                if (!p.CanWrite && (ShowReadOnlyProperties == false ))//|| isAnonymous == false))
+                    continue;
                 if (IgnoreAttributes != null)
                 {
                     bool found = false;
@@ -566,6 +569,22 @@ namespace fastJSON
             return val;
         }
 
+        //private static bool IsAnonymousType(Type type)
+        //{
+        //    // may break in the future if compiler defined names change...
+        //    const string CS_ANONYMOUS_PREFIX = "<>f__AnonymousType";
+        //    const string VB_ANONYMOUS_PREFIX = "VB$AnonymousType";
+
+        //    if (type == null)
+        //        throw new ArgumentNullException("type");
+
+        //    if (type.Name.StartsWith(CS_ANONYMOUS_PREFIX, StringComparison.Ordinal) || type.Name.StartsWith(VB_ANONYMOUS_PREFIX, StringComparison.Ordinal))
+        //    {
+        //        return type.IsDefined(typeof(CompilerGeneratedAttribute), false);
+        //    }
+
+        //    return false;
+        //}
         #endregion
 
         internal void ResetPropertyCache()
@@ -574,13 +593,13 @@ namespace fastJSON
         }
 
         internal void ClearReflectionCache()
-        {            
-            _tyname = new SafeDictionary<Type,string>();
-            _typecache = new SafeDictionary<string,Type>();
-            _constrcache = new SafeDictionary<Type,CreateObject>();
-            _getterscache = new SafeDictionary<Type,Getters[]>();
+        {
+            _tyname = new SafeDictionary<Type, string>();
+            _typecache = new SafeDictionary<string, Type>();
+            _constrcache = new SafeDictionary<Type, CreateObject>();
+            _getterscache = new SafeDictionary<Type, Getters[]>();
             _propertycache = new SafeDictionary<string, Dictionary<string, myPropInfo>>();
-            _genericTypes = new SafeDictionary<Type,Type[]>();
+            _genericTypes = new SafeDictionary<Type, Type[]>();
             _genericTypeDef = new SafeDictionary<Type, Type>();
         }
     }

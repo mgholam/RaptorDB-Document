@@ -11,7 +11,6 @@ using System.IO.Compression;
 using System.CodeDom.Compiler;
 using System.Text.RegularExpressions;
 using System.ComponentModel;
-using RaptorDBRest;
 
 // ----- Feature list -------
 // TODO : enum in row schema support
@@ -53,7 +52,7 @@ namespace RaptorDB
 
         private string _S = Path.DirectorySeparatorChar.ToString();
         private ILog _log = LogManager.GetLogger(typeof(RaptorDB));
-        private Views.ViewManager _viewManager;
+        private ViewManager _viewManager;
         private KeyStore<Guid> _objStore;
         private KeyStore<Guid> _fileStore;
         private KeyStoreHF _objHF;
@@ -1194,7 +1193,7 @@ namespace RaptorDB
             if (Global.EnableWebStudio)
             {
                 _log.Debug("Enabling WEBSTUDIO on port : " + Global.WebStudioPort);
-                _restServer = new RestServer(Global.WebStudioPort, this, _Path, Global.LocalOnlyWebStudio);
+                _restServer = new rdbRest(Global.WebStudioPort, this, _Path, Global.LocalOnlyWebStudio);
             }
         }
 
@@ -1384,7 +1383,7 @@ namespace RaptorDB
 
         private object _flock = new object();
         private Regex _jsonfilter = new Regex("[\\[\\]\"{}:,]", RegexOptions.Compiled);
-        private RestServer _restServer = null;
+        private rdbRest _restServer = null;
 
         private void _fulltextTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {

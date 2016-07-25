@@ -133,6 +133,10 @@ namespace fastBinaryJSON
 
             else if (obj is DateTime)
                 WriteDateTime((DateTime)obj);
+#if NET4
+            else if (obj is System.Dynamic.ExpandoObject)
+                WriteStringDictionary((IDictionary<string, object>)obj);
+#endif
 
             else if (obj is IDictionary && obj.GetType().IsGenericType && obj.GetType().GetGenericArguments()[0] == typeof(string))
                 WriteStringDictionary((IDictionary)obj);
@@ -569,6 +573,23 @@ namespace fastBinaryJSON
             bool pendingSeparator = false;
 
             foreach (DictionaryEntry entry in dic)
+            {
+                if (pendingSeparator) WriteComma();
+
+                WritePair((string)entry.Key, entry.Value);
+
+                pendingSeparator = true;
+            }
+            _output.WriteByte(TOKENS.DOC_END);
+        }
+
+        private void WriteStringDictionary(IDictionary<string, object> dic)
+        {
+            _output.WriteByte(TOKENS.DOC_START);
+
+            bool pendingSeparator = false;
+
+            foreach (KeyValuePair<string, object> entry in dic)
             {
                 if (pendingSeparator) WriteComma();
 

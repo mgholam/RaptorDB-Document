@@ -216,10 +216,23 @@ namespace datagridbinding
             //}
         }
 
+        class ppp
+        {
+            public int i = 100;
+        }
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GC.Collect(2);
-            KVHFtest();
+            //KVHFtest();
+
+            var p = new ppp[2];
+            p[0] = new ppp();
+            p[1] = new ppp();
+            var pp = new ppp();
+
+            int cc = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < pp.i);
+            var tt = p[1].i;
+            cc = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < tt);
 
             var t = rap.Query<SalesInvoiceViewRowSchema>(x => false);
             var ss = rap.FullTextSearch("woodland -oak");
@@ -249,6 +262,7 @@ namespace datagridbinding
             //string s = q.Rows[0].CustomerName;
 
             //perftest();
+
         }
 
         private void frmMain_FormClosing(object sender, FormClosingEventArgs e)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using RaptorDB.Common;
 using System.Threading;
+using RaptorDB;
 
 namespace RaptorDB
 {
@@ -48,7 +49,7 @@ namespace RaptorDB
         private SafeSortedList<int, WAHBitArray> _cache = new SafeSortedList<int, WAHBitArray>();
         //private SafeDictionary<int, long> _offsetCache = new SafeDictionary<int, long>();
         private ILog log = LogManager.GetLogger(typeof(BitmapIndex));
-        private bool _optimizing = false;
+        private bool _stopOperations = false;
         private bool _shutdownDone = false;
         private int _workingCount = 0;
         private bool _isDirty = false;
@@ -134,7 +135,7 @@ namespace RaptorDB
                 lock (_readlock)
                     lock (_writelock)
                     {
-                        _optimizing = true;
+                        _stopOperations = true;
                         while (_workingCount > 0) Thread.SpinWait(1);
                         Flush();
 
@@ -156,7 +157,7 @@ namespace RaptorDB
                             byte[] b = ReadBMPData(offset);
                             if (b == null)
                             {
-                                _optimizing = false;
+                                _stopOperations = false;
                                 throw new Exception("bitmap index file is corrupted");
                             }
 
@@ -178,7 +179,7 @@ namespace RaptorDB
                         File.Move(_Path + _FileName + "$" + _recExt, _Path + _FileName + _recExt);
 
                         Initialize();
-                        _optimizing = false;
+                        _stopOperations = false;
                     }
         }
 
@@ -422,7 +423,7 @@ namespace RaptorDB
         //#pragma warning disable 642
         private void CheckInternalOP()
         {
-            if (_optimizing)
+            if (_stopOperations)
                 lock (_oplock) { } // yes! this is good
             Interlocked.Increment(ref _workingCount);
         }

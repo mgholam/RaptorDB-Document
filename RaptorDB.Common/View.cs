@@ -91,6 +91,8 @@ namespace RaptorDB
             CaseInsensitiveColumns = new List<string>();
             StringIndexLength = new Dictionary<string, byte>();
             NoIndexingColumns = new List<string>();
+            isPrimaryList = true;
+            ConsistentSaveToThisView = true;
         }
 
         /// <summary>
