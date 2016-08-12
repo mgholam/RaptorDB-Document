@@ -47,7 +47,7 @@ namespace RaptorDB.Common
 
         public ICollection<KeyValuePair<TKey, TValue>> GetList()
         {
-            return (ICollection<KeyValuePair<TKey, TValue>>)_Dictionary;
+            return _Dictionary;
         }
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
@@ -78,6 +78,8 @@ namespace RaptorDB.Common
 
         public bool Remove(TKey key)
         {
+            if (key == null)
+                return true;
             lock (_Padlock)
             {
                 return _Dictionary.Remove(key);
@@ -105,10 +107,12 @@ namespace RaptorDB.Common
         public void Add(T key, V val)
         {
             lock (_padlock)
+            {
                 if (_list.ContainsKey(key) == false)
                     _list.Add(key, val);
                 else
                     _list[key] = val;
+        }
         }
 
         public void Remove(T key)

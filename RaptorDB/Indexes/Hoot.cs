@@ -32,8 +32,8 @@ namespace RaptorDB
             LoadWords();
         }
 
-        //private SafeDictionary<string, int> _words = new SafeDictionary<string, int>();
-        private SafeSortedList<string, int> _words = new SafeSortedList<string, int>();
+        private SafeDictionary<string, int> _words = new SafeDictionary<string, int>();
+        //private SafeSortedList<string, int> _words = new SafeSortedList<string, int>();
         private BitmapIndex _bitmaps;
         private BoolIndex _deleted;
         private ILog _log = LogManager.GetLogger(typeof(Hoot));
@@ -42,7 +42,8 @@ namespace RaptorDB
         private string _Path = "";
         private KeyStoreString _docs;
         private bool _docMode = false;
-        private bool _loaded = false;
+        private bool _wordschanged = true;
+        private bool _shutdowndone = false;
 
         public string[] Words
         {
@@ -82,7 +83,7 @@ namespace RaptorDB
         public int Index(Document doc, bool deleteold)
         {
             checkloaded();
-            _log.Debug("indexing doc : " + doc.FileName);
+            _log.Info("indexing doc : " + doc.FileName);
             DateTime dt = FastDateTime.Now;
 
             if (deleteold && doc.DocNumber > -1)
@@ -95,12 +96,12 @@ namespace RaptorDB
             string dstr = fastJSON.JSON.ToJSON(doc, new fastJSON.JSONParameters { UseExtensions = false });
             _docs.Set(doc.FileName.ToLower(), Encoding.Unicode.GetBytes(dstr));
 
-            _log.Debug("writing doc to disk (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            _log.Info("writing doc to disk (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
 
             dt = FastDateTime.Now;
             // index doc
             AddtoIndex(doc.DocNumber, doc.Text);
-            _log.Debug("indexing time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            _log.Info("indexing time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
 
             return _lastDocNum;
         }
@@ -123,7 +124,7 @@ namespace RaptorDB
                 if (i > _lastDocNum - 1)
                     break;
                 string b = _docs.ReadData(i);
-                T d = fastJSON.JSON.ToObject<T>(b);
+                T d = fastJSON.JSON.ToObject<T>(b, new fastJSON.JSONParameters { ParametricConstructorOverride = true });
 
                 yield return d;
             }
@@ -184,7 +185,7 @@ namespace RaptorDB
 
         private void checkloaded()
         {
-            if (_loaded == false)
+            if (_wordschanged == false)
             {
                 LoadWords();
             }
@@ -265,7 +266,7 @@ namespace RaptorDB
                     found = DoBitOperation(found, ba, op, maxsize);
                 }
                 else if (op == OPERATION.AND)
-                    found = null;
+                    found = new WAHBitArray();
             }
             if (found == null)
                 return new WAHBitArray();
@@ -305,7 +306,7 @@ namespace RaptorDB
         private object _lock = new object();
         private void InternalSave()
         {
-            _log.Debug("saving index...");
+            _log.Info("saving index...");
             DateTime dt = FastDateTime.Now;
             // save deleted
             if (_deleted != null)
@@ -318,7 +319,7 @@ namespace RaptorDB
             if (_bitmaps != null)
                 _bitmaps.Commit(false);
 
-            if (_words != null && _loaded == true)
+            if (_words != null && _wordschanged == true)
             {
                 MemoryStream ms = new MemoryStream();
                 BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
@@ -336,8 +337,9 @@ namespace RaptorDB
                     words.Flush();
                     words.Close();
                 }
+                _wordschanged = false;
             }
-            _log.Debug("save time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+            _log.Info("save time (ms) = " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
         }
 
         private void LoadWords()
@@ -345,7 +347,7 @@ namespace RaptorDB
             lock (_lock)
             {
                 if (_words == null)
-                    _words = new SafeSortedList<string, int>();
+                    _words = new SafeDictionary<string, int>();// new SafeSortedList<string, int>();
                 if (File.Exists(_Path + _FileName + ".words") == false)
                     return;
                 // load words
@@ -366,7 +368,7 @@ namespace RaptorDB
                     catch { s = ""; }
                 }
                 _log.Debug("Word Count = " + _words.Count);
-                _loaded = true;
+                _wordschanged = true;
             }
         }
 
@@ -379,7 +381,7 @@ namespace RaptorDB
             if (_docMode)
             {
                 //_log.Debug("text size = " + text.Length);
-                Dictionary<string, int> wordfreq = GenerateWordFreq(text);
+                Dictionary<string, int> wordfreq = tokenizer.GenerateWordFreq(text);
                 //_log.Debug("word count = " + wordfreq.Count);
                 var kk = wordfreq.Keys;
                 keys = new string[kk.Count];
@@ -407,105 +409,19 @@ namespace RaptorDB
                     _words.Add(key, bmp);
                 }
             }
+            _wordschanged = true;
         }
 
-        private Dictionary<string, int> GenerateWordFreq(string text)
-        {
-            Dictionary<string, int> dic = new Dictionary<string, int>(500);
-
-            char[] chars = text.ToCharArray();
-            int index = 0;
-            int run = -1;
-            int count = chars.Length;
-            while (index < count)
-            {
-                char c = chars[index++];
-                if (!(char.IsLetterOrDigit(c) || char.IsPunctuation(c))) // rdb specific
-                {
-                    if (run != -1)
-                    {
-                        ParseString(dic, chars, index, run);
-                        run = -1;
-                    }
-                }
-                else
-                    if (run == -1)
-                    run = index - 1;
-            }
-
-            if (run != -1)
-            {
-                ParseString(dic, chars, index, run);
-                run = -1;
-            }
-
-            return dic;
-        }
-
-        private void ParseString(Dictionary<string, int> dic, char[] chars, int end, int start)
-        {
-            // check if upper lower case mix -> extract words
-            int uppers = 0;
-            bool found = false;
-            for (int i = start; i < end; i++)
-            {
-                if (char.IsUpper(chars[i]))
-                    uppers++;
-            }
-            // not all uppercase
-            if (uppers != end - start - 1)
-            {
-                int lastUpper = start;
-
-                string word = "";
-                for (int i = start + 1; i < end; i++)
-                {
-                    char c = chars[i];
-                    if (char.IsUpper(c))
-                    {
-                        found = true;
-                        word = new string(chars, lastUpper, i - lastUpper).ToLowerInvariant().Trim();
-                        AddDictionary(dic, word);
-                        lastUpper = i;
-                    }
-                }
-                if (lastUpper > start)
-                {
-                    string last = new string(chars, lastUpper, end - lastUpper).ToLowerInvariant().Trim();
-                    if (word != last)
-                        AddDictionary(dic, last);
-                }
-            }
-            if (found == false)
-            {
-                string s = new string(chars, start, end - start).ToLowerInvariant().Trim();
-                AddDictionary(dic, s);
-            }
-        }
-
-        private void AddDictionary(Dictionary<string, int> dic, string word)
-        {
-            int l = word.Length;
-            if (l > Global.DefaultStringKeySize)
-                return;
-            if (l < 2)
-                return;
-            if (char.IsLetterOrDigit(word[l - 1]) == false) // rdb specific
-                word = new string(word.ToCharArray(), 0, l - 1);
-            if (word.Length < 2)
-                return;
-            int cc = 0;
-            if (dic.TryGetValue(word, out cc))
-                dic[word] = ++cc;
-            else
-                dic.Add(word, 1);
-        }
+        
         #endregion
 
         public void Shutdown()
         {
             lock (_lock)
             {
+                if (_shutdowndone == true)
+                    return;
+
                 InternalSave();
                 if (_deleted != null)
                 {
@@ -523,6 +439,8 @@ namespace RaptorDB
 
                 if (_docMode)
                     _docs.Shutdown();
+
+                _shutdowndone = true;
             }
         }
 

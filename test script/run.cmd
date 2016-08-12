@@ -1,0 +1,1 @@
+..\tools\nscript.exe sample.cs

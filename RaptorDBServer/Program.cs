@@ -77,7 +77,7 @@ Run with :
 
         private static void Dostart()
         {
-            var _raptor = new RaptorDB.RaptorDBServer(Program.Port, Program.Path);
+            var _raptor = new RaptorDB.RaptorDBServer(Port, Path);
             Console.WriteLine("Press Enter to shutdown...");
             Console.ReadLine();
             _raptor.Shutdown();

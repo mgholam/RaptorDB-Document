@@ -1,4 +1,13 @@
-﻿v3.3.6
+﻿v3.3.8
+------
+- synced with hOOt
+- added nscript.exe tool
+- added sample.cs test script with command line run
+- changed log message types
+- bug fix fulltext search  
+- fulltext tokenizer breaks a.b.c words and numbers
+
+v3.3.6
 ------
 - upgrade to fastJSON v2.1.18
 - upgrade to fastBinaryJSON v1.4.15

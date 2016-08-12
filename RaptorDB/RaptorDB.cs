@@ -124,7 +124,7 @@ namespace RaptorDB
             string viewname = _viewManager.GetPrimaryViewForType(data.GetType());
             if (viewname == "" && Global.RequirePrimaryView == true)
             {
-                _log.Debug("Primary View not defined for object : " + data.GetType());
+                _log.Warn("Primary View not defined for object : " + data.GetType());
                 return false;
             }
             _pauseindexer = true;

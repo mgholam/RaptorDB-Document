@@ -222,7 +222,7 @@ namespace RaptorDB
                     if (c.Value.isDirty == false)
                         free.Add(c.Key);
                 }
-                _log.Debug("releasing page count = " + free.Count + " out of " + _cache.Count);
+                _log.Info("releasing page count = " + free.Count + " out of " + _cache.Count);
                 foreach (var i in free)
                     _cache.Remove(i);
             }

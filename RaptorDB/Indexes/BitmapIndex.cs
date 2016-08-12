@@ -193,7 +193,7 @@ namespace RaptorDB
                     if (b.Value.isDirty == false)
                         free.Add(b.Key);
                 }
-                log.Debug("releasing bmp count = " + free.Count + " out of " + _cache.Count);
+                log.Info("releasing bmp count = " + free.Count + " out of " + _cache.Count);
                 foreach (int i in free)
                     _cache.Remove(i);
             }

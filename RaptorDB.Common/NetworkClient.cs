@@ -93,7 +93,7 @@ namespace RaptorDB.Common
     {
         public delegate object ProcessPayload(object data);
 
-        private ILog log = RaptorDB.LogManager.GetLogger(typeof(NetworkServer));
+        private ILog log = LogManager.GetLogger(typeof(NetworkServer));
         ProcessPayload _handler;
         private bool _run = true;
         private int count = 0;
@@ -162,14 +162,14 @@ namespace RaptorDB.Common
                     object r = _handler(o);
                     bool compressed = false;
                     data = fastBinaryJSON.BJSON.ToBJSON(r);
-                    if (data.Length > RaptorDB.Common.NetworkClient.Config.CompressDataOver)
+                    if (data.Length > NetworkClient.Config.CompressDataOver)
                     {
                         log.Debug("compressing data over limit : " + data.Length.ToString("#,#"));
                         compressed = true;
                         data = MiniLZO.Compress(data);
                         log.Debug("new size : " + data.Length.ToString("#,#"));
                     }
-                    if (data.Length > RaptorDB.Common.NetworkClient.Config.LogDataSizesOver)
+                    if (data.Length > NetworkClient.Config.LogDataSizesOver)
                         log.Debug("data size (bytes) = " + data.Length.ToString("#,#"));
 
                     byte[] b = BitConverter.GetBytes(data.Length);
