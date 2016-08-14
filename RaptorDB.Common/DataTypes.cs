@@ -54,3 +54,46 @@ namespace RaptorDB
         public Guid docid;
     }
 }
+
+// no namespace -> available to all
+public static class RDBExtension
+{
+    /// <summary>
+    /// RDB Between checking for dates
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="fromdate">Must be yyyy-mm-dd</param>
+    /// <param name="todate">Must be yyyy-mm-dd</param>
+    /// <returns></returns>
+    public static bool Between(this DateTime value, string fromdate, string todate)
+    {
+        return true;
+    }
+
+    /// <summary>
+    /// RDB Between checking for dates
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="fromdate"></param>
+    /// <param name="todate"></param>
+    /// <returns></returns>
+    public static bool Between(this DateTime value, DateTime fromdate, DateTime todate)
+    {
+        return true;
+    }
+
+    public static bool Between(this int value, int from, int to)
+    {
+        return true;
+    }
+
+    public static bool Between(this long value, long from, long to)
+    {
+        return true;
+    }
+
+    public static bool Between(this decimal value, decimal from, decimal to)
+    {
+        return true;
+    }
+}

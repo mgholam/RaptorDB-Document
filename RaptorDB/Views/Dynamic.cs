@@ -750,27 +750,27 @@ namespace System.Linq.Dynamic
         //    return Expression.Call(typeof(Enumerable), signature.Name, typeArgs, args);
         //}
 
-        //Expression[] ParseArgumentList()
-        //{
-        //    ValidateToken(TokenId.OpenParen, Res.OpenParenExpected);
-        //    NextToken();
-        //    Expression[] args = token.id != TokenId.CloseParen ? ParseArguments() : new Expression[0];
-        //    ValidateToken(TokenId.CloseParen, Res.CloseParenOrCommaExpected);
-        //    NextToken();
-        //    return args;
-        //}
+        Expression[] ParseArgumentList()
+        {
+            ValidateToken(TokenId.OpenParen, Res.OpenParenExpected);
+            NextToken();
+            Expression[] args = token.id != TokenId.CloseParen ? ParseArguments() : new Expression[0];
+            ValidateToken(TokenId.CloseParen, Res.CloseParenOrCommaExpected);
+            NextToken();
+            return args;
+        }
 
-        //Expression[] ParseArguments()
-        //{
-        //    List<Expression> argList = new List<Expression>();
-        //    while (true)
-        //    {
-        //        argList.Add(ParseExpression());
-        //        if (token.id != TokenId.Comma) break;
-        //        NextToken();
-        //    }
-        //    return argList.ToArray();
-        //}
+        Expression[] ParseArguments()
+        {
+            List<Expression> argList = new List<Expression>();
+            while (true)
+            {
+                argList.Add(ParseExpression());
+                if (token.id != TokenId.Comma) break;
+                NextToken();
+            }
+            return argList.ToArray();
+        }
 
         //Expression ParseElementAccess(Expression expr)
         //{
@@ -1003,12 +1003,12 @@ namespace System.Linq.Dynamic
                 else
                 {
                     if (left.Type == typeof(Guid))
-                        right = Expression.Constant(Guid.Parse(right.ToString().Replace("\"", "").Replace("'","")));
+                        right = Expression.Constant(Guid.Parse(right.ToString().Replace("\"", "").Replace("'", "")));
                     else if (left.Type == typeof(DateTime))
                         right = Expression.Constant(DateTime.Parse(right.ToString().Replace("\"", "").Replace("'", "")));
                     else
-                    CheckAndPromoteOperands(isEquality ? typeof(IEqualitySignatures) : typeof(IRelationalSignatures),
-                        op.text, ref left, ref right, op.pos);
+                        CheckAndPromoteOperands(isEquality ? typeof(IEqualitySignatures) : typeof(IRelationalSignatures),
+                            op.text, ref left, ref right, op.pos);
                 }
                 switch (op.id)
                 {
@@ -1293,12 +1293,35 @@ namespace System.Linq.Dynamic
             return ParseMemberAccess(type, null);
         }
 
+        internal static MethodInfo _datetime_between = null;
+        internal static MethodInfo _int_between = null;
+        internal static MethodInfo _long_between = null;
+        internal static MethodInfo _decimal_between = null;
+        Expression CallBetween(MethodInfo method,Expression instance, Type checktype, Type datatype, Expression[] args)
+        {
+            if (method == null)
+                foreach (var m in typeof(RDBExtension).GetMethods())
+                {
+                    if (m.Name.ToLower() == "between")
+                    {
+                        var pi = m.GetParameters();
+                        if (pi[1].ParameterType == checktype)
+                        {
+                            method = m;
+                        }
+                    }
+                }
+            var pname = instance.ToString();
+            return Expression.Call(method, new Expression[] { ConstantExpression.Variable(datatype, pname), args[0], args[1] });
+        }
+
         Expression ParseMemberAccess(Type type, Expression instance)
         {
             if (instance != null) type = instance.Type;
             int errorPos = token.pos;
             string id = GetIdentifier();
             NextToken();
+            #region commented
             //if (token.id == TokenId.OpenParen)
             //{
             //    //if (instance != null && type != typeof(string))
@@ -1330,12 +1353,31 @@ namespace System.Linq.Dynamic
             //                id, GetTypeName(type));
             //    }
             //}
-            //else
+            //else 
+            #endregion
             {
                 MemberInfo member = FindPropertyOrField(type, id, instance == null);
                 if (member == null)
-                    throw ParseError(errorPos, Res.UnknownPropertyOrField,
-                        id, GetTypeName(type));
+                {
+                    if (id.ToLower() == "between") // FIX : add more between here
+                    {
+                        Expression[] args = ParseArgumentList();
+                        if (type == typeof(DateTime))
+                            return CallBetween(_datetime_between, instance, typeof(string), typeof(DateTime), args);
+
+                        else if (type == typeof(int))
+                            return CallBetween(_int_between, instance, typeof(int), typeof(int), args);
+
+                        else if (type == typeof(long))
+                            return CallBetween(_long_between, instance, typeof(long), typeof(long), args);
+
+                        else if (type == typeof(decimal))
+                            return CallBetween(_decimal_between, instance, typeof(decimal), typeof(decimal), args);
+                    }
+                    else
+                        throw ParseError(errorPos, Res.UnknownPropertyOrField,
+                            id, GetTypeName(type));
+                }
                 return member is PropertyInfo ?
                     Expression.Property(instance, (PropertyInfo)member) :
                     Expression.Field(instance, (FieldInfo)member);

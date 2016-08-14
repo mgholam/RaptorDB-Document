@@ -104,7 +104,6 @@
     <Compile Include="Indexes\IIndex.cs" />
     <Compile Include="Indexes\Indexes.cs" />
     <Compile Include="Indexes\IndexFile.cs" />
-    <Compile Include="Indexes\BitmapIndexHF.cs" />
     <Compile Include="Indexes\MGIndex.cs" />
     <Compile Include="Indexes\tokenizer.cs" />
     <Compile Include="Properties\Resources.Designer.cs">

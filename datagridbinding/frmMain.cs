@@ -37,12 +37,14 @@ namespace datagridbinding
 
         private void Query()
         {
-            string[] s = textBox1.Text.Split(',');
+            int c = textBox1.Text.IndexOf(',');
+            string viewname = textBox1.Text.Substring(0, c);
+            string args = textBox1.Text.Substring(c+1);
 
             try
             {
                 DateTime dt = FastDateTime.Now;
-                var q = rap.Query(s[0].Trim(), s[1].Trim());
+                var q = rap.Query(viewname, args.Trim());
                 toolStripStatusLabel2.Text = "Query time (sec) = " + FastDateTime.Now.Subtract(dt).TotalSeconds;
                 dataGridView1.DataSource = q.Rows;
                 toolStripStatusLabel1.Text = "Count = " + q.Count.ToString("#,0");
@@ -179,7 +181,7 @@ namespace datagridbinding
         {
             //var r = (rap as RaptorDB.RaptorDB);
             var kv = rap.GetKVHF();
-            
+
             DateTime dt = DateTime.Now;
             for (int i = 0; i < 1000; i++)
             {
@@ -191,16 +193,16 @@ namespace datagridbinding
             var g = kv.GetObjectHF("109");
 
             //for (int i = 0; i < 100000; i++)
-                //kv.DeleteKeyHF(i.ToString());
-            
+            //kv.DeleteKeyHF(i.ToString());
+
             //g = kv.GetObjectHF("1009");
             //MessageBox.Show(""+kv.CountHF());
 
             //foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
             //{
-                //kv.SetObjectHF(f, File.ReadAllBytes(f));
+            //kv.SetObjectHF(f, File.ReadAllBytes(f));
             //}
-            
+
             //kv.CompactStorageHF();
 
             //foreach (var f in Directory.GetFiles("d:\\pp", "*.*"))
@@ -229,6 +231,11 @@ namespace datagridbinding
             p[0] = new ppp();
             p[1] = new ppp();
             var pp = new ppp();
+            var d1 = DateTime.Parse("2001-1-1");
+            var d2 = DateTime.Parse("2010-1-1");
+            var ooooooooo = rap.Query<SalesInvoiceViewRowSchema>(x => x.Date.Between("2001-1-1", "2010-1-1") && x.Status == 2);
+            ooooooooo = rap.Query<SalesInvoiceViewRowSchema>(x => x.Date.Between(d1, d2) && x.Status == 2);
+            ooooooooo = rap.Query<SalesInvoiceViewRowSchema>(x => x.Serial.Between(1, 3));
 
             int cc = rap.Count<SalesInvoiceViewRowSchema>(x => x.Serial < pp.i);
             var tt = p[1].i;

@@ -50,7 +50,6 @@ namespace RaptorDB
 
         void IIndex.Shutdown()
         {
-            //base.SaveIndex();
             base.Shutdown();
         }
 
@@ -58,22 +57,23 @@ namespace RaptorDB
         {
             return base.GetKeys();
         }
-        //public WAHBitArray Query(object fromkey, object tokey, int maxsize)
-        //{
-        //    T f = default(T);
-        //    if (typeof(T).Equals(fromkey.GetType()) == false)
-        //        f = (T)Convert.ChangeType(fromkey, typeof(T));
-        //    else
-        //        f = (T)fromkey;
 
-        //    T t = default(T);
-        //    if (typeof(T).Equals(tokey.GetType()) == false)
-        //        t = (T)Convert.ChangeType(tokey, typeof(T));
-        //    else
-        //        t = (T)tokey;
+        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
+        {
+            T f = default(T);
+            if (typeof(T).Equals(fromkey.GetType()) == false)
+                f = (T)Convert.ChangeType(fromkey, typeof(T));
+            else
+                f = (T)fromkey;
 
-        //    return base.Query(f, t, maxsize);
-        //}
+            T t = default(T);
+            if (typeof(T).Equals(tokey.GetType()) == false)
+                t = (T)Convert.ChangeType(tokey, typeof(T));
+            else
+                t = (T)tokey;
+
+            return base.Query(f, t, maxsize);
+        }
     }
     #endregion
 
@@ -84,7 +84,6 @@ namespace RaptorDB
         {
             // create file
             _filename = filename + extension;
-            //if (_filename.Contains(".") == false) _filename += ".deleted";
             _path = path;
             if (_path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false)
                 _path += Path.DirectorySeparatorChar.ToString();
@@ -97,7 +96,6 @@ namespace RaptorDB
         private string _filename;
         private string _path;
         private object _lock = new object();
-        //private bool _inMemory = false;
 
         public WAHBitArray GetBits()
         {
@@ -129,23 +127,17 @@ namespace RaptorDB
             {
                 SaveIndex();
                 _bits.FreeMemory();
-                // free memory
-                //_bits.FreeMemory();
-                // save to disk
-                //SaveIndex();
             }
         }
 
         public void Shutdown()
         {
             // shutdown
-            //if (_inMemory == false)
             WriteFile();
         }
 
         public void SaveIndex()
         {
-            //if (_inMemory == false)
             WriteFile();
         }
 
@@ -194,7 +186,7 @@ namespace RaptorDB
 
         public WAHBitArray Query(object fromkey, object tokey, int maxsize)
         {
-            return Query(RDBExpression.Greater, fromkey, maxsize);
+            return Query(RDBExpression.Greater, fromkey, maxsize); // range doesn't make sense here just do from 
         }
 
         internal void FixSize(int size)
@@ -245,7 +237,7 @@ namespace RaptorDB
 
         public WAHBitArray Query(object fromkey, object tokey, int maxsize)
         {
-            return base.Query("" + fromkey, maxsize);
+            return base.Query("" + fromkey, maxsize); // range doesn't make sense here just do from  
         }
 
         public object[] GetKeys()
@@ -379,6 +371,11 @@ namespace RaptorDB
         public object[] GetKeys()
         {
             return new object[] { };
+        }
+
+        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
+        {
+            return WAHBitArray.Fill(maxsize); // FIX : all or none??
         }
     }
     #endregion

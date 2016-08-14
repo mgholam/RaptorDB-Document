@@ -1,4 +1,12 @@
-﻿v3.3.8
+﻿v3.3.9
+------
+- query date parts e.g. x => x.Date.Year == 2016 or "date.year = 2016"
+- Between() for dates e.g. x => x.Date.Between("2000-1-1","2002-6-16")
+- optimized internal query engine for ranges
+- internal query from to implementation 
+- Between() for int, long
+
+v3.3.8
 ------
 - synced with hOOt
 - added nscript.exe tool

@@ -17,7 +17,6 @@ using System.ComponentModel;
 // TODO : validate view schema with mapper on startup ??
 // TODO : HFKV transaction mode set and rollback handling
 // TODO : fastJSON unsafe string pointer parser
-// TODO : .Between() in predicate support
 
 namespace RaptorDB
 {
@@ -1055,7 +1054,7 @@ namespace RaptorDB
             if (list != null)
                 foreach (string name in list)
                 {
-                    _log.Debug("Saving to consistent view : " + name);
+                    //_log.Info("Saving to consistent view : " + name);
                     _viewManager.Insert(name, docid, data);
                 }
         }

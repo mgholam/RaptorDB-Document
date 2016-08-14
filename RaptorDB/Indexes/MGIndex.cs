@@ -91,7 +91,7 @@ namespace RaptorDB
 
         public WAHBitArray Query(T from, T to, int maxsize)
         {
-            // TODO : add BETWEEN code here
+            WAHBitArray bits = new WAHBitArray();
             T temp = default(T);
             if (from.CompareTo(to) > 0) // check values order
             {
@@ -102,13 +102,60 @@ namespace RaptorDB
             // find first page and do > than
             bool found = false;
             int startpos = FindPageOrLowerPosition(from, ref found);
-
             // find last page and do < than
             int endpos = FindPageOrLowerPosition(to, ref found);
+            bool samepage = startpos == endpos;
 
-            // do all pages in between
+            // from key page
+            Page<T> page = LoadPage(_pageList.GetValue(startpos).PageNumber);
+            T[] keys = page.tree.Keys();
+            Array.Sort(keys);
 
-            return new WAHBitArray();
+            // find better start position rather than 0
+            int pos = Array.BinarySearch<T>(keys, from); // FEATURE : rewrite??
+            if (pos < 0) pos = ~pos;
+
+            for (int i = pos; i < keys.Length; i++)
+            {
+                T k = keys[i];
+                int bn = page.tree[k].DuplicateBitmapNumber;
+
+                if (samepage)
+                {
+                    if (k.CompareTo(from) >= 0 && k.CompareTo(to) <= 0) // if from,to same page
+                        bits = bits.Or(_index.GetDuplicateBitmap(bn));
+                }
+                else
+                {
+                    if (k.CompareTo(from) >= 0)
+                        bits = bits.Or(_index.GetDuplicateBitmap(bn));
+                }
+            }
+            if (!samepage)
+            {
+                // to key page
+                page = LoadPage(_pageList.GetValue(endpos).PageNumber);
+                keys = page.tree.Keys();
+                Array.Sort(keys);
+                // find better end position rather than last key
+                pos = Array.BinarySearch<T>(keys, to);
+                if (pos < 0) pos = ~pos;
+
+                for (int i = 0; i <= pos; i++)
+                {
+                    T k = keys[i];
+                    int bn = page.tree[k].DuplicateBitmapNumber;
+
+                    if (k.CompareTo(to) <= 0)
+                        bits = bits.Or(_index.GetDuplicateBitmap(bn));
+                }
+                // do all pages in between
+                for (int i = startpos + 1; i < endpos; i++)
+                {
+                    doPageOperation(ref bits, i);
+                }
+            }
+            return bits;
         }
 
         public WAHBitArray Query(RDBExpression exp, T from, int maxsize)
@@ -282,8 +329,8 @@ namespace RaptorDB
             Array.Sort(keys);
 
             // find better start position rather than 0
-            pos = Array.IndexOf<T>(keys, key);
-            if (pos == -1) pos = 0;
+            pos = Array.BinarySearch<T>(keys, key);
+            if (pos < 0) pos = ~pos;
 
             for (int i = pos; i < keys.Length; i++)
             {
@@ -314,7 +361,10 @@ namespace RaptorDB
             Page<T> page = LoadPage(_pageList.GetValue(pos).PageNumber);
             T[] keys = page.tree.Keys();
             Array.Sort(keys);
-            for (int i = 0; i < keys.Length; i++)
+            // find better end position rather than last key
+            pos = Array.BinarySearch<T>(keys, key);
+            if (pos < 0) pos = ~pos;
+            for (int i = 0; i <= pos; i++)
             {
                 T k = keys[i];
                 if (k.CompareTo(key) > 0)
