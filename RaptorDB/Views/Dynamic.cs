@@ -1293,12 +1293,12 @@ namespace System.Linq.Dynamic
             return ParseMemberAccess(type, null);
         }
 
-        internal static MethodInfo _datetime_between = null;
-        internal static MethodInfo _int_between = null;
-        internal static MethodInfo _long_between = null;
-        internal static MethodInfo _decimal_between = null;
-        Expression CallBetween(MethodInfo method,Expression instance, Type checktype, Type datatype, Expression[] args)
+        internal static Dictionary<Type, MethodInfo> _betweens = new Dictionary<Type, MethodInfo>();
+        Expression CallBetween(Expression instance, Type checktype, Type datatype, Expression[] args)
         {
+            MethodInfo method = null;
+            _betweens.TryGetValue(datatype, out method);
+
             if (method == null)
                 foreach (var m in typeof(RDBExtension).GetMethods())
                 {
@@ -1308,6 +1308,14 @@ namespace System.Linq.Dynamic
                         if (pi[1].ParameterType == checktype)
                         {
                             method = m;
+                            _betweens.Add(datatype, method);
+                            break;
+                        }
+                        else if (pi[1].ParameterType.IsGenericParameter)
+                        {
+                            method = m.MakeGenericMethod(args[0].Type);
+                            _betweens.Add(datatype, method);
+                            break;
                         }
                     }
                 }
@@ -1359,20 +1367,13 @@ namespace System.Linq.Dynamic
                 MemberInfo member = FindPropertyOrField(type, id, instance == null);
                 if (member == null)
                 {
-                    if (id.ToLower() == "between") // FIX : add more between here
+                    if (id.ToLower() == "between") 
                     {
                         Expression[] args = ParseArgumentList();
                         if (type == typeof(DateTime))
-                            return CallBetween(_datetime_between, instance, typeof(string), typeof(DateTime), args);
-
-                        else if (type == typeof(int))
-                            return CallBetween(_int_between, instance, typeof(int), typeof(int), args);
-
-                        else if (type == typeof(long))
-                            return CallBetween(_long_between, instance, typeof(long), typeof(long), args);
-
-                        else if (type == typeof(decimal))
-                            return CallBetween(_decimal_between, instance, typeof(decimal), typeof(decimal), args);
+                            return CallBetween(instance, typeof(string), typeof(DateTime), args);
+                        else
+                            return CallBetween(instance, type, type, args);
                     }
                     else
                         throw ParseError(errorPos, Res.UnknownPropertyOrField,

@@ -17,6 +17,7 @@ using System.ComponentModel;
 // TODO : validate view schema with mapper on startup ??
 // TODO : HFKV transaction mode set and rollback handling
 // TODO : fastJSON unsafe string pointer parser
+// TODO : compress old logs 
 
 namespace RaptorDB
 {
@@ -271,8 +272,7 @@ namespace RaptorDB
             if (_repclient != null)
                 _repclient.Shutdown();
 
-            // TODO : write global or something else?
-            //if (File.Exists(_Path + "RaptorDB.config") == false)
+            // feature : write global or something else?
             File.WriteAllText(_Path + "RaptorDB.config", fastJSON.JSON.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
             if (_cron != null)
                 _cron.Stop();
@@ -1493,6 +1493,11 @@ namespace RaptorDB
         internal object GetAssemblyForView(string viewname, out string typename)
         {
             return _viewManager.GetAssemblyForView(viewname, out typename);
+        }
+
+        public T Fetch<T>(Guid docID) where T : class
+        {
+            return Fetch(docID) as T;
         }
 
         #endregion

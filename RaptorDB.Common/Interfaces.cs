@@ -103,6 +103,13 @@ namespace RaptorDB
         /// <returns></returns>
         object Fetch(Guid guid);
 
+        /// <summary>
+        /// Fetch a document by it's Guid
+        /// </summary>
+        /// <param name="guid"></param>
+        /// <returns></returns>
+        T Fetch<T>(Guid guid) where T : class;
+
         // new query model
         Result<T> Query<T>(Expression<Predicate<T>> Filter);
         Result<T> Query<T>(Expression<Predicate<T>> Filter, int start, int count);

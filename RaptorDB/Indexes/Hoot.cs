@@ -44,6 +44,7 @@ namespace RaptorDB
         private bool _docMode = false;
         private bool _wordschanged = true;
         private bool _shutdowndone = false;
+        private object _lock = new object();
 
         public string[] Words
         {
@@ -303,7 +304,6 @@ namespace RaptorDB
             return bits;
         }
 
-        private object _lock = new object();
         private void InternalSave()
         {
             _log.Info("saving index...");

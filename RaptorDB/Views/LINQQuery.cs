@@ -100,7 +100,7 @@ namespace RaptorDB.Views
                 return null;
             }
             string mc = s.Substring(s.IndexOf('.') + 1);
-            if (mc.Contains("Between")) // FIX : add more between here
+            if (mc.Contains("Between")) 
             {
                 Type datatype = m.Arguments[0].Type;
                 string name = m.Arguments[0].ToString().Split('.')[1];
@@ -121,22 +121,28 @@ namespace RaptorDB.Views
                     }
                     _bitmap.Push(qfromto(name, from, to));
                 }
-                else if(datatype == typeof(int))
+                //else if(datatype == typeof(int))
+                //{
+                //    var from = (int)GetValueForMember(m.Arguments[1]);
+                //    var to = (int)GetValueForMember(m.Arguments[2]);
+                //    _bitmap.Push(qfromto(name, from, to));
+                //}
+                //else if (datatype == typeof(long))
+                //{
+                //    var from = (long)GetValueForMember(m.Arguments[1]);
+                //    var to = (long)GetValueForMember(m.Arguments[2]);
+                //    _bitmap.Push(qfromto(name, from, to));
+                //}
+                //else if (datatype == typeof(decimal))
+                //{
+                //    var from = (decimal)GetValueForMember(m.Arguments[1]);
+                //    var to = (decimal)GetValueForMember(m.Arguments[2]);
+                //    _bitmap.Push(qfromto(name, from, to));
+                //}
+                else
                 {
-                    var from = (int)GetValueForMember(m.Arguments[1]);
-                    var to = (int)GetValueForMember(m.Arguments[2]);
-                    _bitmap.Push(qfromto(name, from, to));
-                }
-                else if (datatype == typeof(long))
-                {
-                    var from = (long)GetValueForMember(m.Arguments[1]);
-                    var to = (long)GetValueForMember(m.Arguments[2]);
-                    _bitmap.Push(qfromto(name, from, to));
-                }
-                else if (datatype == typeof(decimal))
-                {
-                    var from = (decimal)GetValueForMember(m.Arguments[1]);
-                    var to = (decimal)GetValueForMember(m.Arguments[2]);
+                    var from = GetValueForMember(m.Arguments[1]);
+                    var to = GetValueForMember(m.Arguments[2]);
                     _bitmap.Push(qfromto(name, from, to));
                 }
             }

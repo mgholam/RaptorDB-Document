@@ -264,10 +264,11 @@ namespace RaptorDB
             try
             {
                 List<int> free = new List<int>();
-                foreach (var c in _cache)
+                foreach (var k in _cache.Keys())
                 {
-                    if (c.Value.isDirty == false)
-                        free.Add(c.Key);
+                    var val = _cache[k];
+                    if (val.isDirty == false)
+                        free.Add(k);
                 }
                 _log.Info("releasing page count = " + free.Count + " out of " + _cache.Count);
                 foreach (var i in free)

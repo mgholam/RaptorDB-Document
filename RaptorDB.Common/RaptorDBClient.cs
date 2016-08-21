@@ -851,5 +851,17 @@ namespace RaptorDB
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
             return (object[])ret.Data;
         }
+
+        public T Fetch<T>(Guid docID) where T : class
+        {
+            Packet p = CreatePacket();
+            p.Command = "" + COMMANDS.Fetch;
+            p.Docid = docID;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+            if (ret.OK)
+                return (ret.Data as T);
+            else
+                return null;
+        }
     }
 }

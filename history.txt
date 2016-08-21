@@ -1,10 +1,20 @@
-﻿v3.3.9
+﻿v3.3.10
+-------
+- code cleanup
+- generic Between<T>()
+- bug fix BitmapIndex.FreeMemory() 
+- bug fix MGIndex.FreeMemory()
+- added generic Fetch<T>() (thanks to Norbert Haberl)
+- added ZipStorer from [https://github.com/jaime-olivares/zipstorer] (thanks to Jaime Olivares)
+- added auto compress old log files
+
+v3.3.9
 ------
 - query date parts e.g. x => x.Date.Year == 2016 or "date.year = 2016"
 - Between() for dates e.g. x => x.Date.Between("2000-1-1","2002-6-16")
 - optimized internal query engine for ranges
 - internal query from to implementation 
-- Between() for int, long
+- Between() for int, long, decimal
 
 v3.3.8
 ------

@@ -124,6 +124,13 @@ namespace RaptorDB.Common
         object Fetch(Guid docID);
 
         /// <summary>
+        /// Fetch a Document when you know the type
+        /// </summary>
+        /// <param name="docID"></param>
+        /// <returns></returns>
+        T Fetch<T>(Guid docID) where T : class;
+
+        /// <summary>
         /// Fetch a file bytes
         /// </summary>
         /// <param name="fileID"></param>

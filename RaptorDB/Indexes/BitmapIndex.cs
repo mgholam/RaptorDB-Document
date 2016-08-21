@@ -188,10 +188,11 @@ namespace RaptorDB
             try
             {
                 List<int> free = new List<int>();
-                foreach (var b in _cache)
+                foreach (var k in _cache.Keys())
                 {
-                    if (b.Value.isDirty == false)
-                        free.Add(b.Key);
+                    var val =_cache[k];
+                    if (val.isDirty == false)
+                        free.Add(k);
                 }
                 log.Info("releasing bmp count = " + free.Count + " out of " + _cache.Count);
                 foreach (int i in free)

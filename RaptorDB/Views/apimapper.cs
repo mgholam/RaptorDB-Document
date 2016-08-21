@@ -130,5 +130,10 @@ namespace RaptorDB.Views
         {
             return _viewmanager.GetKVHF();
         }
+
+        public T Fetch<T>(Guid guid) where T : class
+        {
+            return (T)Fetch(guid);
+        }
     }
 }
