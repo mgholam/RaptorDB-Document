@@ -209,7 +209,7 @@ namespace RaptorDB
                 path += "old" + _S;
                 if (Directory.Exists(path) == false)
                 {
-                    fn = "old.zip";
+                    fn = "0000-00-00.zip";
                     Directory.CreateDirectory(path);
                 }
                 
