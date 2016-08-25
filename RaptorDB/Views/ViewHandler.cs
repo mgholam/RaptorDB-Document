@@ -69,10 +69,12 @@ namespace RaptorDB.Views
         private int _RaptorDBVersion = 3; // used for engine changes to views
         private string _RaptorDBVersionFilename = "RaptorDB.version";
 
-        private object _stlock = new object();
+        private SafeDictionary<object, WAHBitArray> _queryCache = new SafeDictionary<object, WAHBitArray>();
+
+        private object _savetimerlock = new object();
         void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            lock (_stlock)
+            lock (_savetimerlock)
             {
                 _stsaving = true;
                 foreach (var i in _indexes)
@@ -183,7 +185,7 @@ namespace RaptorDB.Views
                 i.Value.FreeMemory();
 
             _deletedRows.FreeMemory();
-            InvalidateSortCache();
+            InvalidateCache();
         }
 
         internal void Commit(int ID)
@@ -238,7 +240,7 @@ namespace RaptorDB.Views
                 // insert new items into view
                 InsertRowsWithIndexUpdate(d.Key, d.Value);
             }
-            InvalidateSortCache();
+            InvalidateCache();
         }
 
         internal bool InsertTransaction<T>(Guid docid, T doc)
@@ -286,7 +288,6 @@ namespace RaptorDB.Views
             return true;
         }
 
-        // FEATURE : add query caching here
         SafeDictionary<string, LambdaExpression> _lambdacache = new SafeDictionary<string, LambdaExpression>();
         internal Result<object> Query(string filter, int start, int count)
         {
@@ -307,31 +308,39 @@ namespace RaptorDB.Views
 
             WAHBitArray ba = new WAHBitArray();
             var delbits = _deletedRows.GetBits();
-            if (filter != "")
+            // check query cache
+            _queryCache.TryGetValue(filter, out ba);
+            if (ba == null)
             {
-                LambdaExpression le = null;
-                if (_lambdacache.TryGetValue(filter, out le) == false)
+                ba = new WAHBitArray();
+                if (filter != "")
                 {
-                    le = System.Linq.Dynamic.DynamicExpression.ParseLambda(_view.Schema, typeof(bool), filter, null);
-                    _lambdacache.Add(filter, le);
+                    LambdaExpression le = null;
+                    if (_lambdacache.TryGetValue(filter, out le) == false)
+                    {
+                        le = System.Linq.Dynamic.DynamicExpression.ParseLambda(_view.Schema, typeof(bool), filter, null);
+                        _lambdacache.Add(filter, le);
+                    }
+                    QueryVisitor qv = new QueryVisitor(QueryColumnExpression, QueryColumnExpFromTo);
+                    qv.Visit(le.Body);
+                    if (qv._bitmap.Count > 0)
+                    {
+                        WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
+                        ba = qbits.AndNot(delbits);
+                    }
+                    else if (qv._stack.Count > 0)
+                    {
+                        var val = Convert.ToBoolean(qv._stack.Pop());
+                        if (val == true)
+                            ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
+                    }
+                    _queryCache.Add(filter, ba);
                 }
-                QueryVisitor qv = new QueryVisitor(QueryColumnExpression, QueryColumnExpFromTo);
-                qv.Visit(le.Body);
-                if (qv._bitmap.Count > 0)
-                {
-                    WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
-                    ba = qbits.AndNot(delbits);
-                }
-                else if (qv._stack.Count > 0)
-                {
-                    var val = Convert.ToBoolean(qv._stack.Pop());
-                    if (val == true)
-                        ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
-                }
-                //ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+                else
+                    ba = WAHBitArray.Fill(_viewData.Count()).AndNot(delbits);
             }
             else
-                ba = WAHBitArray.Fill(_viewData.Count()).AndNot(delbits);
+                _log.Debug("  found in cache");
 
             var order = SortBy(orderby);
             bool desc = false;
@@ -348,7 +357,6 @@ namespace RaptorDB.Views
             return Query<T>(filter, start, count, "");
         }
 
-        // FEATURE : add query caching here
         internal Result<object> Query<T>(Expression<Predicate<T>> filter, int start, int count, string orderby)
         {
             if (filter == null)
@@ -359,21 +367,29 @@ namespace RaptorDB.Views
 
             WAHBitArray ba = new WAHBitArray();
 
-            QueryVisitor qv = new QueryVisitor(QueryColumnExpression, QueryColumnExpFromTo);
-            qv.Visit(filter);
-            var delbits = _deletedRows.GetBits();
-            if (qv._bitmap.Count > 0)
+            _queryCache.TryGetValue(filter, out ba);
+            if (ba == null)
             {
-                WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
-                ba = qbits.AndNot(delbits);
+                ba = new WAHBitArray();
+                QueryVisitor qv = new QueryVisitor(QueryColumnExpression, QueryColumnExpFromTo);
+                qv.Visit(filter);
+                var delbits = _deletedRows.GetBits();
+                if (qv._bitmap.Count > 0)
+                {
+                    WAHBitArray qbits = (WAHBitArray)qv._bitmap.Pop();
+                    ba = qbits.AndNot(delbits);
+                }
+                else if (qv._stack.Count > 0)
+                {
+                    var val = Convert.ToBoolean(qv._stack.Pop());
+                    if (val == true)
+                        ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
+                }
+                _queryCache.Add(filter, ba);
             }
-            else if (qv._stack.Count > 0)
-            {
-                var val = Convert.ToBoolean(qv._stack.Pop());
-                if (val == true)
-                    ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
-            }
-            //ba = ((WAHBitArray)qv._bitmap.Pop()).AndNot(delbits);
+            else
+                _log.Debug("  found in cache");
+
             List<T> trows = null;
             if (_viewmanager.inTransaction())
             {
@@ -479,7 +495,7 @@ namespace RaptorDB.Views
         {
             try
             {
-                lock (_stlock)
+                lock (_savetimerlock)
                     _saveTimer.Enabled = false;
                 while (_stsaving)
                     Thread.Sleep(1);
@@ -521,7 +537,7 @@ namespace RaptorDB.Views
         {
             DeleteRowsWith(docid);
 
-            InvalidateSortCache();
+            InvalidateCache();
         }
 
         #region [  private methods  ]
@@ -1440,7 +1456,7 @@ namespace RaptorDB.Views
             }
             _log.Debug("Deleted rows = " + count);
 
-            InvalidateSortCache();
+            InvalidateCache();
             return count;
         }
 
@@ -1480,7 +1496,7 @@ namespace RaptorDB.Views
                 }
             }
 
-            InvalidateSortCache();
+            InvalidateCache();
             return count;
         }
 
@@ -1492,13 +1508,16 @@ namespace RaptorDB.Views
             var r = ExtractRows(l);
             InsertRowsWithIndexUpdate(id, r);
 
-            InvalidateSortCache();
+            InvalidateCache();
             return true;
         }
 
-        private void InvalidateSortCache()
+        private void InvalidateCache()
         {
+            // invalidate sort cache
             _sortcache = new SafeDictionary<string, List<int>>();
+            // inavidate query cache
+            _queryCache = new SafeDictionary<object, WAHBitArray>();
         }
     }
 }

@@ -1,4 +1,8 @@
-﻿v3.3.10
+﻿v3.3.11
+-------
+- added query bitmap caching for faster queries
+
+v3.3.10
 -------
 - code cleanup
 - generic Between<T>()

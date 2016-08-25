@@ -16,8 +16,7 @@ using System.ComponentModel;
 // TODO : enum in row schema support
 // TODO : validate view schema with mapper on startup ??
 // TODO : HFKV transaction mode set and rollback handling
-// TODO : fastJSON unsafe string pointer parser
-// TODO : compress old logs 
+// TODO : fastJSON unsafe string pointer parser ??
 
 namespace RaptorDB
 {
