@@ -375,7 +375,7 @@ namespace RaptorDB
 
         public WAHBitArray Query(object fromkey, object tokey, int maxsize)
         {
-            return WAHBitArray.Fill(maxsize); // FIX : all or none??
+            return WAHBitArray.Fill(maxsize); // TODO : all or none??
         }
     }
     #endregion

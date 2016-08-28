@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -100,10 +101,18 @@ namespace RaptorDB.Views
                 return null;
             }
             string mc = s.Substring(s.IndexOf('.') + 1);
-            if (mc.Contains("Between")) 
+            if (mc.Contains("Between"))
             {
                 Type datatype = m.Arguments[0].Type;
-                string name = m.Arguments[0].ToString().Split('.')[1];
+                var ss = m.Arguments[0].ToString().Split('.');
+                string name = "";
+                if (ss.Length > 2)
+                {
+                    // handle datetype.year etc
+                    name = ss[1] + "_$" + ss[2];
+                }
+                else
+                    name = ss[1];
 
                 if (datatype == typeof(DateTime))
                 {
@@ -121,24 +130,6 @@ namespace RaptorDB.Views
                     }
                     _bitmap.Push(qfromto(name, from, to));
                 }
-                //else if(datatype == typeof(int))
-                //{
-                //    var from = (int)GetValueForMember(m.Arguments[1]);
-                //    var to = (int)GetValueForMember(m.Arguments[2]);
-                //    _bitmap.Push(qfromto(name, from, to));
-                //}
-                //else if (datatype == typeof(long))
-                //{
-                //    var from = (long)GetValueForMember(m.Arguments[1]);
-                //    var to = (long)GetValueForMember(m.Arguments[2]);
-                //    _bitmap.Push(qfromto(name, from, to));
-                //}
-                //else if (datatype == typeof(decimal))
-                //{
-                //    var from = (decimal)GetValueForMember(m.Arguments[1]);
-                //    var to = (decimal)GetValueForMember(m.Arguments[2]);
-                //    _bitmap.Push(qfromto(name, from, to));
-                //}
                 else
                 {
                     var from = GetValueForMember(m.Arguments[1]);
@@ -146,10 +137,59 @@ namespace RaptorDB.Views
                     _bitmap.Push(qfromto(name, from, to));
                 }
             }
+            else if (mc.Contains("In"))
+            {
+                var ss = m.Arguments[0].ToString().Split('.');
+                string name = "";
+                if (ss.Length > 2)
+                {
+                    // handle datetype.year etc
+                    name = ss[1] + "_$" + ss[2];
+                }
+                else
+                    name = ss[1];
+                _InCommand = name;
+                Visit(m.Arguments[1]);
+                _bitmap.Push(_inBmp);
+                _inBmp = null;
+                _InCommand = "";
+            }
             else
                 _stack.Push(mc);
 
             return m;
+        }
+
+        private WAHBitArray _inBmp = null;
+        private string _InCommand = "";
+        private int _count = 0;
+        public override Expression Visit(Expression node)
+        {
+            if (node.NodeType == ExpressionType.NewArrayInit)
+            {
+                var a = node as NewArrayExpression;
+                _count = a.Expressions.Count;
+                return base.Visit(node);
+            }
+            else if (node.NodeType == ExpressionType.MemberAccess)
+            {
+                var v = base.Visit(node);
+                if (_InCommand != "")
+                {
+                    var a = _stack.Pop() as IList;
+                    foreach (var c in a)
+                    {
+                        if (_inBmp == null)
+                            _inBmp = qexpression(_InCommand, RDBExpression.Equal, c);
+                        else
+                            _inBmp = _inBmp.Or(qexpression(_InCommand, RDBExpression.Equal, c));
+                    }
+                }
+
+                return v;
+            }
+            else
+                return base.Visit(node);
         }
 
         private object GetValueForMember(object m)
@@ -232,7 +272,17 @@ namespace RaptorDB.Views
             {
                 Type t = c.Value.GetType();
                 if (t.IsValueType || t == typeof(string))
-                    _stack.Push(c.Value);
+                {
+                    if (_InCommand != "")
+                    {
+                        if (_inBmp == null)
+                            _inBmp = qexpression(_InCommand, RDBExpression.Equal, c.Value);
+                        else
+                            _inBmp = _inBmp.Or(qexpression(_InCommand, RDBExpression.Equal, c.Value));
+                    }
+                    else
+                        _stack.Push(c.Value);
+                }
             }
             return c;
         }

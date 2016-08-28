@@ -226,7 +226,17 @@ namespace datagridbinding
         {
             GC.Collect(2);
             //KVHFtest();
+            var ind = rap.Query<SalesInvoiceViewRowSchema>(x => 
+                x.Date.Year.In(2000) 
+                && 
+                x.Date.Month.In(4));
 
+            var id = new int[] { 20, 30, 40 };
+            var iin = rap.Query<SalesInvoiceViewRowSchema>(x => x.Serial.In(
+               // new int[] { 20,30, 40} 
+               id
+               //20,30,40
+            ));
             var p = new ppp[2];
             p[0] = new ppp();
             p[1] = new ppp();

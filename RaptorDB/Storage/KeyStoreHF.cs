@@ -197,7 +197,7 @@ namespace RaptorDB
                     //Directory.Delete(_Path + "old", true); // FEATURE : delete or keep?
                     _log.Debug("Re-opening storage file");
                     _datastore = new StorageFileHF(_Path + "data.mghf", Global.HighFrequencyKVDiskBlockSize);
-                    _keys = new MGIndex<string>(_Path, "keys.idx", 255, /*Global.PageItemCount,*/ false);
+                    _keys = new MGIndex<string>(_Path, "keys.idx", 255, false);
 
                     _BlockSize = _datastore.GetBlockSize();
                 }

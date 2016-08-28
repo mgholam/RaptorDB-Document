@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -9,9 +10,6 @@ namespace RaptorDB
 {
     public class LINQString : ExpressionVisitor
     {
-        public LINQString()
-        {
-        }
         public StringBuilder sb = new StringBuilder();
 
         protected override Expression VisitBinary(BinaryExpression b)
@@ -22,9 +20,6 @@ namespace RaptorDB
 
             switch (b.NodeType)
             {
-                //case ExpressionType.Not:
-                //    sb.Append(" NOT ");
-                //    break;
                 case ExpressionType.AndAlso:
                 case ExpressionType.And:
                     sb.Append(" AND ");
@@ -61,7 +56,12 @@ namespace RaptorDB
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
             string s = m.ToString();
-            sb.Append(s.Substring(s.IndexOf('.') + 1));
+            string prop = m.Arguments[0].ToString();
+            sb.Append(prop.Substring(prop.IndexOf(".") + 1) + "." + m.Method.Name + "(");
+
+            Visit(m.Arguments[1]); 
+
+            sb.Append(")");
             return m;
         }
 
@@ -88,6 +88,16 @@ namespace RaptorDB
                         sb.Append("\"").Append(x).Append("\"");
                     else // numbers
                         sb.Append(x);
+                }
+                else if (x.GetType().IsArray)
+                {
+                    var a = x as IList;
+                    for (int i = 0; i < a.Count - 1; i++)
+                    {
+                        sb.Append(a[i]);
+                        sb.Append(",");
+                    }
+                    sb.Append(a[a.Count - 1]);
                 }
                 else
                     _stack.Push(x);
@@ -156,10 +166,25 @@ namespace RaptorDB
                         break;
                     default:
                         sb.Append(c.Value);
+                        if (--_count > 0)
+                            sb.Append(",");
                         break;
                 }
             }
             return c;
+        }
+
+        int _count = 0;
+        public override Expression Visit(Expression node)
+        {
+            if (node.NodeType == ExpressionType.NewArrayInit) 
+            {
+                var a = node as NewArrayExpression;
+                _count = a.Expressions.Count;
+                return base.Visit(node);
+            }
+            else
+                return base.Visit(node);
         }
     }
 }

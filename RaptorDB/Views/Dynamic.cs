@@ -1323,6 +1323,39 @@ namespace System.Linq.Dynamic
             return Expression.Call(method, new Expression[] { ConstantExpression.Variable(datatype, pname), args[0], args[1] });
         }
 
+        internal static Dictionary<Type, MethodInfo> _ins = new Dictionary<Type, MethodInfo>();
+        Expression CallIn(Expression instance, Type checktype, Type datatype, Expression[] args)
+        {
+            MethodInfo method = null;
+            _ins.TryGetValue(datatype, out method);
+
+            if (method == null)
+                foreach (var m in typeof(RDBExtension).GetMethods())
+                {
+                    if (m.Name.ToLower() == "in")
+                    {
+                        var pi = m.GetParameters();
+                        if (pi[0].ParameterType.IsGenericParameter)
+                        {
+                            method = m.MakeGenericMethod(datatype);
+                            _ins.Add(datatype, method);
+                            break;
+                        }
+                    }
+                }
+            var pname = instance.ToString();
+            // calling on byte column status.in(1,3) 1,3 = int32 not byte
+            if(datatype != args[0].Type)
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    args[i] = ConstantExpression.Constant( Convert.ChangeType(
+                        (args[i] as ConstantExpression).Value, datatype));
+                }
+            }
+            return Expression.Call(method,  new Expression[] { ConstantExpression.Variable(datatype, pname), Expression.NewArrayInit(datatype, args) });
+        }
+
         Expression ParseMemberAccess(Type type, Expression instance)
         {
             if (instance != null) type = instance.Type;
@@ -1374,6 +1407,12 @@ namespace System.Linq.Dynamic
                             return CallBetween(instance, typeof(string), typeof(DateTime), args);
                         else
                             return CallBetween(instance, type, type, args);
+                    }
+                    else if(id.ToLower() == "in") // in(1,3,5,7)
+                    {
+                        var args = ParseArgumentList();
+                        int i = args.Length;
+                        return CallIn(instance, type, type, args);
                     }
                     else
                         throw ParseError(errorPos, Res.UnknownPropertyOrField,

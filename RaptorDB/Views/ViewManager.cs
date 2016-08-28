@@ -274,7 +274,7 @@ namespace RaptorDB.Views
             // find view from name
             if (_views.TryGetValue(view.ToLower(), out vman))
             {
-                return vman.Query2<T>(filter, start, count, orderby);
+                return vman.QueryWithTypedResult<T>(filter, start, count, orderby);
             }
             return new Result<T>(false, new Exception("View not found"));
         }
@@ -292,7 +292,7 @@ namespace RaptorDB.Views
             // find view from name
             if (_views.TryGetValue(view.ToLower(), out vman))
             {
-                return vman.Query2<T>(filter, start, count, orderby);
+                return vman.QueryWithTypedResult<T>(filter, start, count, orderby);
             }
             return new Result<T>(false, new Exception("View not found"));
         }

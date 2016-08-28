@@ -74,4 +74,14 @@ public static class RDBExtension
     {
         return true;
     }
+
+    public static bool In(this byte value, params byte[] values)
+    {
+        return true;
+    }
+
+    public static bool In<T>(this T value, params T[] values)
+    {
+        return true;
+    }
 }

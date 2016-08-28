@@ -1,4 +1,12 @@
-﻿v3.3.11
+﻿v3.3.12
+-------
+- added In<T>() e.g. x => x.Serial.In(1,3,5,7) or "serial.in(1,3,5,7)"
+- query cache for Count() and all other overloads
+- code refactoring/cleanup in ViewHandler.cs
+- date parts work with In() e.g. x => x.Date.Year.In(2000,2001)
+- date parts work with Between() e.g. x => x.Date.Year.Between(2000,2010)
+
+v3.3.11
 -------
 - added query bitmap caching for faster queries
 
