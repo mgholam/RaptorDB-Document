@@ -225,6 +225,7 @@ namespace datagridbinding
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
             GC.Collect(2);
+            
             //KVHFtest();
             var ind = rap.Query<SalesInvoiceViewRowSchema>(x => 
                 x.Date.Year.In(2000) 

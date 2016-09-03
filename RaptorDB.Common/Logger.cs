@@ -86,7 +86,6 @@ namespace RaptorDB
             _FilePath = Path.GetDirectoryName(filename);
             if (_FilePath != "")
             {
-
                 _FilePath = Directory.CreateDirectory(_FilePath).FullName;
                 if (_FilePath.EndsWith(_S) == false)
                     _FilePath += _S;

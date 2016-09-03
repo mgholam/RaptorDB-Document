@@ -1,4 +1,13 @@
-﻿v3.3.12
+﻿v3.3.13
+-------
+- bug fix x=>true predicate case
+- upgrade to fastJSON v2.1.19
+- upgrade to fastBinaryJSON v1.4.16
+- bug fix string keys indexes with Global.EnableOptimizedStringIndex = true
+- ** incremented RaptorDBVersion ** will rebuild old index data if exists
+- bug fix WAHBitArray.Fill()
+
+v3.3.12
 -------
 - added In<T>() e.g. x => x.Serial.In(1,3,5,7) or "serial.in(1,3,5,7)"
 - query cache for Count() and all other overloads

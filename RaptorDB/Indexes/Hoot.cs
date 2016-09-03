@@ -53,7 +53,7 @@ namespace RaptorDB
 
         public int WordCount
         {
-            get { checkloaded(); return _words.Count; }
+            get { checkloaded(); return _words.Count(); }
         }
 
         public int DocumentCount
@@ -367,7 +367,7 @@ namespace RaptorDB
                     }
                     catch { s = ""; }
                 }
-                _log.Debug("Word Count = " + _words.Count);
+                _log.Debug("Word Count = " + _words.Count());
                 _wordschanged = true;
             }
         }

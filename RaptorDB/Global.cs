@@ -114,6 +114,11 @@
         /// Local machine access only Web Studio - no network access (default = true)
         /// </summary>
         public static bool LocalOnlyWebStudio = true;
+        /// <summary>
+        /// If True  -> less memory use SafeSortedList and slower
+        ///    False -> more memory use SafeDictionary and faster
+        /// </summary>
+        public static bool UseLessMemoryStructures = false;
     }
 
 

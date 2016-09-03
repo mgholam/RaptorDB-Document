@@ -11,6 +11,11 @@ namespace RaptorDB
     {
         public BitmapIndex(string path, string filename)
         {
+            if (Global.UseLessMemoryStructures)
+                _cache = new SafeSortedList<int, WAHBitArray>();
+            else
+                _cache = new SafeDictionary<int, WAHBitArray>();
+
             _FileName = Path.GetFileNameWithoutExtension(filename);
             _Path = path;
             if (_Path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false)
@@ -46,8 +51,7 @@ namespace RaptorDB
         private long _lastBitmapOffset = 0;
         private int _lastRecordNumber = 0;
         //private SafeDictionary<int, WAHBitArray> _cache = new SafeDictionary<int, WAHBitArray>();
-        private SafeSortedList<int, WAHBitArray> _cache = new SafeSortedList<int, WAHBitArray>();
-        //private SafeDictionary<int, long> _offsetCache = new SafeDictionary<int, long>();
+        private IKV<int, WAHBitArray> _cache = null;// new SafeSortedList<int, WAHBitArray>();
         private ILog log = LogManager.GetLogger(typeof(BitmapIndex));
         private bool _stopOperations = false;
         private bool _shutdownDone = false;
@@ -99,8 +103,10 @@ namespace RaptorDB
                 Flush();
                 if (freeMemory)
                 {
-                    _cache = //new SafeDictionary<int, WAHBitArray>();
-                        new SafeSortedList<int, WAHBitArray>();
+                    if (Global.UseLessMemoryStructures)
+                        _cache = new SafeSortedList<int, WAHBitArray>();
+                    else
+                        _cache = new SafeDictionary<int, WAHBitArray>();
                     log.Debug("  freeing cache");
                 }
                 _isDirty = false;
@@ -190,11 +196,11 @@ namespace RaptorDB
                 List<int> free = new List<int>();
                 foreach (var k in _cache.Keys())
                 {
-                    var val =_cache[k];
+                    var val =_cache.GetValue(k);
                     if (val.isDirty == false)
                         free.Add(k);
                 }
-                log.Info("releasing bmp count = " + free.Count + " out of " + _cache.Count);
+                log.Info("releasing bmp count = " + free.Count + " out of " + _cache.Count());
                 foreach (int i in free)
                     _cache.Remove(i);
             }

@@ -61,7 +61,7 @@ namespace RaptorDB
         private SafeDictionary<Guid, bool> _connectedClients = new SafeDictionary<Guid, bool>();
         private System.Timers.Timer _concleanuptimer;
 
-        public int ConnectedClients { get { return _connectedClients.Count; } }
+        public int ConnectedClients { get { return _connectedClients.Count(); } }
 
         private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {

@@ -8,7 +8,7 @@ namespace RaptorDB
     internal class TypeIndexes<T> : MGIndex<T>, IIndex where T : IComparable<T>
     {
         public TypeIndexes(string path, string filename, byte keysize)
-            : base(path, filename + ".mgidx", keysize, /*Global.PageItemCount,*/ true)
+            : base(path, filename + ".mgidx", keysize, true)
         {
 
         }

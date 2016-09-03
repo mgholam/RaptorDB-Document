@@ -5,7 +5,22 @@ using System.Text;
 
 namespace RaptorDB.Common
 {
-    public class SafeDictionary<TKey, TValue>
+    public interface IKV<T, V>
+    {
+        bool TryGetValue(T key, out V val);
+        int Count();
+        IEnumerator<KeyValuePair<T, V>> GetEnumerator();
+        void Add(T key, V value);
+        T[] Keys();
+        bool Remove(T key);
+        void Clear();
+        V GetValue(T key);
+        // safesortedlist only
+        //V GetValue(int index);
+        //T GetKey(int index);
+    }
+
+    public class SafeDictionary<TKey, TValue> : IKV<TKey, TValue>
     {
         private readonly object _Padlock = new object();
         private readonly Dictionary<TKey, TValue> _Dictionary;
@@ -40,14 +55,9 @@ namespace RaptorDB.Common
             }
         }
 
-        public int Count
+        public int Count()
         {
-            get { lock (_Padlock) return _Dictionary.Count; }
-        }
-
-        public ICollection<KeyValuePair<TKey, TValue>> GetList()
-        {
-            return _Dictionary;
+            lock (_Padlock) return _Dictionary.Count;
         }
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
@@ -92,16 +102,33 @@ namespace RaptorDB.Common
                 _Dictionary.Clear();
         }
 
+        //public TValue GetValue(int index) // FIX : 
+        //{
+        //    lock (_Padlock)
+        //        return _Dictionary[index];
+        //    return default(TValue);// lock (_Padlock) return _Dictionary[index];
+        //}
+
+        //public TKey GetKey(int index) // FIX :
+        //{
+        //    return default(TKey);// lock (_Padlock) return _Dictionary.Keys[index];
+        //}
+
+        public TValue GetValue(TKey key)
+        {
+            lock (_Padlock)
+                return _Dictionary[key];
+        }
     }
 
-    public class SafeSortedList<T,V>
+    public class SafeSortedList<T, V> : IKV<T, V>
     {
         private object _padlock = new object();
         SortedList<T, V> _list = new SortedList<T, V>();
 
-        public int Count
+        public int Count()
         {
-            get { lock(_padlock) return _list.Count; }
+            lock (_padlock) return _list.Count;
         }
 
         public void Add(T key, V val)
@@ -112,15 +139,15 @@ namespace RaptorDB.Common
                     _list.Add(key, val);
                 else
                     _list[key] = val;
-        }
+            }
         }
 
-        public void Remove(T key)
+        public bool Remove(T key)
         {
             if (key == null)
-                return;
+                return true;
             lock (_padlock)
-                _list.Remove(key);
+                return _list.Remove(key);
         }
 
         public T GetKey(int index)
@@ -154,18 +181,30 @@ namespace RaptorDB.Common
                 return _list.TryGetValue(key, out value);
         }
 
-        public V this[T key]
+        //public V this[T key]
+        //{
+        //    get
+        //    {
+        //        lock (_padlock)
+        //            return _list[key];
+        //    }
+        //    set
+        //    {
+        //        lock (_padlock)
+        //            _list[key] = value;
+        //    }
+        //}
+
+        public void Clear()
         {
-            get
-            {
-                lock (_padlock)
-                    return _list[key];
-            }
-            set
-            {
-                lock (_padlock)
-                    _list[key] = value;
-            }
+            lock (_padlock)
+                _list.Clear();
+        }
+
+        public V GetValue(T key)
+        {
+            lock (_padlock)
+                return _list[key];
         }
     }
 

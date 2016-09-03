@@ -65,7 +65,7 @@ namespace RaptorDB.Views
         bool _isDirty = false;
         private string _dirtyFilename = "temp.$";
         private bool _stsaving = false;
-        private int _RaptorDBVersion = 3; // used for engine changes to views
+        private int _RaptorDBVersion = 4; // used for engine changes to views
         private string _RaptorDBVersionFilename = "RaptorDB.version";
 
         private SafeDictionary<object, WAHBitArray> _queryCache = new SafeDictionary<object, WAHBitArray>();
@@ -214,7 +214,7 @@ namespace RaptorDB.Views
 
             if (basetype == doc.GetType())
             {
-                View<T> view = _view as View<T>;
+                View<T> view = (View<T>)_view;
                 if (view.Mapper != null)
                     view.Mapper(api, guid, doc);
             }
@@ -1123,7 +1123,7 @@ namespace RaptorDB.Views
                 {
                     var val = Convert.ToBoolean(qv._stack.Pop());
                     if (val == true)
-                        ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
+                        ba = new WAHBitArray().Not(_viewData.Count()).AndNot(delbits);
                 }
                 _queryCache.Add(filter, ba);
             }
@@ -1158,7 +1158,7 @@ namespace RaptorDB.Views
                 {
                     var val = Convert.ToBoolean(qv._stack.Pop());
                     if (val == true)
-                        ba = new WAHBitArray().Not(this.internalCount()).AndNot(delbits);
+                        ba = new WAHBitArray().Not(_viewData.Count()).AndNot(delbits);
                 }
                 _queryCache.Add(filter, ba);
             }
@@ -1168,7 +1168,7 @@ namespace RaptorDB.Views
             return ba;
         }
 
-        private int internalCount()
+        private int internalCount() // note : don't use for Not() since _deletedRows are excluded
         {
             if (_rebuilding)
                 while (_rebuilding)

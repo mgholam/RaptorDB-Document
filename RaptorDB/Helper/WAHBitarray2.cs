@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RaptorDB.Common;
+using System;
 using System.Collections.Generic;
 
 namespace RaptorDB
@@ -15,6 +16,10 @@ namespace RaptorDB
         public WAHBitArray()
         {
             _state = TYPE.Indexes;
+            if (Global.UseLessMemoryStructures)
+                _offsets = new SafeSortedList<uint, bool>();
+            else
+                _offsets = new SafeDictionary<uint, bool>();
         }
 
         public WAHBitArray(TYPE type, uint[] ints)
@@ -32,8 +37,11 @@ namespace RaptorDB
                     _uncompressed = ints;
                     break;
                 case TYPE.Indexes:
-                    _offsets = new SortedList<uint, bool>(); 
-                            //new Dictionary<uint, bool>();
+                    if (Global.UseLessMemoryStructures)
+                        _offsets = new SafeSortedList<uint, bool>();
+                    else
+                        _offsets = new SafeDictionary<uint, bool>();
+                    //new Dictionary<uint, bool>();
                     foreach (var i in ints)
                         _offsets.Add(i, true);
                     break;
@@ -43,7 +51,7 @@ namespace RaptorDB
         private uint[] _compressed;
         private uint[] _uncompressed;
         //private Dictionary<uint, bool> _offsets = new Dictionary<uint, bool>();
-        private SortedList<uint, bool> _offsets = new SortedList<uint, bool>();
+        private IKV<uint, bool> _offsets = null;// new SafeSortedList<uint, bool>();
         private uint _curMax = 0;
         private TYPE _state;
         public bool isDirty = false;
@@ -89,7 +97,7 @@ namespace RaptorDB
 
                     if (val == true)
                     {
-                        _offsets[(uint)index] = true;
+                        _offsets.Add((uint)index, true);
                         // set max
                         if (index > _curMax)
                             _curMax = (uint)index;
@@ -136,7 +144,7 @@ namespace RaptorDB
             {
                 if (_state == TYPE.Indexes)
                 {
-                    if (_offsets.Count == 0) return 0;
+                    if (_offsets.Count() == 0) return 0;
                     uint[] k = GetOffsets();
 
                     uint l = k[k.Length - 1];
@@ -247,7 +255,7 @@ namespace RaptorDB
         {
             if (_state == TYPE.Indexes)
             {
-                return _offsets.Count;
+                return _offsets.Count();
             }
 
             long c = 0;
@@ -263,7 +271,7 @@ namespace RaptorDB
         {
             if (_state == TYPE.Indexes)
             {
-                long ones = _offsets.Count;
+                long ones = _offsets.Count();
                 uint[] k = GetOffsets();
                 long l = k[k.Length - 1];
                 return l - ones;
@@ -342,8 +350,8 @@ namespace RaptorDB
             uint[] k;
             lock (_lock)
             {
-                k = new uint[_offsets.Count];
-                _offsets.Keys.CopyTo(k, 0);
+                k = new uint[_offsets.Count()];
+                _offsets.Keys().CopyTo(k, 0);
             }
             Array.Sort(k);
             return k;
@@ -390,7 +398,7 @@ namespace RaptorDB
         {
             // return bitmap uints 
             uint max = 0;
-            if (_offsets.Count == 0) return new uint[0];
+            if (_offsets.Count() == 0) return new uint[0];
             uint[] k = GetOffsets();
             max = k[k.Length - 1];
 
@@ -414,18 +422,21 @@ namespace RaptorDB
                 return;
 
             uint T = (_curMax >> 5) + 1;
-            int c = _offsets.Count;
+            int c = _offsets.Count();
             if (c > T && c > Global.BitmapOffsetSwitchOverCount)
             {
                 // change type to WAH
                 _state = TYPE.Bitarray;
                 _uncompressed = new uint[0];
                 // create bitmap
-                foreach (var i in _offsets.Keys)
+                foreach (var i in _offsets.Keys())
                     Set((int)i, true);
                 // clear list
-                _offsets = new SortedList<uint, bool>();
-                 //new Dictionary<uint, bool>();
+                if (Global.UseLessMemoryStructures)
+                    _offsets = new SafeSortedList<uint, bool>();
+                else
+                    _offsets = new SafeDictionary<uint, bool>();
+                //new Dictionary<uint, bool>();
             }
         }
 
@@ -600,7 +611,7 @@ namespace RaptorDB
             if (pointer >= list.Count)
                 list.Add(0);
 
-            if (ccount > x )//|| x == 32) //current pointer
+            if (ccount > x)//|| x == 32) //current pointer
             {
                 list[pointer] |= (uint)((0xffffffff >> off));
                 ccount -= x;
@@ -676,9 +687,10 @@ namespace RaptorDB
                 if (r > 0)
                     c++;
                 uint[] ints = new uint[c];
-                for (int i = 0; i < c - 1; i++)
+                for (int i = 0; i < c; i++)
                     ints[i] = 0xffffffff;
-                ints[c - 1] = 0xffffffff << (31 - r);
+                if (r > 0)
+                    ints[c - 1] = 0xffffffff << (31 - r);
                 return new WAHBitArray(TYPE.Bitarray, ints);
             }
             return new WAHBitArray();

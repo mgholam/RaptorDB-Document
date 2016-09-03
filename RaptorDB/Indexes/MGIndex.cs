@@ -58,22 +58,30 @@ namespace RaptorDB
     {
         ILog _log = LogManager.GetLogger(typeof(MGIndex<T>));
         private SafeSortedList<T, PageInfo> _pageList = new SafeSortedList<T, PageInfo>();
+
         //private SafeDictionary<int, Page<T>> _cache = new SafeDictionary<int, Page<T>>();
-        private SafeSortedList<int, Page<T>> _cache = new SafeSortedList<int, Page<T>>();
+        private IKV<int, Page<T>> _cache = null;//new SafeSortedList<int, Page<T>>();
+
         private List<int> _pageListDiskPages = new List<int>();
         private IndexFile<T> _index;
         private bool _AllowDuplicates = true;
         private int _LastIndexedRecordNumber = 0;
-        //private int _maxPageItems = 0;
 
-        public MGIndex(string path, string filename, byte keysize, /*ushort maxcount,*/ bool allowdups)
+        public MGIndex(string path, string filename, byte keysize, bool allowdups)
         {
+            if (Global.UseLessMemoryStructures)
+                _cache = new SafeSortedList<int, Page<T>>();
+            else
+                _cache = new SafeDictionary<int, Page<T>>();
+
             _AllowDuplicates = allowdups;
-            _index = new IndexFile<T>(path + Path.DirectorySeparatorChar + filename, keysize);//, maxcount);
-            //_maxPageItems = maxcount;
+            if (path.EndsWith(Path.DirectorySeparatorChar.ToString()) == false)
+                path += Path.DirectorySeparatorChar;
+
+            _index = new IndexFile<T>(path + filename, keysize);
             // load page list
             _index.GetPageList(_pageListDiskPages, _pageList, out _LastIndexedRecordNumber);
-            if (_pageList.Count == 0)
+            if (_pageList.Count() == 0)
             {
                 Page<T> page = new Page<T>();
                 page.FirstKey = (T)RDBDataType<T>.GetEmpty();
@@ -209,7 +217,7 @@ namespace RaptorDB
                     page.tree.Add(key, ki);
                 }
 
-                if (page.tree.Count > Global.PageItemCount)
+                if (page.tree.Count() > Global.PageItemCount)
                     SplitPage(page);
 
                 _LastIndexedRecordNumber = val;
@@ -238,7 +246,7 @@ namespace RaptorDB
             // save index to disk
             foreach (var i in keys)
             {
-                var p = _cache[i];
+                var p = _cache.GetValue(i);
                 if (p.isDirty)
                 {
                     _index.SavePage(p);
@@ -266,11 +274,11 @@ namespace RaptorDB
                 List<int> free = new List<int>();
                 foreach (var k in _cache.Keys())
                 {
-                    var val = _cache[k];
+                    var val = _cache.GetValue(k);
                     if (val.isDirty == false)
                         free.Add(k);
                 }
-                _log.Info("releasing page count = " + free.Count + " out of " + _cache.Count);
+                _log.Info("releasing page count = " + free.Count + " out of " + _cache.Count());
                 foreach (var i in free)
                     _cache.Remove(i);
             }
@@ -318,10 +326,10 @@ namespace RaptorDB
             bool found = false;
             int pos = FindPageOrLowerPosition(key, ref found);
             WAHBitArray result = new WAHBitArray();
-            if (pos < _pageList.Count)
+            if (pos < _pageList.Count())
             {
                 // all the pages after
-                for (int i = pos + 1; i < _pageList.Count; i++)
+                for (int i = pos + 1; i < _pageList.Count(); i++)
                     doPageOperation(ref result, i);
             }
             // key page
@@ -427,6 +435,7 @@ namespace RaptorDB
             newpage.RightPageNumber = page.RightPageNumber;
             newpage.isDirty = true;
             page.RightPageNumber = newpage.DiskPageNumber;
+            _pageList.Remove(page.FirstKey);
             // get and sort keys
             T[] keys = page.tree.Keys();
             Array.Sort<T>(keys);
@@ -438,15 +447,13 @@ namespace RaptorDB
                 page.tree.Remove(keys[i]);
             }
             // set the first key
-            newpage.FirstKey = keys[keys.Length / 2];
-            // set the first key refs
-            _pageList.Remove(page.FirstKey);
-            _pageList.Remove(keys[0]);
-            // dup counts
-            _pageList.Add(keys[0], new PageInfo(page.DiskPageNumber, page.tree.Count, 0));
-            page.FirstKey = keys[0];
-            // FEATURE : dup counts
-            _pageList.Add(newpage.FirstKey, new PageInfo(newpage.DiskPageNumber, newpage.tree.Count, 0));
+            newpage.FirstKey = keys[keys.Length / 2]; // new key
+            // remove keys from page list
+            _pageList.Remove(newpage.FirstKey);
+            page.FirstKey = keys[0]; // new key
+            // re add to page list
+            _pageList.Add(page.FirstKey, new PageInfo(page.DiskPageNumber, page.tree.Count(), 0));
+            _pageList.Add(newpage.FirstKey, new PageInfo(newpage.DiskPageNumber, newpage.tree.Count(), 0));
             _cache.Add(newpage.DiskPageNumber, newpage);
 
             _totalsplits += FastDateTime.Now.Subtract(dt).TotalSeconds;
@@ -496,12 +503,12 @@ namespace RaptorDB
 
         private int FindPageOrLowerPosition(T key, ref bool found)
         {
-            if (_pageList.Count == 0)
+            if (_pageList.Count() == 0)
                 return 0;
             // binary search
             int lastlower = 0;
             int first = 0;
-            int last = _pageList.Count - 1;
+            int last = _pageList.Count() - 1;
             int mid = 0;
             while (first <= last)
             {
@@ -531,7 +538,7 @@ namespace RaptorDB
         internal object[] GetKeys()
         {
             List<object> keys = new List<object>();
-            for (int i = 0; i < _pageList.Count; i++)
+            for (int i = 0; i < _pageList.Count(); i++)
             {
                 Page<T> page = LoadPage(_pageList.GetValue(i).PageNumber);
                 foreach (var k in page.tree.Keys())
@@ -543,12 +550,12 @@ namespace RaptorDB
         internal int Count()
         {
             int count = 0;
-            for (int i = 0; i < _pageList.Count; i++)
+            for (int i = 0; i < _pageList.Count(); i++)
             {
                 Page<T> page = LoadPage(_pageList.GetValue(i).PageNumber);
                 //foreach (var k in page.tree.Keys())
                 //    count++;
-                count += page.tree.Count;
+                count += page.tree.Count();
             }
             return count;
         }
