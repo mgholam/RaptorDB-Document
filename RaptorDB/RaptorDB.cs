@@ -17,6 +17,7 @@ using System.ComponentModel;
 // TODO : validate view schema with mapper on startup ??
 // TODO : HFKV transaction mode set and rollback handling
 // TODO : fastJSON unsafe string pointer parser ??
+// TODO : put page list string key alloc block num in index file header 
 
 namespace RaptorDB
 {
@@ -1081,7 +1082,6 @@ namespace RaptorDB
 
         private void Initialize()
         {
-            // TODO : read/write global or another object?
             // read raptordb.config here (running parameters)
             if (File.Exists(_Path + "RaptorDB.config"))
                 fastJSON.JSON.FillObject(new Global(), File.ReadAllText(_Path + "RaptorDB.config"));

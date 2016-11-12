@@ -691,7 +691,10 @@ namespace fastBinaryJSON
                 if (key is Dictionary<string, object>)
                     key = ParseDictionary((Dictionary<string, object>)key, globalTypes, t1, null);
 
-                if (val is Dictionary<string, object>)
+                if (typeof(IDictionary).IsAssignableFrom(t2))
+                    val = RootDictionary(val, t2);
+
+                else if (val is Dictionary<string, object>)
                     val = ParseDictionary((Dictionary<string, object>)val, globalTypes, t2, null);
 
                 col.Add(key, val);

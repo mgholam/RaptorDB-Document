@@ -419,7 +419,7 @@ namespace RaptorDB
             {
                 T[] keys = _pages.Keys();
                 int blocknum = 0;
-                if (_externalStrings) //FIX : handle 
+                if (_externalStrings) 
                 {
                     if (_pagelistalllocblock != null)
                         _strings.FreeBlocks(_pagelistalllocblock);

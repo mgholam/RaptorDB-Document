@@ -102,18 +102,6 @@ namespace RaptorDB.Common
                 _Dictionary.Clear();
         }
 
-        //public TValue GetValue(int index) // FIX : 
-        //{
-        //    lock (_Padlock)
-        //        return _Dictionary[index];
-        //    return default(TValue);// lock (_Padlock) return _Dictionary[index];
-        //}
-
-        //public TKey GetKey(int index) // FIX :
-        //{
-        //    return default(TKey);// lock (_Padlock) return _Dictionary.Keys[index];
-        //}
-
         public TValue GetValue(TKey key)
         {
             lock (_Padlock)
@@ -180,20 +168,6 @@ namespace RaptorDB.Common
             lock (_padlock)
                 return _list.TryGetValue(key, out value);
         }
-
-        //public V this[T key]
-        //{
-        //    get
-        //    {
-        //        lock (_padlock)
-        //            return _list[key];
-        //    }
-        //    set
-        //    {
-        //        lock (_padlock)
-        //            _list[key] = value;
-        //    }
-        //}
 
         public void Clear()
         {

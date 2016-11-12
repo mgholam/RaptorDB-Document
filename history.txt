@@ -1,4 +1,10 @@
-﻿v3.3.13
+﻿v3.3.14
+-------
+- upgrade to fastJSON v2.1.21
+- upgrade to fastBinaryJSON v1.4.18
+- bug fix doc full text search results < paging count
+
+v3.3.13
 -------
 - bug fix x=>true predicate case
 - upgrade to fastJSON v2.1.19

@@ -1,11 +1,12 @@
 ﻿#if net4
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
 
 namespace fastBinaryJSON
 {
-    internal class DynamicJson : DynamicObject
+    internal class DynamicJson : DynamicObject, IEnumerable
     {
         private IDictionary<string, object> _dictionary { get; set; }
         private List<object> _list { get; set; }
@@ -66,6 +67,14 @@ namespace fastBinaryJSON
             }
 
             return _dictionary.ContainsKey(binder.Name);
+        }
+
+        public IEnumerator GetEnumerator()
+        {
+            foreach (var o in _list)
+            {
+                yield return new DynamicJson(o as IDictionary<string, object>);
+            }
         }
     }
 }

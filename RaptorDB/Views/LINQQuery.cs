@@ -87,7 +87,7 @@ namespace RaptorDB.Views
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
             string s = m.ToString();
-            // FEATURE : add contains , startswith
+            // FEATURE : add contains , startswith ??
 
             // VB.net : e.g. CompareString(x.NoCase, "Me 4", False)
             if (s.StartsWith("CompareString"))

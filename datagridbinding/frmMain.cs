@@ -270,7 +270,6 @@ namespace datagridbinding
             dataGridView1.DataSource = q.Rows;
 
             //int i = rap.ViewDelete<SalesInvoiceViewRowSchema>(x => x.Serial == 0);
-
             //var qqq= rap.Query<SalesInvoiceViewRowSchema>(x => );
             //SalesInvoiceViewRowSchema s = new SalesInvoiceViewRowSchema();
             //s.docid = Guid.NewGuid();
