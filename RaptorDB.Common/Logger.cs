@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.IO;
+using RaptorDB.Common;
 
 namespace RaptorDB
 {
@@ -204,7 +205,7 @@ namespace RaptorDB
             var files = Directory.GetFiles(path, "*-*");
             if (files.Length > 0)
             {
-                var fn = lastFileDate.ToString("yyyy-MM--dd") + ".zip";
+                var fn = lastFileDate.ToString("yyyy-MM-dd") + ".zip";
                 path += "old" + _S;
                 if (Directory.Exists(path) == false)
                 {
@@ -212,10 +213,10 @@ namespace RaptorDB
                     Directory.CreateDirectory(path);
                 }
                 
-                var zip = System.IO.Compression.ZipStorer.Create(path + fn, "");
+                var zip = ZipStorer.Create(path + fn, "");
                 foreach (var f in files)
                 {
-                    zip.AddFile(System.IO.Compression.ZipStorer.Compression.Deflate, f, f.Replace(prefix, ""), "");
+                    zip.AddFile(ZipStorer.Compression.Deflate, f, f.Replace(prefix, ""), "");
                     File.Delete(f);
                 }
                 zip.Close();

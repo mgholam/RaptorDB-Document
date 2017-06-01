@@ -288,7 +288,8 @@ namespace RaptorDB
                     List<string> list = new List<string>();
                     if (count > -1 && h.Length > 0)
                     {
-                        for (int i = start; i < start + count; i++)
+                        int c = h.Length;
+                        for (int i = start; i < start + count && i < c; i++)
                             list.Add(h[i]);
                     }
                     var obj = new

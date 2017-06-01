@@ -68,7 +68,8 @@ namespace RaptorDB.Views
         private int _RaptorDBVersion = 4; // used for engine changes to views
         private string _RaptorDBVersionFilename = "RaptorDB.version";
 
-        private SafeDictionary<object, WAHBitArray> _queryCache = new SafeDictionary<object, WAHBitArray>();
+        // FIX : showing incorrect results
+        //private SafeDictionary<object, WAHBitArray> _queryCache = new SafeDictionary<object, WAHBitArray>();
 
         private object _savetimerlock = new object();
         void _saveTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -535,63 +536,63 @@ namespace RaptorDB.Views
             return false;
         }
 
-        private Result<object> ReturnRowsObject<T>(WAHBitArray ba, List<T> trows, int start, int count, List<int> orderby, bool descending)
-        {
-            DateTime dt = FastDateTime.Now;
-            List<object> rows = new List<object>();
-            Result<object> ret = new Result<object>();
-            int skip = start;
-            int c = 0;
-            ret.TotalCount = (int)ba.CountOnes();
-            if (count == -1) count = ret.TotalCount;
-            if (count > 0)
-            {
-                int len = orderby.Count;
-                if (len > 0)
-                {
-                    if (descending == false)
-                    {
-                        for (int idx = 0; idx < len; idx++)
-                        {
-                            extractsortrowobject(ba, count, orderby, rows, ref skip, ref c, idx);
-                            if (c == count) break;
-                        }
-                    }
-                    else
-                    {
-                        for (int idx = len - 1; idx >= 0; idx--)
-                        {
-                            extractsortrowobject(ba, count, orderby, rows, ref skip, ref c, idx);
-                            if (c == count) break;
-                        }
-                    }
-                }
-                foreach (int i in ba.GetBitIndexes())
-                {
-                    if (c < count)
-                    {
-                        if (skip > 0)
-                            skip--;
-                        else
-                        {
-                            bool b = OutputRow<object>(rows, i);
-                            if (b && count > 0)
-                                c++;
-                        }
-                        if (c == count) break;
-                    }
-                }
-            }
-            if (trows != null) // TODO : move to start and decrement in count
-                foreach (var o in trows)
-                    rows.Add(o);
-            _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
-            _log.Debug("query rows count : " + rows.Count.ToString("#,0"));
-            ret.OK = true;
-            ret.Count = rows.Count;
-            ret.Rows = rows;
-            return ret;
-        }
+        //private Result<object> ReturnRowsObject<T>(WAHBitArray ba, List<T> trows, int start, int count, List<int> orderby, bool descending)
+        //{
+        //    DateTime dt = FastDateTime.Now;
+        //    List<object> rows = new List<object>();
+        //    Result<object> ret = new Result<object>();
+        //    int skip = start;
+        //    int c = 0;
+        //    ret.TotalCount = (int)ba.CountOnes();
+        //    if (count == -1) count = ret.TotalCount;
+        //    if (count > 0)
+        //    {
+        //        int len = orderby.Count;
+        //        if (len > 0)
+        //        {
+        //            if (descending == false)
+        //            {
+        //                for (int idx = 0; idx < len; idx++)
+        //                {
+        //                    extractsortrowobject(ba, count, orderby, rows, ref skip, ref c, idx);
+        //                    if (c == count) break;
+        //                }
+        //            }
+        //            else
+        //            {
+        //                for (int idx = len - 1; idx >= 0; idx--)
+        //                {
+        //                    extractsortrowobject(ba, count, orderby, rows, ref skip, ref c, idx);
+        //                    if (c == count) break;
+        //                }
+        //            }
+        //        }
+        //        foreach (int i in ba.GetBitIndexes())
+        //        {
+        //            if (c < count)
+        //            {
+        //                if (skip > 0)
+        //                    skip--;
+        //                else
+        //                {
+        //                    bool b = OutputRow<object>(rows, i);
+        //                    if (b && count > 0)
+        //                        c++;
+        //                }
+        //                if (c == count) break;
+        //            }
+        //        }
+        //    }
+        //    if (trows != null) // TODO : move to start and decrement in count
+        //        foreach (var o in trows)
+        //            rows.Add(o);
+        //    _log.Debug("query rows fetched (ms) : " + FastDateTime.Now.Subtract(dt).TotalMilliseconds);
+        //    _log.Debug("query rows count : " + rows.Count.ToString("#,0"));
+        //    ret.OK = true;
+        //    ret.Count = rows.Count;
+        //    ret.Rows = rows;
+        //    return ret;
+        //}
 
         private void extractsortrowobject(WAHBitArray ba, int count, List<int> orderby, List<object> rows, ref int skip, ref int c, int idx)
         {
@@ -1105,9 +1106,10 @@ namespace RaptorDB.Views
 
         private WAHBitArray GenerateBitmap<T>(Expression<Predicate<T>> filter)
         {
-            WAHBitArray ba = new WAHBitArray();
+            WAHBitArray ba = null;
+                             //new WAHBitArray();
             // check query cache
-            _queryCache.TryGetValue(filter, out ba);
+            //_queryCache.TryGetValue(filter, out ba);// FIX : showing incorrect results
             if (ba == null)
             {
                 ba = new WAHBitArray();
@@ -1125,18 +1127,23 @@ namespace RaptorDB.Views
                     if (val == true)
                         ba = new WAHBitArray().Not(_viewData.Count()).AndNot(delbits);
                 }
-                _queryCache.Add(filter, ba);
+                //_queryCache.Add(filter, ba);
             }
             else
+            {
                 _log.Debug("  found in cache");
+                ba = ba.Copy();
+            }
+            
             return ba;
         }
 
         private WAHBitArray GenerateBitmap(string filter)
         {
-            WAHBitArray ba = new WAHBitArray();
+            WAHBitArray ba = null;
+                             //new WAHBitArray();
             // check query cache
-            _queryCache.TryGetValue(filter, out ba);
+            //_queryCache.TryGetValue(filter, out ba);// FIX : showing incorrect results
             if (ba == null)
             {
                 ba = new WAHBitArray();
@@ -1160,10 +1167,13 @@ namespace RaptorDB.Views
                     if (val == true)
                         ba = new WAHBitArray().Not(_viewData.Count()).AndNot(delbits);
                 }
-                _queryCache.Add(filter, ba);
+                //_queryCache.Add(filter, ba);
             }
             else
+            {
                 _log.Debug("  found in cache");
+                ba = ba.Copy();
+            }
 
             return ba;
         }
@@ -1373,7 +1383,7 @@ namespace RaptorDB.Views
             // invalidate sort cache
             _sortcache = new SafeDictionary<string, List<int>>();
             // inavidate query cache
-            _queryCache = new SafeDictionary<object, WAHBitArray>();
+            //_queryCache = new SafeDictionary<object, WAHBitArray>(); // FIX : showing incorrect results
         }
 
         #region [ removed ]

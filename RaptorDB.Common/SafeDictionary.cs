@@ -140,12 +140,20 @@ namespace RaptorDB.Common
 
         public T GetKey(int index)
         {
-            lock (_padlock) return _list.Keys[index];
+            lock (_padlock)
+                if (index < _list.Count)
+                    return _list.Keys[index];
+                else
+                    return default(T);
         }
 
         public V GetValue(int index)
         {
-            lock (_padlock) return _list.Values[index];
+            lock (_padlock)
+                if (index < _list.Count)
+                    return _list.Values[index];
+                else
+                    return default(V);
         }
 
         public T[] Keys()
@@ -183,23 +191,22 @@ namespace RaptorDB.Common
     }
 
     //------------------------------------------------------------------------------------------------------------------
-
     public static class FastDateTime
     {
         public static TimeSpan LocalUtcOffset;
 
         public static DateTime Now
         {
-            get { return DateTime.UtcNow + LocalUtcOffset; }
+            get { return DateTime.SpecifyKind(DateTime.UtcNow + LocalUtcOffset, DateTimeKind.Local); }
+
         }
 
         static FastDateTime()
         {
             LocalUtcOffset = TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now);
+
         }
     }
-
-
     //------------------------------------------------------------------------------------------------------------------
 
     public static class Helper

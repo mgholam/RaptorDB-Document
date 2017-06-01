@@ -7,7 +7,7 @@ using RaptorDB.Common;
 
 namespace RaptorDB
 {
-    internal class Hoot
+    public class Hoot
     {
         public Hoot(string IndexPath, string FileName, bool DocMode)
         {
@@ -376,7 +376,7 @@ namespace RaptorDB
         {
             if (text == "" || text == null)
                 return;
-            text = text.ToLowerInvariant(); // lowercase index 
+            //text = text.ToLowerInvariant(); // lowercase index 
             string[] keys;
             if (_docMode)
             {
@@ -464,7 +464,7 @@ namespace RaptorDB
             }
         }
 
-        internal T Fetch<T>(int docnum)
+        public T Fetch<T>(int docnum)
         {
             string b = _docs.ReadData(docnum);
             return fastJSON.JSON.ToObject<T>(b);

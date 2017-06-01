@@ -224,8 +224,9 @@ namespace datagridbinding
         }
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            GC.Collect(2);
-            
+            GC.Collect();
+            var llll = rap.Query<SalesInvoiceViewRowSchema>(x => x.CustomerName == "ruth" && x.Serial.Between(1600, 1630), 0, 100);
+
             //KVHFtest();
             var ind = rap.Query<SalesInvoiceViewRowSchema>(x => 
                 x.Date.Year.In(2000) 

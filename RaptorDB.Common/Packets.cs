@@ -20,6 +20,7 @@ namespace RaptorDB.Common
         public int Count { get; set; }
         public string OrderBy { get; set; }
         public Guid ClientID { get; set; }
+        public string InstanceName { get; set; }
     }
 
     public class ReturnPacket

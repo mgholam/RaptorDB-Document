@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace RaptorDB
 {
-    internal class WAHBitArray
+    public class WAHBitArray
     {
         public enum TYPE
         {

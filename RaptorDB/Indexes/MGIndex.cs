@@ -373,7 +373,7 @@ namespace RaptorDB
             // find better end position rather than last key
             pos = Array.BinarySearch<T>(keys, key);
             if (pos < 0) pos = ~pos;
-            for (int i = 0; i <= pos; i++)
+            for (int i = 0; i < pos; i++)
             {
                 T k = keys[i];
                 if (k.CompareTo(key) > 0)

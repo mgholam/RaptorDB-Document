@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace RaptorDB
 {
-    internal class CronDaemon
+    public class CronDaemon
     {
         private readonly System.Timers.Timer timer = new System.Timers.Timer(30000);
         private readonly List<CronJob> cron_jobs = new List<CronJob>();

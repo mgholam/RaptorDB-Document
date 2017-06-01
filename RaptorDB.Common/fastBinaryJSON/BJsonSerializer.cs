@@ -5,16 +5,17 @@ using System.Collections.Generic;
 using System.Data;
 #endif
 using System.IO;
-using fastJSON;
-using RaptorDB.Common;
 using System.Collections.Specialized;
+using RaptorDB.Common;
+using fastJSON;
 
 namespace fastBinaryJSON
 {
     internal sealed class BJSONSerializer : IDisposable
     {
         private MemoryStream _output = new MemoryStream();
-        private MemoryStream _before = new MemoryStream();
+        //private MemoryStream _before = new MemoryStream();
+        private int _typespointer = 0;
         private int _MAX_DEPTH = 20;
         int _current_depth = 0;
         private Dictionary<string, int> _globalTypes = new Dictionary<string, int>();
@@ -27,7 +28,7 @@ namespace fastBinaryJSON
             {
                 // dispose managed resources
                 _output.Close();
-                _before.Close();
+                //_before.Close();
             }
             // free native resources
         }
@@ -51,13 +52,13 @@ namespace fastBinaryJSON
             // add $types
             if (_params.UsingGlobalTypes && _globalTypes != null && _globalTypes.Count > 0)
             {
-                byte[] after = _output.ToArray();
-                _output = _before;
+                var pointer = (int)_output.Length;
                 WriteName("$types");
                 WriteColon();
                 WriteTypes(_globalTypes);
-                WriteComma();
-                _output.Write(after, 0, after.Length);
+                //var i = _output.Length;
+                _output.Seek(_typespointer, SeekOrigin.Begin);
+                _output.Write(Helper.GetBytes(pointer, false), 0, 4);
 
                 return _output.ToArray();
             }
@@ -157,6 +158,9 @@ namespace fastBinaryJSON
             else if (obj is NameValueCollection)
                 WriteNV((NameValueCollection)obj);
 
+            else if (_params.UseTypedArrays && obj is Array)
+                WriteTypedArray((ICollection)obj);
+
             else if (obj is IEnumerable)
                 WriteArray((IEnumerable)obj);
 
@@ -168,6 +172,39 @@ namespace fastBinaryJSON
 
             else
                 WriteObject(obj);
+        }
+
+        private void WriteTypedArray(ICollection array)
+        {
+            bool pendingSeperator = false;
+            bool token = true;
+            var t = array.GetType();
+            if (t != null) // non generic array
+            {
+                if (t.GetElementType().IsClass)
+                {
+                    _output.WriteByte(TOKENS.ARRAY_TYPED);
+                    token = false;
+                    // array type name
+                    byte[] b = Reflection.Instance.utf8.GetBytes(Reflection.Instance.GetTypeAssemblyName(t.GetElementType()));
+                    _output.WriteByte((byte)b.Length);
+                    _output.Write(b, 0, b.Length % 256);
+                    // array count
+                    _output.Write(Helper.GetBytes(array.Count, false), 0, 4); //count
+                }
+            }
+            if (token)
+                _output.WriteByte(TOKENS.ARRAY_START);
+
+            foreach (object obj in array)
+            {
+                if (pendingSeperator) WriteComma();
+
+                WriteValue(obj);
+
+                pendingSeperator = true;
+            }
+            _output.WriteByte(TOKENS.ARRAY_END);
         }
 
         private void WriteNV(NameValueCollection nameValueCollection)
@@ -471,14 +508,17 @@ namespace fastBinaryJSON
                 if (_TypesWritten == false)
                 {
                     _output.WriteByte(TOKENS.DOC_START);
-                    _before = _output;
-                    _output = new MemoryStream();
+                    // write pointer to $types position
+                    _output.WriteByte(TOKENS.TYPES_POINTER);
+                    _typespointer = (int)_output.Length; // place holder
+                    _output.Write(new byte[4], 0, 4); // zero pointer for now
+                                                      //_output = new MemoryStream();
+                    _TypesWritten = true;
                 }
                 else
                     _output.WriteByte(TOKENS.DOC_START);
 
             }
-            _TypesWritten = true;
             _current_depth++;
             if (_current_depth > _MAX_DEPTH)
                 throw new Exception("Serializer encountered maximum depth of " + _MAX_DEPTH);
@@ -511,7 +551,7 @@ namespace fastBinaryJSON
                 var o = p.Getter(obj);
                 if (_params.SerializeNulls == false && (o == null || o is DBNull))
                 {
-                    
+
                 }
                 else
                 {
@@ -527,7 +567,7 @@ namespace fastBinaryJSON
 
         private void WritePairFast(string name, string value)
         {
-            if ( _params.SerializeNulls == false && (value == null))
+            if (_params.SerializeNulls == false && (value == null))
                 return;
             WriteName(name);
 

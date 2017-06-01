@@ -936,6 +936,7 @@ namespace RaptorDB
                 if (_viewManager.ViewInsert(id, row))
                 {
                     View_insert vi = new View_insert();
+                    vi.ID = id;
                     vi.Viewname = vn;
                     vi.RowObject = row;
                     _objStore.SetObject(vi.ID, vi);
@@ -957,6 +958,7 @@ namespace RaptorDB
             if (_viewManager.ViewInsert(viewname, id, row))
             {
                 View_insert vi = new View_insert();
+                vi.ID = id;
                 vi.Viewname = viewname;
                 vi.RowObject = row;
                 _objStore.SetObject(vi.ID, vi);
@@ -1319,7 +1321,7 @@ namespace RaptorDB
                 _objStore.FreeMemory();
                 _fileStore.FreeMemory();
                 _objHF.FreeMemory();
-                GC.Collect(GC.MaxGeneration);
+                GC.Collect();// GC.MaxGeneration);
             }
         }
 

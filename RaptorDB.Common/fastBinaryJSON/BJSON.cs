@@ -5,9 +5,8 @@ using System.Collections.Generic;
 using System.Data;
 #endif
 using System.IO;
-using fastJSON;
 using System.Collections.Specialized;
-using System.Globalization;
+using fastJSON;
 
 namespace fastBinaryJSON
 {
@@ -40,6 +39,15 @@ namespace fastBinaryJSON
         public const byte FALSE = 25;
         public const byte UNICODE_STRING = 26;
         public const byte DATETIMEOFFSET = 27;
+        public const byte ARRAY_TYPED = 28;
+        public const byte TYPES_POINTER = 29; 
+    }
+
+    public class typedarray
+    {
+        public string typename;
+        public int count;
+        public List<object> data = new List<object>();
     }
 
     //public delegate string Serialize(object data);
@@ -82,7 +90,7 @@ namespace fastBinaryJSON
         /// <summary>
         /// Ignore attributes to check for (default : XmlIgnoreAttribute, NonSerialized)
         /// </summary>
-        public List<Type> IgnoreAttributes = new List<Type> { typeof(System.Xml.Serialization.XmlIgnoreAttribute) , typeof(NonSerializedAttribute)};
+        public List<Type> IgnoreAttributes = new List<Type> { typeof(System.Xml.Serialization.XmlIgnoreAttribute), typeof(NonSerializedAttribute) };
         /// <summary>
         /// If you have parametric and no default constructor for you classes (default = False)
         /// 
@@ -93,6 +101,10 @@ namespace fastBinaryJSON
         /// Maximum depth the serializer will go to to avoid loops (default = 20 levels)
         /// </summary>
         public short SerializerMaxDepth = 20;
+        /// <summary>
+        /// Use typed arrays t[] into object = t[] not object[] (default = true)
+        /// </summary>
+        public bool UseTypedArrays = true;
 
         public void FixValues()
         {
@@ -288,6 +300,10 @@ namespace fastBinaryJSON
             if (type != null && type == typeof(DataTable))
                 return CreateDataTable(o as Dictionary<string, object>, null);
 #endif
+            if (o is typedarray)
+            {
+                return ParseTypedArray(null, o);
+            }
             if (o is IDictionary)
             {
                 if (type != null && t == typeof(Dictionary<,>)) // deserialize a dictionary
@@ -499,53 +515,89 @@ namespace fastBinaryJSON
                     if (v != null)
                     {
                         object oset = v;
-
-                        switch (pi.Type)
+                        if (v is typedarray)
                         {
-#if !SILVERLIGHT
-                            case myPropInfoType.DataSet:
-                                oset = CreateDataset((Dictionary<string, object>)v, globaltypes);
-                                break;
-                            case myPropInfoType.DataTable:
-                                oset = CreateDataTable((Dictionary<string, object>)v, globaltypes);
-                                break;
-#endif
-                            case myPropInfoType.Custom:
-                                oset = Reflection.Instance.CreateCustom((string)v, pi.pt);
-                                break;
-                            case myPropInfoType.Enum:
-                                oset = CreateEnum(pi.pt, v);
-                                break;
-                            case myPropInfoType.StringKeyDictionary:
-                                oset = CreateStringKeyDictionary((Dictionary<string, object>)v, pi.pt, pi.GenericTypes, globaltypes);
-                                break;
-                            case myPropInfoType.Hashtable:
-                            case myPropInfoType.Dictionary:
-                                oset = CreateDictionary((List<object>)v, pi.pt, pi.GenericTypes, globaltypes);
-                                break;
-                            case myPropInfoType.NameValue: oset = CreateNV((Dictionary<string, object>)v); break;
-                            case myPropInfoType.StringDictionary: oset = CreateSD((Dictionary<string, object>)v); break;
-                            case myPropInfoType.Array:
-                                oset = CreateArray((List<object>)v, pi.pt, pi.bt, globaltypes);
-                                break;
-                            default:
-                                {
-                                    if (pi.IsGenericType && pi.IsValueType == false)
-                                        oset = CreateGenericList((List<object>)v, pi.pt, pi.bt, globaltypes);
-                                    else if ((pi.IsClass || pi.IsStruct || pi.IsInterface) && v is Dictionary<string, object>)
-                                        oset = ParseDictionary((Dictionary<string, object>)v, globaltypes, pi.pt, input);
-
-                                    else if (v is List<object>)
-                                        oset = CreateArray((List<object>)v, pi.pt, typeof(object), globaltypes);
-                                    break;
-                                }
+                            oset = ParseTypedArray(globaltypes, v);
                         }
-
+                        else
+                        {
+                            switch (pi.Type)
+                            {
+#if !SILVERLIGHT
+                                case myPropInfoType.DataSet:
+                                    oset = CreateDataset((Dictionary<string, object>)v, globaltypes);
+                                    break;
+                                case myPropInfoType.DataTable:
+                                    oset = CreateDataTable((Dictionary<string, object>)v, globaltypes);
+                                    break;
+#endif
+                                case myPropInfoType.Custom:
+                                    oset = Reflection.Instance.CreateCustom((string)v, pi.pt);
+                                    break;
+                                case myPropInfoType.Enum:
+                                    oset = CreateEnum(pi.pt, v);
+                                    break;
+                                case myPropInfoType.StringKeyDictionary:
+                                    oset = CreateStringKeyDictionary((Dictionary<string, object>)v, pi.pt, pi.GenericTypes, globaltypes);
+                                    break;
+                                case myPropInfoType.Hashtable:
+                                case myPropInfoType.Dictionary:
+                                    oset = CreateDictionary((List<object>)v, pi.pt, pi.GenericTypes, globaltypes);
+                                    break;
+                                case myPropInfoType.NameValue: oset = CreateNV((Dictionary<string, object>)v); break;
+                                case myPropInfoType.StringDictionary: oset = CreateSD((Dictionary<string, object>)v); break;
+                                case myPropInfoType.Array:
+                                    oset = CreateArray((List<object>)v, pi.pt, pi.bt, globaltypes);
+                                    break;
+                                default:
+                                    {
+                                        if (pi.IsGenericType && pi.IsValueType == false)
+                                            oset = CreateGenericList((List<object>)v, pi.pt, pi.bt, globaltypes);
+                                        else if ((pi.IsClass || pi.IsStruct || pi.IsInterface) && v is Dictionary<string, object>)
+                                        {
+                                            var oo = (Dictionary<string, object>)v;
+                                            if (oo.ContainsKey("$schema"))
+                                                oset = CreateDataset(oo, globaltypes);
+                                            else
+                                                oset = ParseDictionary(oo, globaltypes, pi.pt, input);
+                                        }
+                                        else if (v is List<object>)
+                                            oset = CreateArray((List<object>)v, pi.pt, typeof(object), globaltypes);
+                                        break;
+                                    }
+                            }
+                        }
                         o = pi.setter(o, oset);
                     }
                 }
             }
             return o;
+        }
+
+        private object ParseTypedArray(Dictionary<string, object> globaltypes, object v)
+        {
+            object oset;
+            var ta = (typedarray)v;
+            var t = Reflection.Instance.GetTypeFromCache(ta.typename);
+            IList a = Array.CreateInstance(t, ta.count);
+            int i = 0;
+            foreach (var dd in ta.data)
+            {
+                object oo = null;
+                if (dd == null)
+                    oo = null;
+                else if (dd is typedarray)
+                    oo = ParseTypedArray(globaltypes, dd);
+                else if (dd is Dictionary<string, object>)
+                    oo = ParseDictionary((Dictionary<string, object>)dd, globaltypes, t, null);
+                else if (dd is List<object>)
+                    oo = CreateArray((List<object>)dd, t, t.GetElementType(), globaltypes);
+                else
+                    oo = dd;
+                a[i++] = oo;
+            }
+            oset = a;
+            return oset;
         }
 
         private StringDictionary CreateSD(Dictionary<string, object> d)
@@ -622,7 +674,8 @@ namespace fastBinaryJSON
                         else
                             col.Add(((List<object>)ob).ToArray());
                     }
-
+                    else if(ob is typedarray)
+                        col.Add(((typedarray)ob).data.ToArray());
                     else
                         col.Add(ob);
                 }

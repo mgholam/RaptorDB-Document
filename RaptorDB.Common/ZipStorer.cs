@@ -2,10 +2,13 @@
 // Website: zipstorer.codeplex.com
 // Version: 2.35 (March 14, 2010)
 
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Text;
 
-namespace System.IO.Compression
+namespace RaptorDB.Common
 {
     public static class ZIP
     {
@@ -172,7 +175,7 @@ namespace System.IO.Compression
 
         #region Public fields
         /// <summary>True if UTF8 encoding for filename and comments, false if default (CP 437)</summary>
-        public bool EncodeUTF8 = false;
+        public bool EncodeUTF8 = true;
         /// <summary>Force deflate algotithm even if it inflates the stored file. Off by default.</summary>
         public bool ForceDeflating = false;
         #endregion
