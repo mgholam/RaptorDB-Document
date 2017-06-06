@@ -39,7 +39,7 @@ namespace datagridbinding
         {
             int c = textBox1.Text.IndexOf(',');
             string viewname = textBox1.Text.Substring(0, c);
-            string args = textBox1.Text.Substring(c+1);
+            string args = textBox1.Text.Substring(c + 1);
 
             try
             {
@@ -182,17 +182,35 @@ namespace datagridbinding
             //var r = (rap as RaptorDB.RaptorDB);
             var kv = rap.GetKVHF();
 
-            DateTime dt = DateTime.Now;
-            for (int i = 0; i < 1000; i++)
+            int c = kv.CountHF();
+
+            if (c == 0)
             {
-                var o = CreateInvoice(i);
-                kv.SetObjectHF(i.ToString(), o);// new byte[100000]);
+                DateTime dt = DateTime.Now;
+                for (int i = 0; i < 1000; i++)
+                {
+                    var o = CreateInvoice(i);
+                    kv.SetObjectHF(i.ToString(), o);// new byte[100000]);
+                }
+                MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
             }
-            MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
+            else
+            {
+                for(int i = 0; i < 1000; i++)
+                {
+                    var o = (SalesInvoice) kv.GetObjectHF("" + i);
+                    var id = o.Serial;
+                    if(id != i)
+                    {
+                        MessageBox.Show("not equal");
+                        break;
+                    }
+                }
+            }
 
             var g = kv.GetObjectHF("109");
 
-            //for (int i = 0; i < 100000; i++)
+            //for (int i = 0; i < 100; i++)
             //kv.DeleteKeyHF(i.ToString());
 
             //g = kv.GetObjectHF("1009");
@@ -227,17 +245,17 @@ namespace datagridbinding
             GC.Collect();
             var llll = rap.Query<SalesInvoiceViewRowSchema>(x => x.CustomerName == "ruth" && x.Serial.Between(1600, 1630), 0, 100);
 
-            //KVHFtest();
-            var ind = rap.Query<SalesInvoiceViewRowSchema>(x => 
-                x.Date.Year.In(2000) 
-                && 
+            KVHFtest();
+            var ind = rap.Query<SalesInvoiceViewRowSchema>(x =>
+                x.Date.Year.In(2000)
+                &&
                 x.Date.Month.In(4));
 
             var id = new int[] { 20, 30, 40 };
             var iin = rap.Query<SalesInvoiceViewRowSchema>(x => x.Serial.In(
                // new int[] { 20,30, 40} 
                id
-               //20,30,40
+            //20,30,40
             ));
             var p = new ppp[2];
             p[0] = new ppp();

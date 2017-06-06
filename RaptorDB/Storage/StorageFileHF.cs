@@ -20,7 +20,7 @@ namespace RaptorDB
 
         // **** change this if storage format changed ****
         internal static int _CurrentVersion = 1;
-        int _lastBlockNumber = 0;
+        int _lastBlockNumber = -1;
         private ushort _BLOCKSIZE = 4096;
         private string _Path = "";
         private string _S = Path.DirectorySeparatorChar.ToString();
@@ -230,7 +230,7 @@ namespace RaptorDB
 
         internal int NumberofBlocks()
         {
-            return (int)((_datawrite.Length / (int)_BLOCKSIZE) + 1);
+            return (int)((_datawrite.Length / (int)_BLOCKSIZE)) + 1;
         }
 
         internal void FreeBlock(int i)

@@ -1,4 +1,4 @@
-﻿v3.3.15*
+﻿v3.3.15
 -------
 - upgrade to fastBinaryJSON v1.4.19
 - bug fix logger zip file names
@@ -6,9 +6,11 @@
 - changed to public WAHBitArray
 - changed to public Hoot
 - changed to public CronDaemon
-- Zipstorer default to UTF8 filename
-- bug fix ViewInsert() and rebuild index *old data is not recoverable rebuild your database if you can* 
-- 
+- Zipstorer default to UTF8 filenames
+- bug fix ViewInsert() and rebuild index *old data is not recoverable, rebuild your database if you can* 
+- remove query bitmap cache because of incorrect results
+- upgrade to fastJSON v2.1.25
+- bug fix HFKV store rebuild on failed shutdown
 
 v3.3.14
 -------

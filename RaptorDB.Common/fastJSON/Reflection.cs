@@ -4,6 +4,7 @@ using System.Reflection.Emit;
 using System.Reflection;
 using System.Collections;
 using System.Text;
+using System.Runtime.Serialization;
 using RaptorDB.Common;
 using System.Linq;
 #if !SILVERLIGHT
@@ -17,6 +18,7 @@ namespace fastJSON
     {
         public string Name;
         public string lcName;
+        public string memberName;
         public Reflection.GenericGetter Getter;
     }
 
@@ -54,6 +56,7 @@ namespace fastJSON
         public Reflection.GenericGetter getter;
         public Type[] GenericTypes;
         public string Name;
+        public string memberName;
         public myPropInfoType Type;
         public bool CanWrite;
 
@@ -175,7 +178,20 @@ namespace fastJSON
                     if (d.setter != null)
                         d.CanWrite = true;
                     d.getter = Reflection.CreateGetMethod(type, p);
-                    sd.Add(p.Name.ToLower(), d);
+                    var att = p.GetCustomAttributes(true);
+                    foreach (var at in att)
+                    {
+                        if (at is DataMemberAttribute)
+                        {
+                            var dm = (DataMemberAttribute)at;
+                            if (dm.Name != "")
+                                d.memberName = dm.Name;
+                        }
+                    }
+                    if (d.memberName != null)
+                        sd.Add(d.memberName, d);
+                    else
+                        sd.Add(p.Name.ToLower(), d);
                 }
                 FieldInfo[] fi = type.GetFields(bf);
                 foreach (FieldInfo f in fi)
@@ -187,7 +203,20 @@ namespace fastJSON
                         if (d.setter != null)
                             d.CanWrite = true;
                         d.getter = Reflection.CreateGetField(type, f);
-                        sd.Add(f.Name.ToLower(), d);
+                        var att = f.GetCustomAttributes(true);
+                        foreach (var at in att)
+                        {
+                            if (at is DataMemberAttribute)
+                            {
+                                var dm = (DataMemberAttribute)at;
+                                if (dm.Name != "")
+                                    d.memberName = dm.Name;
+                            }
+                        }
+                        if (d.memberName != null)
+                            sd.Add(d.memberName, d);
+                        else
+                            sd.Add(f.Name.ToLower(), d);
                     }
                 }
 
@@ -542,9 +571,24 @@ namespace fastJSON
                     if (found)
                         continue;
                 }
+                //#if net4
+                var att = p.GetCustomAttributes(true);
+                string mName = null;
+                foreach (var at in att)
+                {
+                    if (at is DataMemberAttribute)
+                    {
+                        var dm = (DataMemberAttribute)at;
+                        if (dm.Name != "")
+                        {
+                            mName = dm.Name;
+                        }
+                    }
+                }
+                //#endif
                 GenericGetter g = CreateGetMethod(type, p);
                 if (g != null)
-                    getters.Add(new Getters { Getter = g, Name = p.Name, lcName = p.Name.ToLower() });
+                    getters.Add(new Getters { Getter = g, Name = p.Name, lcName = p.Name.ToLower(), memberName = mName });
             }
 
             FieldInfo[] fi = type.GetFields(bf);
@@ -564,11 +608,24 @@ namespace fastJSON
                     if (found)
                         continue;
                 }
+                var att = f.GetCustomAttributes(true);
+                string mName = null;
+                foreach (var at in att)
+                {
+                    if (at is DataMemberAttribute)
+                    {
+                        var dm = (DataMemberAttribute)at;
+                        if (dm.Name != "")
+                        {
+                            mName = dm.Name;
+                        }
+                    }
+                }
                 if (f.IsLiteral == false)
                 {
                     GenericGetter g = CreateGetField(type, f);
                     if (g != null)
-                        getters.Add(new Getters { Getter = g, Name = f.Name, lcName = f.Name.ToLower() });
+                        getters.Add(new Getters { Getter = g, Name = f.Name, lcName = f.Name.ToLower(), memberName = mName });
                 }
             }
             val = getters.ToArray();
