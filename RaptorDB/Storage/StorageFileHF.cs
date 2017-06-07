@@ -183,18 +183,8 @@ namespace RaptorDB
                 _lastBlockNumber = (int)((_datawrite.Length - _fileheader.Length) / _BLOCKSIZE);
                 _lastBlockNumber++;
             }
-            //if (_readfreeList != null)
-            //    _freeList = _readfreeList();
-            //else
-            //{
-            //    _freeList = new WAHBitArray();
-            //    if (File.Exists(_Path + _filename + ".free"))
-            //    {
-            //        ReadFreeListBMPFile(_Path + _filename + ".free");
-            //        // delete file so if failure no big deal on restart
-            //        File.Delete(_Path + _filename + ".free");
-            //    }
-            //}
+
+            Initialize();
         }
 
         private void ReadFileHeader()

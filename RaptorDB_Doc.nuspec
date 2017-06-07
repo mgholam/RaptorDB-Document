@@ -2,11 +2,11 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>RaptorDB_doc</id>
-        <version>3.3.14</version>
+        <version>3.3.16.0</version>
         <title>RaptorDB Document Database</title>
         <authors>mgholam</authors>
         <owners />
-        <projectUrl>http://raptordb.codeplex.com/</projectUrl>
+        <projectUrl>https://www.codeproject.com/Articles/375413/RaptorDB-The-Document-Store</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>NoSql, JSON based, Document store database with compiled .net map functions and automatic hybrid bitmap indexing and LINQ query filters (now with standalone Server mode, Backup and Active Restore, Transactions, Server side queries, MonoDroid support, HQ-Branch Replication, works on Linux)</description>
     </metadata>

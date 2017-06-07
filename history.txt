@@ -1,4 +1,8 @@
-﻿v3.3.15
+﻿v3.3.16
+-------
+- bug fix HFKV rebuild 
+
+v3.3.15
 -------
 - upgrade to fastBinaryJSON v1.4.19
 - bug fix logger zip file names

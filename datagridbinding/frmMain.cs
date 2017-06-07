@@ -184,31 +184,40 @@ namespace datagridbinding
 
             int c = kv.CountHF();
 
-            if (c == 0)
+            //if (c == 0)
+            //{
+            //    DateTime dt = DateTime.Now;
+            //    for (int i = 0; i < 1000; i++)
+            //    {
+            //        var o = CreateInvoice(i);
+            //        kv.SetObjectHF(i.ToString(), o);// new byte[100000]);
+            //    }
+            //    MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
+            //}
+            //else
+            //{
+            //    for(int i = 0; i < 1000; i++)
+            //    {
+            //        var o = (SalesInvoice) kv.GetObjectHF("" + i);
+            //        var id = o.Serial;
+            //        if(id != i)
+            //        {
+            //            MessageBox.Show("not equal");
+            //            break;
+            //        }
+            //    }
+            //}
+            if(c==0)
             {
-                DateTime dt = DateTime.Now;
-                for (int i = 0; i < 1000; i++)
-                {
-                    var o = CreateInvoice(i);
-                    kv.SetObjectHF(i.ToString(), o);// new byte[100000]);
-                }
-                MessageBox.Show("time = " + DateTime.Now.Subtract(dt).TotalSeconds);
+                kv.SetObjectHF("00", CreateInvoice(100));
+                kv.SetObjectHF("00", CreateInvoice(100));
             }
             else
             {
-                for(int i = 0; i < 1000; i++)
-                {
-                    var o = (SalesInvoice) kv.GetObjectHF("" + i);
-                    var id = o.Serial;
-                    if(id != i)
-                    {
-                        MessageBox.Show("not equal");
-                        break;
-                    }
-                }
+
             }
 
-            var g = kv.GetObjectHF("109");
+            var g = kv.GetObjectHF("00");
 
             //for (int i = 0; i < 100; i++)
             //kv.DeleteKeyHF(i.ToString());

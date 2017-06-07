@@ -490,7 +490,7 @@ namespace RaptorDB
                     if (failed == false)
                     {
                         keys.Set(ab.key, i);// valid block found
-                        if (freelast)// free the old blocks
+                        if (freelast && old != null)// free the old blocks
                             _datastore.FreeBlocks(old.Blocks);
                     }
 
