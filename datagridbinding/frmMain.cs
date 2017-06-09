@@ -209,12 +209,12 @@ namespace datagridbinding
             //}
             if(c==0)
             {
-                kv.SetObjectHF("00", CreateInvoice(100));
-                kv.SetObjectHF("00", CreateInvoice(100));
+                kv.SetObjectHF("00", 100);
+                kv.SetObjectHF("01", 101);
             }
             else
             {
-
+                kv.SetObjectHF("00", 102);
             }
 
             var g = kv.GetObjectHF("00");

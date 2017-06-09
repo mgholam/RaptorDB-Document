@@ -1,4 +1,10 @@
-﻿v3.3.16
+﻿v3.3.17
+-------
+- added ITokenizer full text search overload to RaptorDB.Open()
+- tokenizer rewrite
+- bug fix HFKV rebuild 
+
+v3.3.16
 -------
 - bug fix HFKV rebuild 
 

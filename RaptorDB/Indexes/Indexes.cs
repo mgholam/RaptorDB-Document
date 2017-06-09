@@ -204,8 +204,8 @@ namespace RaptorDB
     #region [  FullTextIndex  ]
     internal class FullTextIndex : Hoot, IIndex
     {
-        public FullTextIndex(string IndexPath, string FileName, bool docmode, bool sortable)
-            : base(IndexPath, FileName, docmode)
+        public FullTextIndex(string IndexPath, string FileName, bool docmode, bool sortable, ITokenizer tokenizer)
+            : base(IndexPath, FileName, docmode, tokenizer)
         {
             if (sortable)
             {

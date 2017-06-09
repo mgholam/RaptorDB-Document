@@ -1020,7 +1020,7 @@ namespace RaptorDB.Views
                 return new NoIndex();
 
             if (type == typeof(FullTextString))
-                return new FullTextIndex(_Path, name, false, true);
+                return new FullTextIndex(_Path, name, false, true, _viewmanager._tokenizer);
 
             else if (type == typeof(string))
             {

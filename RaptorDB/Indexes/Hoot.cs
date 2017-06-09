@@ -9,8 +9,12 @@ namespace RaptorDB
 {
     public class Hoot
     {
-        public Hoot(string IndexPath, string FileName, bool DocMode)
+        public Hoot(string IndexPath, string FileName, bool DocMode, ITokenizer tokenizer)
         {
+            if (tokenizer != null)
+                _tokenizer = tokenizer;
+            else
+                _tokenizer = new tokenizer();
             _Path = IndexPath;
             _FileName = FileName;
             _docMode = DocMode;
@@ -31,7 +35,7 @@ namespace RaptorDB
             // read words
             LoadWords();
         }
-
+        private ITokenizer _tokenizer;
         private SafeDictionary<string, int> _words = new SafeDictionary<string, int>();
         //private SafeSortedList<string, int> _words = new SafeSortedList<string, int>();
         private BitmapIndex _bitmaps;
@@ -381,7 +385,7 @@ namespace RaptorDB
             if (_docMode)
             {
                 //_log.Debug("text size = " + text.Length);
-                Dictionary<string, int> wordfreq = tokenizer.GenerateWordFreq(text);
+                Dictionary<string, int> wordfreq = _tokenizer.GenerateWordFreq(text);
                 //_log.Debug("word count = " + wordfreq.Count);
                 var kk = wordfreq.Keys;
                 keys = new string[kk.Count];

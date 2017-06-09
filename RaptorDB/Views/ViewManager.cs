@@ -8,11 +8,12 @@ namespace RaptorDB.Views
 {
     internal class ViewManager
     {
-        public ViewManager(string viewfolder, IDocStorage<Guid> objstore, IKeyStoreHF kvhf)
+        public ViewManager(string viewfolder, IDocStorage<Guid> objstore, IKeyStoreHF kvhf, ITokenizer tokenizer)
         {
             _Path = viewfolder;
             _objectStore = objstore;
             _kvhf = kvhf;
+            _tokenizer = tokenizer;
         }
 
         private IKeyStoreHF _kvhf;
@@ -31,6 +32,7 @@ namespace RaptorDB.Views
         private SafeDictionary<Type, List<string>> _otherViews = new SafeDictionary<Type, List<string>>();
         private TaskQueue _que = new TaskQueue();
         private SafeDictionary<int, bool> _transactions = new SafeDictionary<int, bool>();
+        internal ITokenizer _tokenizer;
 
         internal int Count(string viewname, string filter)
         {

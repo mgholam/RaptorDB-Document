@@ -1,41 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace RaptorDB
 {
-    public class tokenizer
+    class tokenizer : ITokenizer
     {
-        public static Dictionary<string, int> GenerateWordFreq(string text)
+        public Dictionary<string, int> GenerateWordFreq(string text)
         {
             Dictionary<string, int> dic = new Dictionary<string, int>(500);
 
             char[] chars = text.ToCharArray();
             int index = 0;
-            int run = -1;
+            int look = 0;
             int count = chars.Length;
+            int lastlang = langtype(chars[0]);
             while (index < count)
             {
-                char c = chars[index++];
-                if (!(char.IsLetterOrDigit(c) || c == '.' || c == ','))
+                int lang = -1;
+                while (look < count)
                 {
-                    if (run != -1)
-                    {
-                        ParseString(dic, chars, index, run);
-                        run = -1;
-                    }
+                    char c = chars[look];
+                    lang = langtype(c);
+                    if (lang == lastlang)
+                        look++;
+                    else
+                        break;
                 }
-                else
-                    if (run == -1)
-                    run = index - 1;
+                if (lastlang > -1)
+                    ParseString(dic, chars, look, index);
+                index = look;
+                lastlang = lang;
             }
-
-            if (run != -1)
-            {
-                ParseString(dic, chars, index, run);
-                run = -1;
-            }
-
             return dic;
+        }
+
+        private static int langtype(char c)
+        {
+            if (char.IsDigit(c))
+                return 0;
+
+            else if (char.IsWhiteSpace(c))
+                return -1;
+
+            else if (char.IsPunctuation(c))
+                return -1;
+
+            else if (char.IsLetter(c)) // FEATURE : language checking here
+                return 1;
+
+            else
+                return -1;
         }
 
         private static void ParseString(Dictionary<string, int> dic, char[] chars, int end, int start)
@@ -93,60 +106,7 @@ namespace RaptorDB
             if (l < 2)
                 return;
 
-            // trim end non letter/digit    
-            int x = 1;
-            while (x < l)
-            {
-                if (char.IsLetterOrDigit(word[l - x]) == false)
-                    x++;
-                else
-                    break;
-            }
-            if (l - x + 1 > 0)
-                word = new string(word.ToCharArray(), 0, l - x + 1);
-            else
-                word = "";
-            l = word.Length;
-
-            // trim start non letter/digit
-            x = 0;
-            while (l > 0 && x < l)
-            {
-                if (char.IsLetterOrDigit(word[x]) == false)
-                    x++;
-                else
-                    break;
-            }
-            if (l - x > 0)
-                word = new string(word.ToCharArray(), x, l - x);
-            else
-                word = "";
-            l = word.Length;
-
-            // too short
-            if (l < 2)
-                return;
-
-            //  split a.b.c words and not numbers and dots > 1
-            if (char.IsDigit(word[0]) == false || CountWordDots(word)>1)
-            {
-                foreach (var s in word.Split('.'))
-                {
-                    if (s.Length > 2)
-                        addword(dic, s);
-                }
-            }
-            else
-                addword(dic, word);
-        }
-
-        private static int CountWordDots(string word)
-        {
-            int c = 0;
-            foreach(var s in word.ToCharArray())
-                if (s == '.')
-                    c++;
-            return c;
+            addword(dic, word);
         }
 
         private static void addword(Dictionary<string, int> dic, string word)

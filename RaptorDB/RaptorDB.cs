@@ -23,8 +23,12 @@ namespace RaptorDB
 {
     public class RaptorDB : IRaptorDB
     {
-        private RaptorDB(string FolderPath)
+        private RaptorDB(string FolderPath, ITokenizer tokenizer)
         {
+            if (tokenizer != null)
+                _tokenizer = tokenizer;
+            else
+                _tokenizer = new tokenizer();
             // speed settings
             fastJSON.JSON.Parameters.ParametricConstructorOverride = true;
             fastBinaryJSON.BJSON.Parameters.ParametricConstructorOverride = true;
@@ -47,7 +51,12 @@ namespace RaptorDB
 
         public static RaptorDB Open(string FolderPath)
         {
-            return new RaptorDB(FolderPath);
+            return new RaptorDB(FolderPath, new tokenizer());
+        }
+
+        public static RaptorDB Open(string FolderPath, ITokenizer tokenizer)
+        {
+            return new RaptorDB(FolderPath, tokenizer);
         }
 
         private string _S = Path.DirectorySeparatorChar.ToString();
@@ -77,6 +86,7 @@ namespace RaptorDB
         private Replication.ReplicationServer _repserver;
         private Replication.ReplicationClient _repclient;
         private DateTime _startTime = DateTime.Now;
+        private ITokenizer _tokenizer = new tokenizer();
 
         #region [            P U B L I C    I N T E R F A C E            ]
         /// <summary>
@@ -1116,7 +1126,7 @@ namespace RaptorDB
 
             _objHF = new KeyStoreHF(_Path + "DataHF");
 
-            _viewManager = new Views.ViewManager(_Path + "Views", _objStore, _objHF);
+            _viewManager = new Views.ViewManager(_Path + "Views", _objStore, _objHF, _tokenizer);
 
             // load _LastFulltextIndexed 
             if (File.Exists(_Path + "Data" + _S + "Fulltext" + _S + "_fulltext.rec"))
@@ -1142,7 +1152,7 @@ namespace RaptorDB
             save = this.GetType().GetMethod("Save", BindingFlags.Instance | BindingFlags.Public);
             saverep = this.GetType().GetMethod("SaveReplicationObject", BindingFlags.Instance | BindingFlags.NonPublic);
 
-            _fulltextindex = new FullTextIndex(_Path + "Data" + _S + "Fulltext", "fulltext", true, false);
+            _fulltextindex = new FullTextIndex(_Path + "Data" + _S + "Fulltext", "fulltext", true, false, _tokenizer);
 
             // start backround save to views
             _saveTimer = new System.Timers.Timer(Global.BackgroundSaveViewTimer * 1000);

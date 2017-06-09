@@ -459,6 +459,9 @@ namespace RaptorDB
                     bool freelast = false;
                     AllocationBlock old = null;
 
+                    if (ab.key == null)
+                        continue;
+
                     if (keys.Get(ab.key, out last))
                     {
                         old = this.FillAllocationBlock(last);
