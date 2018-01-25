@@ -34,7 +34,11 @@ namespace RaptorDB
 
         public void abort()
         {
-          _thread.Abort();  
+            try
+            {
+                _thread.Abort();
+            }
+            catch { }
         }
 
     }

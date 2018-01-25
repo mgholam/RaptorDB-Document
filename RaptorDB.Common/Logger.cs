@@ -67,7 +67,7 @@ namespace RaptorDB
         private System.Timers.Timer _saveTimer;
         private int _lastLogsToKeep = 100;
         internal int _logabove = 1;
-        private string _S = "\\";
+        private string _S = "" + Path.DirectorySeparatorChar;
 
         public bool ShowMethodNames
         {
@@ -212,7 +212,7 @@ namespace RaptorDB
                     fn = "0000-00-00.zip";
                     Directory.CreateDirectory(path);
                 }
-                
+
                 var zip = ZipStorer.Create(path + fn, "");
                 foreach (var f in files)
                 {

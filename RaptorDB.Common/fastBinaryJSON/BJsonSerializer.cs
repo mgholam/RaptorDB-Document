@@ -132,6 +132,9 @@ namespace fastBinaryJSON
 
             else if (obj is DateTime)
                 WriteDateTime((DateTime)obj);
+
+            else if (obj is TimeSpan)
+                WriteTimeSpan((TimeSpan)obj);
 #if NET4
             else if (obj is System.Dynamic.ExpandoObject)
                 WriteStringDictionary((IDictionary<string, object>)obj);
@@ -172,6 +175,18 @@ namespace fastBinaryJSON
 
             else
                 WriteObject(obj);
+        }
+
+        private void WriteTimeSpan(TimeSpan obj)
+        {
+            _output.WriteByte(TOKENS.TIMESPAN);
+            byte[] b = Helper.GetBytes(obj.Ticks, false);
+            _output.Write(b, 0, b.Length);
+        }
+
+        private void WriteException(Exception obj)
+        {
+           
         }
 
         private void WriteTypedArray(ICollection array)

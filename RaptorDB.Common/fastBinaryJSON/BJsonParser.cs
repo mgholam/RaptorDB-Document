@@ -161,9 +161,21 @@ namespace fastBinaryJSON
                     return TOKENS.COMMA;
                 case TOKENS.ARRAY_TYPED:
                     return ParseTypedArray();
+                case TOKENS.TIMESPAN:
+                    return ParsTimeSpan();
             }
 
             throw new Exception("Unrecognized token at index = " + _index);
+        }
+
+        private TimeSpan ParsTimeSpan()
+        {
+            long l = Helper.ToInt64(_json, _index);
+            _index += 8;
+
+            TimeSpan dt = new TimeSpan(l);
+
+            return dt;
         }
 
         private object ParseTypedArray()

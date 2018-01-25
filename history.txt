@@ -1,4 +1,17 @@
-﻿v3.3.17
+﻿v3.3.19
+-------
+- upgrade to fastJSON v2.1.28
+- upgrade to fastBinaryJSON v1.4.21
+- support for .netcore 2.0 and netstandard 2.0
+
+v3.3.18
+-------
+- upgrade to fastJSON v2.1.26
+- upgrade to fastBinaryJSON v1.4.20
+- possible edge case currupt deleted rows index on FreeMemory() fix
+- 
+
+v3.3.17
 -------
 - added ITokenizer full text search overload to RaptorDB.Open()
 - tokenizer rewrite

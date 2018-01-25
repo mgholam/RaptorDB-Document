@@ -147,7 +147,11 @@ namespace System.Linq.Dynamic
         private ClassFactory()
         {
             AssemblyName name = new AssemblyName("DynamicClasses");
+#if NETSTANDARD2_0
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
+#else
             AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(name, AssemblyBuilderAccess.Run);
+#endif
 #if ENABLE_LINQ_PARTIAL_TRUST
             new ReflectionPermission(PermissionState.Unrestricted).Assert();
 #endif
@@ -201,7 +205,11 @@ namespace System.Linq.Dynamic
                     FieldInfo[] fields = GenerateProperties(tb, properties);
                     GenerateEquals(tb, fields);
                     GenerateGetHashCode(tb, fields);
+#if NETSTANDARD2_0
+                    Type result = tb.CreateTypeInfo();
+#else
                     Type result = tb.CreateType();
+#endif
                     classCount++;
                     return result;
                 }
@@ -327,11 +335,11 @@ namespace System.Linq.Dynamic
             return string.Format(Res.ParseExceptionFormat, Message, position);
         }
     }
-    #endregion
+#endregion
 
     internal class ExpressionParser
     {
-        #region [ internal ]
+#region [ internal ]
         struct Token
         {
             public TokenId id;
@@ -504,9 +512,9 @@ namespace System.Linq.Dynamic
             typeof(Math),
             typeof(Convert)
         };
-        #endregion
+#endregion
 
-        #region [   gunk   ]
+#region [   gunk   ]
 
 
         //// *, /, %, mod operators
@@ -826,7 +834,7 @@ namespace System.Linq.Dynamic
         //static readonly string keywordIif = "iif";
         //static readonly string keywordNew = "new";
 
-        #endregion
+#endregion
 
         static readonly Expression trueLiteral = Expression.Constant(true);
         static readonly Expression falseLiteral = Expression.Constant(false);
@@ -1362,7 +1370,7 @@ namespace System.Linq.Dynamic
             int errorPos = token.pos;
             string id = GetIdentifier();
             NextToken();
-            #region commented
+#region commented
             //if (token.id == TokenId.OpenParen)
             //{
             //    //if (instance != null && type != typeof(string))
@@ -1395,7 +1403,7 @@ namespace System.Linq.Dynamic
             //    }
             //}
             //else 
-            #endregion
+#endregion
             {
                 MemberInfo member = FindPropertyOrField(type, id, instance == null);
                 if (member == null)

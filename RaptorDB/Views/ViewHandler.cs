@@ -184,7 +184,8 @@ namespace RaptorDB.Views
             foreach (var i in _indexes)
                 i.Value.FreeMemory();
 
-            _deletedRows.FreeMemory();
+            // FIX : possible bug here when long running
+            //_deletedRows.FreeMemory(); 
             InvalidateCaches();
         }
 

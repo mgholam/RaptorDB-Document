@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\raptordb.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputPath>..\..\nuget\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\RaptorDB.Common\DataTypes.cs" Link="DataTypes.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastBinaryJSON\BJSON.cs" Link="fastBinaryJSON\BJSON.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastBinaryJSON\BJsonParser.cs" Link="fastBinaryJSON\BJsonParser.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastBinaryJSON\BJsonSerializer.cs" Link="fastBinaryJSON\BJsonSerializer.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastBinaryJSON\dynamic.cs" Link="fastBinaryJSON\dynamic.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastJSON\dynamic.cs" Link="fastJSON\dynamic.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastJSON\Formatter.cs" Link="fastJSON\Formatter.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastJSON\Getters.cs" Link="fastJSON\Getters.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastJSON\JSON.cs" Link="fastJSON\JSON.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastJSON\JsonParser.cs" Link="fastJSON\JsonParser.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastJSON\JsonSerializer.cs" Link="fastJSON\JsonSerializer.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastJSON\Reflection.cs" Link="fastJSON\Reflection.cs" />
+    <Compile Include="..\..\RaptorDB.Common\FieldDescriptor.cs" Link="FieldDescriptor.cs" />
+    <Compile Include="..\..\RaptorDB.Common\Interfaces.cs" Link="Interfaces.cs" />
+    <Compile Include="..\..\RaptorDB.Common\IRaptorDB.cs" Link="IRaptorDB.cs" />
+    <Compile Include="..\..\RaptorDB.Common\LINQString.cs" Link="LINQString.cs" />
+    <Compile Include="..\..\RaptorDB.Common\Logger.cs" Link="Logger.cs" />
+    <Compile Include="..\..\RaptorDB.Common\MiniLZO.cs" Link="MiniLZO.cs" />
+    <Compile Include="..\..\RaptorDB.Common\MurMurHash2.cs" Link="MurMurHash2.cs" />
+    <Compile Include="..\..\RaptorDB.Common\NetworkClient.cs" Link="NetworkClient.cs" />
+    <Compile Include="..\..\RaptorDB.Common\Packets.cs" Link="Packets.cs" />
+    <Compile Include="..\..\RaptorDB.Common\RaptorDBClient.cs" Link="RaptorDBClient.cs" />
+    <Compile Include="..\..\RaptorDB.Common\SafeDictionary.cs" Link="SafeDictionary.cs" />
+    <Compile Include="..\..\RaptorDB.Common\View.cs" Link="View.cs" />
+    <Compile Include="..\..\RaptorDB.Common\ZipStorer.cs" Link="ZipStorer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="fastBinaryJSON\" />
+    <Folder Include="fastJSON\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
+  </ItemGroup>
+
+</Project>

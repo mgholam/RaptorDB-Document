@@ -83,6 +83,12 @@ namespace fastJSON
                 double d = (double)obj;
                 if (double.IsNaN(d))
                     _output.Append("\"NaN\"");
+                else if (double.IsInfinity(d))
+                {
+                    _output.Append("\"");
+                    _output.Append(((IConvertible)obj).ToString(NumberFormatInfo.InvariantInfo));
+                    _output.Append("\"");
+                }
                 else
                     _output.Append(((IConvertible)obj).ToString(NumberFormatInfo.InvariantInfo));
             }
@@ -91,6 +97,12 @@ namespace fastJSON
                 float d = (float)obj;
                 if (float.IsNaN(d))
                     _output.Append("\"NaN\"");
+                else if (float.IsInfinity(d))
+                {
+                    _output.Append("\"");
+                    _output.Append(((IConvertible)obj).ToString(NumberFormatInfo.InvariantInfo));
+                    _output.Append("\"");
+                }
                 else
                     _output.Append(((IConvertible)obj).ToString(NumberFormatInfo.InvariantInfo));
             }
@@ -633,7 +645,7 @@ namespace fastJSON
                 }
                 else
                 {
-                    if (c != '\t' && c != '\n' && c != '\r' && c != '\"' && c != '\\')// && c != ':' && c!=',')
+                    if (c != '\t' && c != '\n' && c != '\r' && c != '\"' && c != '\\' && c!='\0')// && c != ':' && c!=',')
                     {
                         if (runIndex == -1)
                             runIndex = index;
@@ -655,6 +667,7 @@ namespace fastJSON
                     case '\n': _output.Append("\\n"); break;
                     case '"':
                     case '\\': _output.Append('\\'); _output.Append(c); break;
+                    case '\0': _output.Append("\\u0000"); break;
                     default:
                         if (_useEscapedUnicode)
                         {

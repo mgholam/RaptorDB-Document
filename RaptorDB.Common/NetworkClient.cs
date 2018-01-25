@@ -16,11 +16,24 @@ namespace RaptorDB.Common
 
     public class NetworkClient
     {
-        internal static class Config
+        public static class Config
         {
+            /// <summary>
+            /// Block buffer size (default = 32kb)
+            /// </summary>
             public static int BufferSize = 32 * 1024;
+            /// <summary>
+            /// Log data if over (default = 1,000,000)
+            /// </summary>
             public static int LogDataSizesOver = 1000000;
+            /// <summary>
+            /// Compress data if over (default = 1,000,000)
+            /// </summary>
             public static int CompressDataOver = 1000000;
+            /// <summary>
+            /// Kill inactive client connections (default = 30sec)
+            /// </summary>
+            public static int KillConnectionSeconds = 30;
         }
 
         public NetworkClient(string server, int port)
@@ -28,6 +41,7 @@ namespace RaptorDB.Common
             _server = server;
             _port = port;
         }
+        private ILog log = LogManager.GetLogger(typeof(NetworkClient));
         private TcpClient _client;
         private string _server;
         private int _port;
@@ -44,32 +58,48 @@ namespace RaptorDB.Common
 
         public object Send(object data)
         {
-            CheckConnection();
-
-            byte[] hdr = new byte[5];
-            hdr[0] = (UseBJSON ? (byte)3 : (byte)0);
-            byte[] dat = fastBinaryJSON.BJSON.ToBJSON(data);
-            byte[] len = Helper.GetBytes(dat.Length, false);
-            Array.Copy(len, 0, hdr, 1, 4);
-            _client.Client.Send(hdr);
-            _client.Client.Send(dat);
-
-            byte[] rechdr = new byte[5];
-            using (NetworkStream n = new NetworkStream(_client.Client))
+            try
             {
-                n.Read(rechdr, 0, 5);
-                int c = Helper.ToInt32(rechdr, 1);
-                byte[] recd = new byte[c];
-                int bytesRead = 0;
-                int chunksize = 1;
-                while (bytesRead < c && chunksize > 0)
-                    bytesRead +=
-                      chunksize = n.Read
-                        (recd, bytesRead, c - bytesRead);
-                if ((rechdr[0] & (byte)4) == (byte)4)
-                    recd = MiniLZO.Decompress(recd);
-                if ((rechdr[0] & (byte)3) == (byte)3)
-                    return fastBinaryJSON.BJSON.ToObject(recd);
+                CheckConnection();
+
+                byte[] hdr = new byte[5];
+                hdr[0] = (UseBJSON ? (byte)3 : (byte)0);
+                byte[] dat = fastBinaryJSON.BJSON.ToBJSON(data);
+                bool compressed = false;
+                if (dat.Length > NetworkClient.Config.CompressDataOver)
+                {
+                    log.Debug("compressing data over limit : " + dat.Length.ToString("#,#"));
+                    compressed = true;
+                    dat = MiniLZO.Compress(dat);
+                    log.Debug("new size : " + dat.Length.ToString("#,#"));
+                }
+                byte[] len = Helper.GetBytes(dat.Length, false);
+                hdr[0] = (byte)(3 + (compressed ? 4 : 0));
+                Array.Copy(len, 0, hdr, 1, 4);
+                _client.Client.Send(hdr);
+                _client.Client.Send(dat);
+
+                byte[] rechdr = new byte[5];
+                using (NetworkStream n = new NetworkStream(_client.Client))
+                {
+                    n.Read(rechdr, 0, 5);
+                    int c = Helper.ToInt32(rechdr, 1);
+                    byte[] recd = new byte[c];
+                    int bytesRead = 0;
+                    int chunksize = 1;
+                    while (bytesRead < c && chunksize > 0)
+                        bytesRead +=
+                          chunksize = n.Read
+                            (recd, bytesRead, c - bytesRead);
+                    if ((rechdr[0] & (byte)4) == (byte)4)
+                        recd = MiniLZO.Decompress(recd);
+                    if ((rechdr[0] & (byte)3) == (byte)3)
+                        return fastBinaryJSON.BJSON.ToObject(recd);
+                }
+            }
+            catch
+            {
+
             }
             return null;
         }
@@ -85,7 +115,9 @@ namespace RaptorDB.Common
         public void Close()
         {
             if (_client != null)
+            {
                 _client.Close();
+            }
         }
     }
 
@@ -115,7 +147,7 @@ namespace RaptorDB.Common
         {
             TcpListener listener = new TcpListener(IPAddress.Any, _port);
             listener.Start();
-            
+
             while (_run)
             {
                 try
@@ -130,7 +162,7 @@ namespace RaptorDB.Common
         void t_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             if (count > 0)
-                log.Debug("tcp connects/sec = " + count);
+                log.Info("tcp connects/sec = " + count);
             count = 0;
         }
 
@@ -158,39 +190,54 @@ namespace RaptorDB.Common
                             (data, bytesRead, count - bytesRead);
 
                     object o = fastBinaryJSON.BJSON.ToObject(data);
+                    if ((c[0] & (byte)4) == (byte)4)
+                        data = MiniLZO.Decompress(data);
 
                     object r = _handler(o);
                     bool compressed = false;
-                    data = fastBinaryJSON.BJSON.ToBJSON(r);
-                    if (data.Length > NetworkClient.Config.CompressDataOver)
+                    var dataret = fastBinaryJSON.BJSON.ToBJSON(r);
+                    r = null;
+                    if (dataret.Length > NetworkClient.Config.CompressDataOver)
                     {
-                        log.Debug("compressing data over limit : " + data.Length.ToString("#,#"));
+                        log.Debug("compressing data over limit : " + dataret.Length.ToString("#,#"));
                         compressed = true;
-                        data = MiniLZO.Compress(data);
-                        log.Debug("new size : " + data.Length.ToString("#,#"));
+                        dataret = MiniLZO.Compress(dataret);
+                        log.Debug("new size : " + dataret.Length.ToString("#,#"));
                     }
-                    if (data.Length > NetworkClient.Config.LogDataSizesOver)
-                        log.Debug("data size (bytes) = " + data.Length.ToString("#,#"));
+                    if (dataret.Length > NetworkClient.Config.LogDataSizesOver)
+                        log.Debug("data size (bytes) = " + dataret.Length.ToString("#,#"));
 
-                    byte[] b = BitConverter.GetBytes(data.Length);
+                    byte[] b = BitConverter.GetBytes(dataret.Length);
                     byte[] hdr = new byte[5];
                     hdr[0] = (byte)(3 + (compressed ? 4 : 0));
                     Array.Copy(b, 0, hdr, 1, 4);
                     n.Write(hdr, 0, 5);
-                    n.Write(data, 0, data.Length);
+                    n.Write(dataret, 0, dataret.Length);
 
+                    //n.Flush();
+                    //return;
                     int wait = 0;
-                    while (n.DataAvailable == false)
+                    bool close = false;
+                    var dt = FastDateTime.Now;
+                    while (n.DataAvailable == false && close == false)
                     {
                         wait++;
                         if (wait < 10000) // kludge : for insert performance
                             Thread.Sleep(0);
                         else
+                        {
                             Thread.Sleep(1);
-                        // FEATURE : if wait > 10 min -> close connection 
+                            // wait done -> close connection 
+                            if (FastDateTime.Now.Subtract(dt).TotalSeconds > NetworkClient.Config.KillConnectionSeconds)
+                                close = true;
+                        }
                     }
+                    if (close)
+                        break;
                 }
+                n.Close();
             }
+            client.Close();
         }
     }
 }

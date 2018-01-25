@@ -303,6 +303,16 @@ namespace RaptorDB.Common
             AddStream(_method, _filenameInZip, stream, File.GetLastWriteTime(_pathname), _comment);
             stream.Close();
         }
+
+        public void AddFile(Compression _method, string _pathname, string _filenameInZip, string _comment, DateTime lastwrite)
+        {
+            if (Access == FileAccess.Read)
+                throw new InvalidOperationException("Writing is not alowed");
+
+            FileStream stream = new FileStream(_pathname, FileMode.Open, FileAccess.Read);
+            AddStream(_method, _filenameInZip, stream, lastwrite, _comment);
+            stream.Close();
+        }
         /// <summary>
         /// Add full contents of a stream into the Zip storage
         /// </summary>
@@ -450,6 +460,27 @@ namespace RaptorDB.Common
             // Check it is directory. If so, do nothing
             if (Directory.Exists(_filename))
                 return true;
+
+            Stream output = new FileStream(_filename, FileMode.Create, FileAccess.Write);
+            bool result = ExtractFile(_zfe, output);
+            if (result)
+                output.Close();
+
+            File.SetCreationTime(_filename, _zfe.ModifyTime);
+            File.SetLastWriteTime(_filename, _zfe.ModifyTime);
+
+            return result;
+        }
+        public bool ExtractFile2(ZipFileEntry _zfe, string _filename)
+        {
+            // Make sure the parent directory exist
+            //string path = System.IO.Path.GetDirectoryName(_filename);
+
+            //if (!Directory.Exists(path))
+            //    Directory.CreateDirectory(path);
+            //// Check it is directory. If so, do nothing
+            //if (Directory.Exists(_filename))
+            //    return true;
 
             Stream output = new FileStream(_filename, FileMode.Create, FileAccess.Write);
             bool result = ExtractFile(_zfe, output);

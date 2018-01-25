@@ -1,0 +1,122 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\raptordb.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\..\nuget</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\RaptorDB\cron\CronDaemon.cs" Link="cron\CronDaemon.cs" />
+    <Compile Include="..\..\RaptorDB\cron\CronJob.cs" Link="cron\CronJob.cs" />
+    <Compile Include="..\..\RaptorDB\cron\CronSchedule.cs" Link="cron\CronSchedule.cs" />
+    <Compile Include="..\..\RaptorDB\DataTypes\DataTypes.cs" Link="DataTypes\DataTypes.cs" />
+    <Compile Include="..\..\RaptorDB\Global.cs" Link="Global.cs" />
+    <Compile Include="..\..\RaptorDB\Helper\WAHBitarray2.cs" Link="Helper\WAHBitarray2.cs" />
+    <Compile Include="..\..\RaptorDB\Indexes\BitmapIndex.cs" Link="Indexes\BitmapIndex.cs" />
+    <Compile Include="..\..\RaptorDB\Indexes\Cache.cs" Link="Indexes\Cache.cs" />
+    <Compile Include="..\..\RaptorDB\Indexes\Hoot.cs" Link="Indexes\Hoot.cs" />
+    <Compile Include="..\..\RaptorDB\Indexes\IIndex.cs" Link="Indexes\IIndex.cs" />
+    <Compile Include="..\..\RaptorDB\Indexes\Indexes.cs" Link="Indexes\Indexes.cs" />
+    <Compile Include="..\..\RaptorDB\Indexes\IndexFile.cs" Link="Indexes\IndexFile.cs" />
+    <Compile Include="..\..\RaptorDB\Indexes\ITokenizer.cs" Link="Indexes\ITokenizer.cs" />
+    <Compile Include="..\..\RaptorDB\Indexes\MGIndex.cs" Link="Indexes\MGIndex.cs" />
+    <Compile Include="..\..\RaptorDB\Indexes\tokenizer.cs" Link="Indexes\tokenizer.cs" />
+    <Compile Include="..\..\RaptorDB\Properties\Resources.Designer.cs" Link="Resources.Designer.cs" />
+    <Compile Include="..\..\RaptorDB\RaptorDB.cs" Link="RaptorDB.cs" />
+    <Compile Include="..\..\RaptorDB\RaptorDBServer.cs" Link="RaptorDBServer.cs" />
+    <Compile Include="..\..\RaptorDB\Replication\Configuration.cs" Link="Replication\Configuration.cs" />
+    <Compile Include="..\..\RaptorDB\Replication\Packets.cs" Link="Replication\Packets.cs" />
+    <Compile Include="..\..\RaptorDB\Replication\ReplicationClient.cs" Link="Replication\ReplicationClient.cs" />
+    <Compile Include="..\..\RaptorDB\Replication\ReplicationServer.cs" Link="Replication\ReplicationServer.cs" />
+    <Compile Include="..\..\RaptorDB\REST\aWebServer.cs" Link="REST\aWebServer.cs" />
+    <Compile Include="..\..\RaptorDB\REST\rdbRest.cs" Link="REST\rdbRest.cs" />
+    <Compile Include="..\..\RaptorDB\Storage\KeyStore.cs" Link="Storage\KeyStore.cs" />
+    <Compile Include="..\..\RaptorDB\Storage\KeyStoreHF.cs" Link="Storage\KeyStoreHF.cs" />
+    <Compile Include="..\..\RaptorDB\Storage\StorageFile.cs" Link="Storage\StorageFile.cs" />
+    <Compile Include="..\..\RaptorDB\Storage\StorageFileHF.cs" Link="Storage\StorageFileHF.cs" />
+    <Compile Include="..\..\RaptorDB\Views\apimapper.cs" Link="Views\apimapper.cs" />
+    <Compile Include="..\..\RaptorDB\Views\Dynamic.cs" Link="Views\Dynamic.cs" />
+    <Compile Include="..\..\RaptorDB\Views\LINQQuery.cs" Link="Views\LINQQuery.cs" />
+    <Compile Include="..\..\RaptorDB\Views\TaskQueue.cs" Link="Views\TaskQueue.cs" />
+    <Compile Include="..\..\RaptorDB\Views\ViewHandler.cs" Link="Views\ViewHandler.cs" />
+    <Compile Include="..\..\RaptorDB\Views\ViewManager.cs" Link="Views\ViewManager.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\app.html" Link="WEB\app.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\favicon.ico" Link="WEB\favicon.ico" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\nav.html" Link="WEB\nav.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\raptordb.png" Link="WEB\raptordb.png" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\style.css" Link="WEB\style.css" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\configs.html" Link="WEB\pages\configs.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\dochistory.html" Link="WEB\pages\dochistory.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\docsearch.html" Link="WEB\pages\docsearch.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\docview.html" Link="WEB\pages\docview.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\fileview.html" Link="WEB\pages\fileview.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\hfbrowse.html" Link="WEB\pages\hfbrowse.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\query.html" Link="WEB\pages\query.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\schema.html" Link="WEB\pages\schema.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\schemadata.html" Link="WEB\pages\schemadata.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\ssquery.html" Link="WEB\pages\ssquery.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\systeminfo.html" Link="WEB\pages\systeminfo.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\RaptorDB\Replication\msg.txt" Link="Replication\msg.txt" />
+    <None Include="..\..\RaptorDB\Replication\Readme.txt" Link="Replication\Readme.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\RaptorDB\Properties\Resources.resx" Link="Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.4.1" />
+    <PackageReference Include="System.CodeDom" Version="4.4.0" />
+    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RaptorDb.Common\RaptorDb.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="cron\" />
+    <Folder Include="DataTypes\" />
+    <Folder Include="Helper\" />
+    <Folder Include="REST\" />
+    <Folder Include="Replication\" />
+    <Folder Include="Storage\" />
+    <Folder Include="Views\" />
+    <Folder Include="WEB\JS\" />
+    <Folder Include="WEB\pages\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\docview.js" Link="WEB\JS\docview.js" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\extensions.js" Link="WEB\JS\extensions.js" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\hfview.js" Link="WEB\JS\hfview.js" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\nav.js" Link="WEB\JS\nav.js" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\query.js" Link="WEB\JS\query.js" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\raptordb.js" Link="WEB\JS\raptordb.js" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\schema.js" Link="WEB\JS\schema.js" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\ssquery.js" Link="WEB\JS\ssquery.js" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\system.js" Link="WEB\JS\system.js" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\weld.js" Link="WEB\JS\weld.js" />
+  </ItemGroup>
+
+</Project>

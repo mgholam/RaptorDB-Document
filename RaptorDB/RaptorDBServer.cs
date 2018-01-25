@@ -71,11 +71,11 @@ namespace RaptorDB
             _unusedintsancetimer = new System.Timers.Timer(300 * 1000);// FIX : configuration here
             _unusedintsancetimer.AutoReset = true;
             _unusedintsancetimer.Enabled = true;
-            _unusedintsancetimer.Elapsed += _unusedinsancetimer_Elapsed;
+            _unusedintsancetimer.Elapsed += _unusedinstancetimer_Elapsed;
         }
 
         private object _lock = new object();
-        private void _unusedinsancetimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        private void _unusedinstancetimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             lock (_lock)
             {

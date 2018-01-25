@@ -90,6 +90,10 @@ namespace fastJSON
         /// Save property/field names as lowercase (default = false)
         /// </summary>
         public bool SerializeToLowerCaseNames = false;
+        /// <summary>
+        /// Formatter indent spaces (default = 3)
+        /// </summary>
+        public byte FormatterIndentSpaces = 3;
 
         public void FixValues()
         {
@@ -130,7 +134,7 @@ namespace fastJSON
         {
             string s = ToJSON(obj, param);
 
-            return Beautify(s);
+            return Beautify(s, param.FormatterIndentSpaces);
         }
         /// <summary>
         /// Create a json representation for an object
@@ -235,6 +239,17 @@ namespace fastJSON
             return new deserializer(Parameters).ToObject(json, type);
         }
         /// <summary>
+        /// Create an object of type from the json with parameter override on this call
+        /// </summary>
+        /// <param name="json"></param>
+        /// <param name="type"></param>
+        /// <param name="par"></param>
+        /// <returns></returns>
+        public static object ToObject(string json, Type type, JSONParameters par)
+        {
+            return new deserializer(par).ToObject(json, type);
+        }
+        /// <summary>
         /// Fill a given object with the json represenation
         /// </summary>
         /// <param name="input"></param>
@@ -273,7 +288,19 @@ namespace fastJSON
         /// <returns></returns>
         public static string Beautify(string input)
         {
-            return Formatter.PrettyPrint(input);
+            var i = new string(' ', JSON.Parameters.FormatterIndentSpaces);
+            return Formatter.PrettyPrint(input, i);
+        }
+        /// <summary>
+        /// Create a human readable string from the json with specified indent spaces
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="spaces"></param>
+        /// <returns></returns>
+        public static string Beautify(string input, byte spaces)
+        {
+            var i = new string(' ', spaces);
+            return Formatter.PrettyPrint(input, i);
         }
         /// <summary>
         /// Register custom type handlers for your own types not natively handled by fastJSON
@@ -391,8 +418,20 @@ namespace fastJSON
                     return RootArray(o, type);
                 else if (type == typeof(Hashtable))
                     return RootHashTable((List<object>)o);
-                else
-                    return (o as List<object>).ToArray();
+                else if (type == null)
+                {
+                    List<object> l = (List<object>)o;
+                    if (l.Count > 0 && l[0].GetType() == typeof(Dictionary<string, object>))
+                    {
+                        Dictionary<string, object> globals = new Dictionary<string, object>();
+                        List<object> op = new List<object>();
+                        // try to get $types 
+                        foreach (var i in l)
+                            op.Add(ParseDictionary((Dictionary<string, object>)i, globals, null, null));
+                        return op;
+                    }
+                    return l.ToArray();
+                }
             }
             else if (type != null && o.GetType() != type)
                 return ChangeType(o, type);
@@ -515,7 +554,7 @@ namespace fastJSON
                 {
                     usTicks = CreateInteger(value, p, 4);
                     p = 27;
-                }                
+                }
             }
 
             if (value[p] == 'Z')
@@ -568,12 +607,13 @@ namespace fastJSON
 
         private void DoParseList(object parse, Type it, IList o)
         {
+            Dictionary<string, object> globals = new Dictionary<string, object>();
             foreach (var k in (IList)parse)
             {
                 _usingglobals = false;
                 object v = k;
                 if (k is Dictionary<string, object>)
-                    v = ParseDictionary(k as Dictionary<string, object>, null, it, null);
+                    v = ParseDictionary(k as Dictionary<string, object>, globals, it, null);
                 else
                     v = ChangeType(k, it);
 
@@ -653,12 +693,15 @@ namespace fastJSON
             if (d.TryGetValue("$types", out tn))
             {
                 _usingglobals = true;
-                globaltypes = new Dictionary<string, object>();
+                if (globaltypes == null)
+                    globaltypes = new Dictionary<string, object>();
                 foreach (var kv in (Dictionary<string, object>)tn)
                 {
                     globaltypes.Add((string)kv.Value, kv.Key);
                 }
             }
+            if (globaltypes != null)
+                _usingglobals = true;
 
             bool found = d.TryGetValue("$type", out tn);
 #if !SILVERLIGHT
@@ -698,24 +741,25 @@ namespace fastJSON
                 _cirrev.Add(circount, o);
             }
 
-            Dictionary<string, myPropInfo> props = Reflection.Instance.Getproperties(type, typename);//, Reflection.Instance.IsTypeRegistered(type));
+            Dictionary<string, myPropInfo> props = Reflection.Instance.Getproperties(type, typename);
             foreach (var kv in d)
             {
                 var n = kv.Key;
                 var v = kv.Value;
-                string name = n.ToLower();
+
+                string name = n;//.ToLower();
                 if (name == "$map")
                 {
                     ProcessMap(o, props, (Dictionary<string, object>)d[name]);
                     continue;
                 }
                 myPropInfo pi;
-                if (props.TryGetValue(name, out pi) == false)
-                    continue;
+                if (props.TryGetValue(name.ToLower(), out pi) == false)
+                    if (props.TryGetValue(name, out pi) == false)
+                        continue;
+
                 if (pi.CanWrite)
                 {
-                    //object v = d[n];
-
                     if (v != null)
                     {
                         object oset = null;
@@ -775,19 +819,15 @@ namespace fastJSON
 
         private long AutoConv(object value)
         {
-            //string s = value as string;
-            //if (s == null)
-            //    return (long)value;
-            //else
-            //    return CreateLong(s, 0, s.Length);
-
             if (value is string)
             {
                 string s = (string)value;
                 return CreateLong(s, 0, s.Length);
             }
-            else
+            else if (value is long)
                 return (long)value;
+            else
+                return Convert.ToInt64(value);
         }
 
         private StringDictionary CreateSD(Dictionary<string, object> d)
@@ -1097,6 +1137,7 @@ namespace fastJSON
             dt.BeginLoadData();
             List<int> guidcols = new List<int>();
             List<int> datecol = new List<int>();
+            List<int> bytearraycol = new List<int>();
 
             foreach (DataColumn c in dt.Columns)
             {
@@ -1104,6 +1145,8 @@ namespace fastJSON
                     guidcols.Add(c.Ordinal);
                 if (_params.UseUTCDateTime && (c.DataType == typeof(DateTime) || c.DataType == typeof(DateTime?)))
                     datecol.Add(c.Ordinal);
+                if (c.DataType == typeof(byte[]))
+                    bytearraycol.Add(c.Ordinal);
             }
 
             foreach (List<object> row in rows)
@@ -1115,6 +1158,12 @@ namespace fastJSON
                     string s = (string)v[i];
                     if (s != null && s.Length < 36)
                         v[i] = new Guid(Convert.FromBase64String(s));
+                }
+                foreach (int i in bytearraycol)
+                {
+                    string s = (string)v[i];
+                    if (s != null)
+                        v[i] = Convert.FromBase64String(s);
                 }
                 if (_params.UseUTCDateTime)
                 {

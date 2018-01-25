@@ -427,14 +427,14 @@ namespace RaptorDB
             return bc;
         }
 
-        //#pragma warning disable 642
+        #pragma warning disable 642
         private void CheckInternalOP()
         {
             if (_stopOperations)
                 lock (_oplock) { } // yes! this is good
             Interlocked.Increment(ref _workingCount);
         }
-        //#pragma warning restore 642
+        #pragma warning restore 642
 
         private void Done()
         {

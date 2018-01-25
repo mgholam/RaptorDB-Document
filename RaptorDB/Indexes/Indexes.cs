@@ -123,7 +123,7 @@ namespace RaptorDB
 
         public void FreeMemory()
         {
-            lock (_lock)
+            //lock (_lock)
             {
                 SaveIndex();
                 _bits.FreeMemory();

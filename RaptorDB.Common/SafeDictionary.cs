@@ -204,7 +204,6 @@ namespace RaptorDB.Common
         static FastDateTime()
         {
             LocalUtcOffset = TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now);
-
         }
     }
     //------------------------------------------------------------------------------------------------------------------
