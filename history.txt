@@ -1,4 +1,8 @@
-﻿v3.3.19
+﻿v3.3.19.1
+---------
+- bug fix shutting down in .net core on ubuntu
+
+v3.3.19
 -------
 - upgrade to fastJSON v2.1.28
 - upgrade to fastBinaryJSON v1.4.21

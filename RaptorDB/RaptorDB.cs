@@ -286,11 +286,11 @@ namespace RaptorDB
             File.WriteAllText(_Path + "RaptorDB.config", fastJSON.JSON.ToNiceJSON(new Global(), new fastJSON.JSONParameters { UseExtensions = false }));
             if (_cron != null)
                 _cron.Stop();
+            _fulltextTimer.Stop();
             _fulltextindex.Shutdown();
 
             _log.Debug("Shutting down");
             _saveTimer.Stop();
-            _fulltextTimer.Stop();
             _viewManager.ShutDown();
             _objStore.Shutdown();
             _fileStore.Shutdown();
