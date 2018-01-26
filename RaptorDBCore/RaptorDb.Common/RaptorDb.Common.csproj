@@ -4,6 +4,9 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\raptordb.snk</AssemblyOriginatorKeyFile>
+    <AssemblyVersion>3.3.19.1</AssemblyVersion>
+    <FileVersion>3.3.19.1</FileVersion>
+    <Version>3.3.19</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
