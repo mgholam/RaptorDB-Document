@@ -150,6 +150,7 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Replication\msg.txt" />
   </ItemGroup>
@@ -215,7 +216,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>md "$(SolutionDir)nuget\net40"
-copy "$(TargetPath)" "$(SolutionDir)nuget\net40\$(TargetFileName)"</PostBuildEvent>
+    <PostBuildEvent>md "$(SolutionDir)output\net40"
+copy "$(TargetPath)" "$(SolutionDir)output\net40\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
 </Project>

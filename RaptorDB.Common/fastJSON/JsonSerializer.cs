@@ -116,7 +116,7 @@ namespace fastJSON
             else if (obj is TimeSpan)
                 _output.Append(((TimeSpan)obj).Ticks);
 
-#if net4
+#if NET4
             else if (_params.KVStyleStringDictionary == false &&
                 obj is IEnumerable<KeyValuePair<string, object>>)
 
@@ -124,7 +124,7 @@ namespace fastJSON
 #endif
 
             else if (_params.KVStyleStringDictionary == false && obj is IDictionary &&
-                obj.GetType().IsGenericType && obj.GetType().GetGenericArguments()[0] == typeof(string))
+                obj.GetType().IsGenericType && Reflection.Instance.GetGenericArguments(obj.GetType())[0] == typeof(string))
 
                 WriteStringDictionary((IDictionary)obj);
             else if (obj is IDictionary)
@@ -199,7 +199,7 @@ namespace fastJSON
                 {
                     if (pendingSeparator) _output.Append(',');
                     if (_params.SerializeToLowerCaseNames)
-                        WritePair(key.ToLower(), nameValueCollection[key]);
+                        WritePair(key.ToLowerInvariant(), nameValueCollection[key]);
                     else
                         WritePair(key, nameValueCollection[key]);
                     pendingSeparator = true;
@@ -225,7 +225,7 @@ namespace fastJSON
 
                     string k = (string)entry.Key;
                     if (_params.SerializeToLowerCaseNames)
-                        WritePair(k.ToLower(), entry.Value);
+                        WritePair(k.ToLowerInvariant(), entry.Value);
                     else
                         WritePair(k, entry.Value);
                     pendingSeparator = true;
@@ -563,7 +563,7 @@ namespace fastJSON
 
                     string k = (string)entry.Key;
                     if (_params.SerializeToLowerCaseNames)
-                        WritePair(k.ToLower(), entry.Value);
+                        WritePair(k.ToLowerInvariant(), entry.Value);
                     else
                         WritePair(k, entry.Value);
                     pendingSeparator = true;
@@ -587,7 +587,7 @@ namespace fastJSON
                     string k = entry.Key;
 
                     if (_params.SerializeToLowerCaseNames)
-                        WritePair(k.ToLower(), entry.Value);
+                        WritePair(k.ToLowerInvariant(), entry.Value);
                     else
                         WritePair(k, entry.Value);
                     pendingSeparator = true;

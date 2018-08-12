@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>RaptorDB_doc</id>
-        <version>3.3.19.1</version>
+        <version>3.4.0</version>
         <title>RaptorDB Document Database</title>
         <authors>mgholam</authors>
         <owners />
@@ -12,12 +12,12 @@
     </metadata>
     <files>
         <file src="readme.md" target="lib\readme.md" />
-        <file src="nuget\net40\RaptorDB.dll" target="lib\net40\RaptorDB.dll" />
-        <file src="nuget\net40\RaptorDB.Common.dll" target="lib\net40\RaptorDB.Common.dll" />
-        <file src="nuget\netstandard2.0\RaptorDB.dll" target="lib\netstandard2.0\RaptorDB.dll" />
-        <file src="nuget\netstandard2.0\RaptorDB.deps.json" target="lib\netstandard2.0\RaptorDB.deps.json" />
-        <file src="nuget\netstandard2.0\RaptorDB.Common.dll" target="lib\netstandard2.0\RaptorDB.Common.dll" />
-        <file src="nuget\netstandard2.0\RaptorDB.Common.deps.json" target="lib\netstandard2.0\RaptorDB.Common.deps.json" />
-        <file src="nuget\RaptorDBServer.exe" target="lib\RaptorDBServer.exe" />
+        <file src="output\net40\RaptorDB.dll" target="lib\net40\RaptorDB.dll" />
+        <file src="output\net40\RaptorDB.Common.dll" target="lib\net40\RaptorDB.Common.dll" />
+        <file src="output\netstandard2.0\RaptorDB.dll" target="lib\netstandard2.0\RaptorDB.dll" />
+        <file src="output\netstandard2.0\RaptorDB.deps.json" target="lib\netstandard2.0\RaptorDB.deps.json" />
+        <file src="output\netstandard2.0\RaptorDB.Common.dll" target="lib\netstandard2.0\RaptorDB.Common.dll" />
+        <file src="output\netstandard2.0\RaptorDB.Common.deps.json" target="lib\netstandard2.0\RaptorDB.Common.deps.json" />
+        <file src="output\RaptorDBServer.exe" target="lib\RaptorDBServer.exe" />
     </files>
 </package>

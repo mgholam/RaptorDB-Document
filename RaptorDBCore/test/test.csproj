@@ -6,14 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RaptorDb.Common\RaptorDb.Common.csproj" />
+    <ProjectReference Include="..\RaptorDB\RaptorDB.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Faker">
       <HintPath>..\..\Faker.dll</HintPath>
-    </Reference>
-    <Reference Include="RaptorDB">
-      <HintPath>..\..\nuget\netstandard2.0\RaptorDB.dll</HintPath>
-    </Reference>
-    <Reference Include="RaptorDb.Common">
-      <HintPath>..\..\nuget\netstandard2.0\RaptorDb.Common.dll</HintPath>
     </Reference>
   </ItemGroup>
 

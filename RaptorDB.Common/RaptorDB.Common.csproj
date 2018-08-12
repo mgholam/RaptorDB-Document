@@ -54,9 +54,11 @@
     <Compile Include="fastBinaryJSON\BJsonParser.cs" />
     <Compile Include="fastBinaryJSON\BJsonSerializer.cs" />
     <Compile Include="fastBinaryJSON\dynamic.cs" />
+    <Compile Include="fastBinaryJSON\Helper.cs" />
     <Compile Include="fastJSON\dynamic.cs" />
     <Compile Include="fastJSON\Formatter.cs" />
     <Compile Include="fastJSON\Getters.cs" />
+    <Compile Include="fastJSON\Helper.cs" />
     <Compile Include="fastJSON\JSON.cs" />
     <Compile Include="fastJSON\JsonParser.cs" />
     <Compile Include="fastJSON\JsonSerializer.cs" />
@@ -78,8 +80,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>md "$(SolutionDir)nuget\net40"
-copy "$(TargetPath)" "$(SolutionDir)nuget\net40\$(TargetFileName)"</PostBuildEvent>
+    <PostBuildEvent>md "$(SolutionDir)output\net40"
+copy "$(TargetPath)" "$(SolutionDir)output\net40\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>"$(SolutionDir)tools\buildversion.exe" "$(SolutionDir)buildversion.cs"</PreBuildEvent>

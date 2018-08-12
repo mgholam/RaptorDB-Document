@@ -69,6 +69,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Service1.resx">
       <DependentUpon>Service1.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -79,8 +80,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>md "$(SolutionDir)nuget"
-copy "$(TargetPath)" "$(SolutionDir)nuget\$(TargetFileName)"</PostBuildEvent>
+    <PostBuildEvent>md "$(SolutionDir)output"
+copy "$(TargetPath)" "$(SolutionDir)output\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

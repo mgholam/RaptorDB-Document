@@ -11,7 +11,7 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputPath>..\..\nuget\</OutputPath>
+    <OutputPath>..\..\output\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,9 +20,11 @@
     <Compile Include="..\..\RaptorDB.Common\fastBinaryJSON\BJsonParser.cs" Link="fastBinaryJSON\BJsonParser.cs" />
     <Compile Include="..\..\RaptorDB.Common\fastBinaryJSON\BJsonSerializer.cs" Link="fastBinaryJSON\BJsonSerializer.cs" />
     <Compile Include="..\..\RaptorDB.Common\fastBinaryJSON\dynamic.cs" Link="fastBinaryJSON\dynamic.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastBinaryJSON\Helper.cs" Link="fastBinaryJSON\Helper.cs" />
     <Compile Include="..\..\RaptorDB.Common\fastJSON\dynamic.cs" Link="fastJSON\dynamic.cs" />
     <Compile Include="..\..\RaptorDB.Common\fastJSON\Formatter.cs" Link="fastJSON\Formatter.cs" />
     <Compile Include="..\..\RaptorDB.Common\fastJSON\Getters.cs" Link="fastJSON\Getters.cs" />
+    <Compile Include="..\..\RaptorDB.Common\fastJSON\Helper.cs" Link="fastJSON\Helper.cs" />
     <Compile Include="..\..\RaptorDB.Common\fastJSON\JSON.cs" Link="fastJSON\JSON.cs" />
     <Compile Include="..\..\RaptorDB.Common\fastJSON\JsonParser.cs" Link="fastJSON\JsonParser.cs" />
     <Compile Include="..\..\RaptorDB.Common\fastJSON\JsonSerializer.cs" Link="fastJSON\JsonSerializer.cs" />
