@@ -1,7 +1,7 @@
-using System;
-using System.IO;
-using System.Collections.Generic;
 using RaptorDB.Common;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 
 namespace RaptorDB
@@ -9,18 +9,16 @@ namespace RaptorDB
     // high frequency storage file with overwrite old values
     internal class StorageFileHF
     {
-        FileStream _datawrite;
-        MGRB _freeList;
-        //Action<MGRB> _savefreeList = null;
-        //Func<MGRB> _readfreeList = null;
-
+        private FileStream _datawriteorg;
+        private BufferedStream _datawrite;
+        private MGRB _freeList = new MGRB();
         private string _filename = "";
         private object _readlock = new object();
         ILog _log = LogManager.GetLogger(typeof(StorageFileHF));
 
         // **** change this if storage format changed ****
-        internal static int _CurrentVersion = 1;
-        int _lastBlockNumber = -1;
+        private static int _CurrentVersion = 1;
+        private int _lastBlockNumber = -1;
         private ushort _BLOCKSIZE = 4096;
         private string _Path = "";
         private string _S = Path.DirectorySeparatorChar.ToString();
@@ -33,7 +31,7 @@ namespace RaptorDB
 
         //private SafeDictionary<string, int> _masterblock = new SafeDictionary<string, int>();
 
-        public StorageFileHF(string filename, ushort blocksize) //: this(filename, blocksize, null, null)
+        public StorageFileHF(string filename, ushort blocksize) 
         {
             _Path = Path.GetDirectoryName(filename);
             if (_Path.EndsWith(_S) == false) _Path += _S;
@@ -42,26 +40,11 @@ namespace RaptorDB
             Initialize(filename, blocksize);
         }
 
-        // used for bitmapindexhf
-        //public StorageFileHF(string filename, ushort blocksize, Func<MGRB> readfreelist, Action<MGRB> savefreelist)
-        //{
-        //    _savefreeList = savefreelist;
-        //    _readfreeList = readfreelist;
-        //    _Path = Path.GetDirectoryName(filename);
-        //    if (_Path.EndsWith(_S) == false) _Path += _S;
-        //    _filename = Path.GetFileNameWithoutExtension(filename);
-
-        //    Initialize(filename, blocksize);
-        //}
-
         public void Shutdown()
         {
-            // write free list 
-            //if (_savefreeList != null)
-            //    _savefreeList(_freeList);
-            //else
-                WriteFreeListBMPFile(_Path + _filename + ".free");
-            FlushClose(_datawrite);
+            WriteFreeListBMPFile();
+            _datawrite.Flush();
+            FlushClose(_datawriteorg);
             _datawrite = null;
         }
 
@@ -103,7 +86,7 @@ namespace RaptorDB
                 return i;
             }
             else
-                return Interlocked.Increment(ref _lastBlockNumber);//++;
+                return Interlocked.Increment(ref _lastBlockNumber);
         }
 
         internal void Initialize()
@@ -113,24 +96,47 @@ namespace RaptorDB
                 // write master block
                 _datawrite.Write(new byte[_BLOCKSIZE], 0, _BLOCKSIZE);
                 _lastBlockNumber = 1;
+                //_masterblock.Add("freelist", -1);
             }
-            //if (_readfreeList != null)
-            //    _freeList = _readfreeList();
-            //else
+            else
             {
                 _freeList = new MGRB();
-                if (File.Exists(_Path + _filename + ".free"))
+                // read master block data
+                var b = ReadBlock(0);
+                if (b[0] == (byte)'F' && b[1] == (byte)'L')
                 {
-                    ReadFreeListBMPFile(_Path + _filename + ".free");
-                    // delete file so if failure no big deal on restart
-                    File.Delete(_Path + _filename + ".free");
+                    // get free block num and size
+                    int block = Helper.ToInt32(b, 2);
+                    int len = Helper.ToInt32(b, 2 + 4);
+                    // read blocks upto size from block num
+                    // read freelist from master block from end of file
+                    _lastBlockNumber = block;
+                    b = new byte[len];
+                    SeekBlock(block);
+                    var offset = 0;
+                    while (len > 0)
+                    {
+                        // check header 
+                        var bb = ReadBlock(block++);
+                        if(bb[0]!=(byte)'F' || bb[1]!=(byte)'L')
+                        {
+                            // throw exception??
+                            _log.Error("Free list header does not match : " + _filename);
+                            break;
+                        }
+                        int c = len > _BLOCKSIZE ? _BLOCKSIZE - 2 : len;
+                        Buffer.BlockCopy(bb, 2, b, offset, c);
+                        len -= c;
+                    }
+                    var o = fastBinaryJSON.BJSON.ToObject<MGRBData>(b);
+                    _freeList.Deserialize(o);
                 }
             }
         }
 
         internal void SeekBlock(int blocknumber)
         {
-            long offset = (long)_fileheader.Length + (long)blocknumber * _BLOCKSIZE;
+            long offset = _fileheader.Length + (long)blocknumber * _BLOCKSIZE;
             _datawrite.Seek(offset, SeekOrigin.Begin);// wiil seek past the end of file on fs.Write will zero the difference
         }
 
@@ -141,31 +147,43 @@ namespace RaptorDB
 
         #region [ private / internal  ]
 
-        private void WriteFreeListBMPFile(string filename)
+        private void WriteFreeListBMPFile()
         {
+            // write freelist to end of blocks and update master block
+
             if (_freeList != null)
             {
                 _freeList.Optimize();
                 var o = _freeList.Serialize();
                 var b = fastBinaryJSON.BJSON.ToBJSON(o, new fastBinaryJSON.BJSONParameters { UseExtensions = false });
-                File.WriteAllBytes(filename, b);
-            }
-        }
 
-        private void ReadFreeListBMPFile(string filename)
-        {
-            byte[] b = File.ReadAllBytes(filename);
-            var o = fastBinaryJSON.BJSON.ToObject<MGRBData>(b);
-            _freeList = new MGRB();
-            _freeList.Deserialize(o);
+                var len = b.Length;
+                var offset = 0;
+                // write master block 
+                SeekBlock(0);
+                _lastBlockNumber++;
+                WriteBlockBytes(new byte[] { (byte)'F', (byte)'L' }, 0, 2);
+                WriteBlockBytes(Helper.GetBytes(_lastBlockNumber, false), 0, 4);
+                WriteBlockBytes(Helper.GetBytes(len, false), 0, 4);
+                // seek to end of file
+                SeekBlock(_lastBlockNumber);
+                while (len > 0)
+                {
+                    WriteBlockBytes(new byte[] { (byte)'F', (byte)'L' }, 0, 2);
+                    WriteBlockBytes(b, offset, len > _BLOCKSIZE ? _BLOCKSIZE - 2 : len);
+                    len -= (_BLOCKSIZE - 2);
+                }
+            }
         }
 
         private void Initialize(string filename, ushort blocksize)
         {
             if (File.Exists(filename) == false)
-                _datawrite = new FileStream(filename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
+                _datawriteorg = new FileStream(filename, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite);
             else
-                _datawrite = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                _datawriteorg = new FileStream(filename, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+
+            _datawrite = new BufferedStream(_datawriteorg);
 
             if (_datawrite.Length == 0)
             {
@@ -177,7 +195,7 @@ namespace RaptorDB
             else
             {
                 int filever = ReadFileHeader();
-                if(filever<_CurrentVersion)
+                if (filever < _CurrentVersion)
                 {
                     // fixx : upgrade storage file here
                 }
