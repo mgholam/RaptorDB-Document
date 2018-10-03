@@ -423,7 +423,6 @@ namespace RaptorDB
 
         private string WriteCsv(List<object> data)//, Stream stream)
         {
-            //TextWriter output = new StreamWriter(stream, UTF8Encoding.UTF8);
             StringBuilder output = new StringBuilder();
             var o = data[0];
 

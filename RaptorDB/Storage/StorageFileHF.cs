@@ -10,9 +10,9 @@ namespace RaptorDB
     internal class StorageFileHF
     {
         FileStream _datawrite;
-        WAHBitArray _freeList;
-        Action<WAHBitArray> _savefreeList;
-        Func<WAHBitArray> _readfreeList;
+        MGRB _freeList;
+        //Action<MGRB> _savefreeList = null;
+        //Func<MGRB> _readfreeList = null;
 
         private string _filename = "";
         private object _readlock = new object();
@@ -31,15 +31,10 @@ namespace RaptorDB
                                               1    // 7 -- key type 0 = guid, 1 = string
                                            };
 
-        public StorageFileHF(string filename, ushort blocksize) : this(filename, blocksize, null, null)
-        {
-        }
+        //private SafeDictionary<string, int> _masterblock = new SafeDictionary<string, int>();
 
-        // used for bitmapindexhf
-        public StorageFileHF(string filename, ushort blocksize, Func<WAHBitArray> readfreelist, Action<WAHBitArray> savefreelist)
+        public StorageFileHF(string filename, ushort blocksize) //: this(filename, blocksize, null, null)
         {
-            _savefreeList = savefreelist;
-            _readfreeList = readfreelist;
             _Path = Path.GetDirectoryName(filename);
             if (_Path.EndsWith(_S) == false) _Path += _S;
             _filename = Path.GetFileNameWithoutExtension(filename);
@@ -47,12 +42,24 @@ namespace RaptorDB
             Initialize(filename, blocksize);
         }
 
+        // used for bitmapindexhf
+        //public StorageFileHF(string filename, ushort blocksize, Func<MGRB> readfreelist, Action<MGRB> savefreelist)
+        //{
+        //    _savefreeList = savefreelist;
+        //    _readfreeList = readfreelist;
+        //    _Path = Path.GetDirectoryName(filename);
+        //    if (_Path.EndsWith(_S) == false) _Path += _S;
+        //    _filename = Path.GetFileNameWithoutExtension(filename);
+
+        //    Initialize(filename, blocksize);
+        //}
+
         public void Shutdown()
         {
             // write free list 
-            if (_savefreeList != null)
-                _savefreeList(_freeList);
-            else
+            //if (_savefreeList != null)
+            //    _savefreeList(_freeList);
+            //else
                 WriteFreeListBMPFile(_Path + _filename + ".free");
             FlushClose(_datawrite);
             _datawrite = null;
@@ -101,11 +108,17 @@ namespace RaptorDB
 
         internal void Initialize()
         {
-            if (_readfreeList != null)
-                _freeList = _readfreeList();
-            else
+            if (_lastBlockNumber < 0)
             {
-                _freeList = new WAHBitArray();
+                // write master block
+                _datawrite.Write(new byte[_BLOCKSIZE], 0, _BLOCKSIZE);
+                _lastBlockNumber = 1;
+            }
+            //if (_readfreeList != null)
+            //    _freeList = _readfreeList();
+            //else
+            {
+                _freeList = new MGRB();
                 if (File.Exists(_Path + _filename + ".free"))
                 {
                     ReadFreeListBMPFile(_Path + _filename + ".free");
@@ -132,35 +145,19 @@ namespace RaptorDB
         {
             if (_freeList != null)
             {
-                WAHBitArray.TYPE t;
-                uint[] ints = _freeList.GetCompressed(out t);
-                MemoryStream ms = new MemoryStream();
-                BinaryWriter bw = new BinaryWriter(ms);
-                bw.Write((byte)t);// write new format with the data type byte
-                foreach (var i in ints)
-                {
-                    bw.Write(i);
-                }
-                File.WriteAllBytes(filename, ms.ToArray());
+                _freeList.Optimize();
+                var o = _freeList.Serialize();
+                var b = fastBinaryJSON.BJSON.ToBJSON(o, new fastBinaryJSON.BJSONParameters { UseExtensions = false });
+                File.WriteAllBytes(filename, b);
             }
         }
 
         private void ReadFreeListBMPFile(string filename)
         {
             byte[] b = File.ReadAllBytes(filename);
-            WAHBitArray.TYPE t = WAHBitArray.TYPE.WAH;
-            int j = 0;
-            if (b.Length % 4 > 0) // new format with the data type byte
-            {
-                t = (WAHBitArray.TYPE)Enum.ToObject(typeof(WAHBitArray.TYPE), b[0]);
-                j = 1;
-            }
-            List<uint> ints = new List<uint>();
-            for (int i = 0; i < b.Length / 4; i++)
-            {
-                ints.Add((uint)Helper.ToInt32(b, (i * 4) + j));
-            }
-            _freeList = new WAHBitArray(t, ints.ToArray());
+            var o = fastBinaryJSON.BJSON.ToObject<MGRBData>(b);
+            _freeList = new MGRB();
+            _freeList.Deserialize(o);
         }
 
         private void Initialize(string filename, ushort blocksize)
@@ -179,7 +176,11 @@ namespace RaptorDB
             }
             else
             {
-                ReadFileHeader();
+                int filever = ReadFileHeader();
+                if(filever<_CurrentVersion)
+                {
+                    // fixx : upgrade storage file here
+                }
                 _lastBlockNumber = (int)((_datawrite.Length - _fileheader.Length) / _BLOCKSIZE);
                 _lastBlockNumber++;
             }
@@ -187,7 +188,7 @@ namespace RaptorDB
             Initialize();
         }
 
-        private void ReadFileHeader()
+        private int ReadFileHeader()
         {
             // set _blockize
             _datawrite.Seek(0L, SeekOrigin.Begin);
@@ -196,6 +197,8 @@ namespace RaptorDB
 
             _BLOCKSIZE = 0;
             _BLOCKSIZE = (ushort)((int)hdr[5] + ((int)hdr[6]) << 8);
+
+            return hdr[4];
         }
 
         private void CreateFileHeader(int blocksize)

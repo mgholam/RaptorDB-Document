@@ -16,7 +16,6 @@ using System.ComponentModel;
 // TODO : enum in row schema support
 // TODO : validate view schema with mapper on startup ??
 // TODO : HFKV transaction mode set and rollback handling
-// TODO : fastJSON unsafe string pointer parser ??
 // TODO : put page list string key alloc block num in index file header 
 
 namespace RaptorDB
@@ -33,6 +32,9 @@ namespace RaptorDB
             fastJSON.JSON.Parameters.ParametricConstructorOverride = true;
             fastBinaryJSON.BJSON.Parameters.ParametricConstructorOverride = true;
             fastJSON.JSON.Parameters.UseEscapedUnicode = false;
+            // backward compatibility 
+            fastBinaryJSON.BJSON.Parameters.v1_4TypedArray = true;
+            fastJSON.Reflection.RDBMode = true;
 
             if (_S == "/")
                 FolderPath = FolderPath.Replace("\\", "/");

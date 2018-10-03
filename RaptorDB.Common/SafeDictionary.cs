@@ -166,6 +166,20 @@ namespace RaptorDB.Common
             }
         }
 
+        public V this[T key]
+        {
+            get
+            {
+                lock (_padlock)
+                    return _list[key];
+            }
+            set
+            {
+                lock (_padlock)
+                    _list[key] = value;
+            }
+        }
+
         public IEnumerator<KeyValuePair<T, V>> GetEnumerator()
         {
             return ((ICollection<KeyValuePair<T, V>>)_list).GetEnumerator();

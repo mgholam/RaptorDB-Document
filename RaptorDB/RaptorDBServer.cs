@@ -68,10 +68,10 @@ namespace RaptorDB
             _concleanuptimer.Enabled = true;
             _concleanuptimer.Elapsed += _concleanuptimer_Elapsed;
 
-            _unusedintsancetimer = new System.Timers.Timer(300 * 1000);// FIX : configuration here
-            _unusedintsancetimer.AutoReset = true;
-            _unusedintsancetimer.Enabled = true;
-            _unusedintsancetimer.Elapsed += _unusedinstancetimer_Elapsed;
+            _unusedinstancetimer = new System.Timers.Timer(300 * 1000);// FIX : configuration here
+            _unusedinstancetimer.AutoReset = true;
+            _unusedinstancetimer.Enabled = true;
+            _unusedinstancetimer.Elapsed += _unusedinstancetimer_Elapsed;
         }
 
         private object _lock = new object();
@@ -132,7 +132,7 @@ namespace RaptorDB
         private const string _RaptorDB_users_config = "RaptorDB-Users.config";
         private SafeDictionary<Guid, bool> _connectedClients = new SafeDictionary<Guid, bool>();
         private System.Timers.Timer _concleanuptimer;
-        private System.Timers.Timer _unusedintsancetimer;
+        private System.Timers.Timer _unusedinstancetimer;
 
         public int ConnectedClients { get { return _connectedClients.Count(); } }
 

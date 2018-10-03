@@ -97,9 +97,9 @@ namespace RaptorDB
             return _LastIndexedRecordNumber;
         }
 
-        public WAHBitArray Query(T from, T to, int maxsize)
+        public MGRB Query(T from, T to, int maxsize)
         {
-            WAHBitArray bits = new WAHBitArray();
+            MGRB bits = new MGRB();
             T temp = default(T);
             if (from.CompareTo(to) > 0) // check values order
             {
@@ -166,7 +166,7 @@ namespace RaptorDB
             return bits;
         }
 
-        public WAHBitArray Query(RDBExpression exp, T from, int maxsize)
+        public MGRB Query(RDBExpression exp, T from, int maxsize)
         {
             T key = from;
             if (exp == RDBExpression.Equal || exp == RDBExpression.NotEqual)
@@ -183,7 +183,7 @@ namespace RaptorDB
                 return doMoreOp(exp, key);
             }
 
-            return new WAHBitArray(); // blank results 
+            return new MGRB(); // blank results 
         }
 
         private object _setlock = new object();
@@ -321,11 +321,11 @@ namespace RaptorDB
         }
 
         #region [  P R I V A T E  ]
-        private WAHBitArray doMoreOp(RDBExpression exp, T key)
+        private MGRB doMoreOp(RDBExpression exp, T key)
         {
             bool found = false;
             int pos = FindPageOrLowerPosition(key, ref found);
-            WAHBitArray result = new WAHBitArray();
+            MGRB result = new MGRB();
             if (pos < _pageList.Count())
             {
                 // all the pages after
@@ -355,11 +355,11 @@ namespace RaptorDB
             return result;
         }
 
-        private WAHBitArray doLessOp(RDBExpression exp, T key)
+        private MGRB doLessOp(RDBExpression exp, T key)
         {
             bool found = false;
             int pos = FindPageOrLowerPosition(key, ref found);
-            WAHBitArray result = new WAHBitArray();
+            MGRB result = new MGRB();
             if (pos > 0)
             {
                 // all the pages before
@@ -389,7 +389,7 @@ namespace RaptorDB
             return result;
         }
 
-        private WAHBitArray doEqualOp(RDBExpression exp, T key, int maxsize)
+        private MGRB doEqualOp(RDBExpression exp, T key, int maxsize)
         {
             PageInfo pi;
             Page<T> page = LoadPage(key, out pi);
@@ -406,13 +406,13 @@ namespace RaptorDB
             else
             {
                 if (exp == RDBExpression.NotEqual)
-                    return new WAHBitArray().Not(maxsize);
+                    return new MGRB().Not(maxsize);
                 else
-                    return new WAHBitArray();
+                    return new MGRB();
             }
         }
 
-        private void doPageOperation(ref WAHBitArray res, int pageidx)
+        private void doPageOperation(ref MGRB res, int pageidx)
         {
             Page<T> page = LoadPage(_pageList.GetValue(pageidx).PageNumber);
             T[] keys = page.tree.Keys(); // avoid sync issues

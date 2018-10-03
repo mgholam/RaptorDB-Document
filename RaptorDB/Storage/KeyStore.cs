@@ -21,13 +21,13 @@ namespace RaptorDB
 
         public void Set(string key, string val)
         {
-            Set(key, Encoding.Unicode.GetBytes(val));
+            Set(key, fastJSON.Reflection.UnicodeGetBytes(val));
         }
 
         public void Set(string key, byte[] val)
         {
             string str = (_caseSensitive ? key : key.ToLower());
-            byte[] bkey = Encoding.Unicode.GetBytes(str);
+            byte[] bkey = fastJSON.Reflection.UnicodeGetBytes(str);
             int hc = (int)Helper.MurMur.Hash(bkey);
             MemoryStream ms = new MemoryStream();
             ms.Write(Helper.GetBytes(bkey.Length, false), 0, 4);
@@ -44,7 +44,7 @@ namespace RaptorDB
             bool b = Get(key, out bval);
             if (b)
             {
-                val = Encoding.Unicode.GetString(bval);
+                val = fastJSON.Reflection.UnicodeGetString(bval);
             }
             return b;
         }
@@ -53,7 +53,7 @@ namespace RaptorDB
         {
             string str = (_caseSensitive ? key : key.ToLower());
             val = null;
-            byte[] bkey = Encoding.Unicode.GetBytes(str);
+            byte[] bkey = fastJSON.Reflection.UnicodeGetBytes(str);
             int hc = (int)Helper.MurMur.Hash(bkey);
 
             if (_db.GetBytes(hc, out val))
@@ -127,7 +127,7 @@ namespace RaptorDB
             byte[] b = _db.FetchRecordBytes(recnumber);
             if (UnpackData(b, out val, out key))
             {
-                return Encoding.Unicode.GetString(val);
+                return fastJSON.Reflection.UnicodeGetString(val);
             }
             return "";
         }
@@ -365,7 +365,7 @@ namespace RaptorDB
             if (ret)
             {
                 if (b != null)
-                    val = Encoding.Unicode.GetString(b);
+                    val = fastJSON.Reflection.UnicodeGetString(b);
                 else
                     val = "";
             }
@@ -399,7 +399,7 @@ namespace RaptorDB
 
         public int SetString(T key, string data)
         {
-            return SetBytes(key, Encoding.Unicode.GetBytes(data));
+            return SetBytes(key, fastJSON.Reflection.UnicodeGetBytes(data));
         }
 
         public int SetObject(T key, object doc)
@@ -476,6 +476,8 @@ namespace RaptorDB
             string idx = _Path + Path.DirectorySeparatorChar + _FileName + _idxExtension;
 
             //LogManager.Configure(_Path + Path.DirectorySeparatorChar + _FileName + ".txt", 500, false);
+
+            // FIX : check if indexes need upgrade to mgrb
 
             _index = new MGIndex<T>(_Path, _FileName + _idxExtension, _MaxKeySize, /*Global.PageItemCount,*/ AllowDuplicateKeys);
 

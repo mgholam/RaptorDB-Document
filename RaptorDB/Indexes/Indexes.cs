@@ -20,7 +20,7 @@ namespace RaptorDB
             base.Set((T)key, recnum);
         }
 
-        public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
+        public MGRB Query(RDBExpression ex, object from, int maxsize)
         {
             T f = default(T);
             if (typeof(T).Equals(from.GetType()) == false)
@@ -44,8 +44,8 @@ namespace RaptorDB
 
         void IIndex.FreeMemory()
         {
-            base.FreeMemory();
             base.SaveIndex();
+            base.FreeMemory();
         }
 
         void IIndex.Shutdown()
@@ -58,7 +58,7 @@ namespace RaptorDB
             return base.GetKeys();
         }
 
-        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
+        public MGRB Query(object fromkey, object tokey, int maxsize)
         {
             T f = default(T);
             if (typeof(T).Equals(fromkey.GetType()) == false)
@@ -92,12 +92,12 @@ namespace RaptorDB
                 ReadFile();
         }
 
-        private WAHBitArray _bits = new WAHBitArray();
+        private MGRB _bits = new MGRB();
         private string _filename;
         private string _path;
         private object _lock = new object();
 
-        public WAHBitArray GetBits()
+        public MGRB GetBits()
         {
             return _bits.Copy();
         }
@@ -109,7 +109,7 @@ namespace RaptorDB
                     _bits.Set(recnum, (bool)key);
         }
 
-        public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
+        public MGRB Query(RDBExpression ex, object from, int maxsize)
         {
             lock (_lock)
             {
@@ -123,10 +123,10 @@ namespace RaptorDB
 
         public void FreeMemory()
         {
-            //lock (_lock)
+            lock (_lock)
             {
+                _bits.Optimize();
                 SaveIndex();
-                _bits.FreeMemory();
             }
         }
 
@@ -141,7 +141,7 @@ namespace RaptorDB
             WriteFile();
         }
 
-        public void InPlaceOR(WAHBitArray left)
+        public void InPlaceOR(MGRB left)
         {
             lock (_lock)
                 _bits = _bits.Or(left);
@@ -151,47 +151,24 @@ namespace RaptorDB
         {
             lock (_lock)
             {
-                WAHBitArray.TYPE t;
-                uint[] ints = _bits.GetCompressed(out t);
-                MemoryStream ms = new MemoryStream();
-                BinaryWriter bw = new BinaryWriter(ms);
-                bw.Write((byte)t);// write new format with the data type byte
-                foreach (var i in ints)
-                {
-                    bw.Write(i);
-                }
-                bw.Flush();
-                File.WriteAllBytes(_path + _filename, ms.ToArray());
+                _bits.Optimize();
+                var o = _bits.Serialize();
+                var b = fastBinaryJSON.BJSON.ToBJSON(o, new fastBinaryJSON.BJSONParameters { UseExtensions = false });
+                File.WriteAllBytes(_path + _filename, b);
             }
         }
 
         private void ReadFile()
         {
             byte[] b = File.ReadAllBytes(_path + _filename);
-            MemoryStream ms = new MemoryStream(b);
-            BinaryReader br = new BinaryReader(ms);
-            WAHBitArray.TYPE t = WAHBitArray.TYPE.WAH;
-            if (b.Length % 4 > 0) // new format with the data type byte
-            {
-                byte tb = br.ReadByte();
-                t = (WAHBitArray.TYPE)Enum.ToObject(typeof(WAHBitArray.TYPE), tb);
-            }
-            List<uint> ints = new List<uint>();
-            for (int i = 0; i < b.Length / 4; i++)
-            {
-                ints.Add((uint)br.ReadInt32());
-            }
-            _bits = new WAHBitArray(t, ints.ToArray());
+            var o = fastBinaryJSON.BJSON.ToObject<MGRBData>(b);
+            _bits = new MGRB();
+            _bits.Deserialize(o);
         }
 
-        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
+        public MGRB Query(object fromkey, object tokey, int maxsize)
         {
             return Query(RDBExpression.Greater, fromkey, maxsize); // range doesn't make sense here just do from 
-        }
-
-        internal void FixSize(int size)
-        {
-            _bits.Length = size;
         }
 
         public object[] GetKeys()
@@ -223,7 +200,7 @@ namespace RaptorDB
                 _idx.Set(key, recnum);
         }
 
-        public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
+        public MGRB Query(RDBExpression ex, object from, int maxsize)
         {
             return base.Query("" + from, maxsize);
         }
@@ -235,7 +212,7 @@ namespace RaptorDB
                 _idx.SaveIndex();
         }
 
-        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
+        public MGRB Query(object fromkey, object tokey, int maxsize)
         {
             return base.Query("" + fromkey, maxsize); // range doesn't make sense here just do from  
         }
@@ -281,7 +258,7 @@ namespace RaptorDB
             base.Set(key.ToString(), recnum);
         }
 
-        public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
+        public MGRB Query(RDBExpression ex, object from, int maxsize)
         {
             T f = default(T);
             if (typeof(T).Equals(from.GetType()) == false)
@@ -305,8 +282,8 @@ namespace RaptorDB
 
         void IIndex.FreeMemory()
         {
-            base.FreeMemory();
             base.SaveIndex();
+            base.FreeMemory();
         }
 
         void IIndex.Shutdown()
@@ -315,7 +292,7 @@ namespace RaptorDB
             base.Shutdown();
         }
 
-        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
+        public MGRB Query(object fromkey, object tokey, int maxsize)
         {
             T f = default(T);
             if (typeof(T).Equals(fromkey.GetType()) == false)
@@ -347,10 +324,10 @@ namespace RaptorDB
             // ignore set
         }
 
-        public WAHBitArray Query(RDBExpression ex, object from, int maxsize)
+        public MGRB Query(RDBExpression ex, object from, int maxsize)
         {
             // always return everything
-            return WAHBitArray.Fill(maxsize);
+            return MGRB.Fill(maxsize);
         }
 
         public void FreeMemory()
@@ -373,9 +350,9 @@ namespace RaptorDB
             return new object[] { };
         }
 
-        public WAHBitArray Query(object fromkey, object tokey, int maxsize)
+        public MGRB Query(object fromkey, object tokey, int maxsize)
         {
-            return WAHBitArray.Fill(maxsize); // TODO : all or none??
+            return MGRB.Fill(maxsize); // TODO : all or none??
         }
     }
     #endregion

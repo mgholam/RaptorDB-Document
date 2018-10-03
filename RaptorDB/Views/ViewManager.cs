@@ -1,8 +1,9 @@
-﻿using System;
+﻿using RaptorDB.Common;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
-using RaptorDB.Common;
+using System.Threading.Tasks;
 
 namespace RaptorDB.Views
 {
@@ -181,19 +182,24 @@ namespace RaptorDB.Views
         {
             _log.Debug("View Manager shutdown");
             _que.Shutdown();
+            List<Task> tasks = new List<Task>();
             // shutdown views
             foreach (var v in _views)
             {
                 try
                 {
-                    _log.Debug(" shutting down view : " + v.Value._view.Name);
-                    v.Value.Shutdown();
+                    tasks.Add(Task.Factory.StartNew(() =>
+                    {
+                        _log.Debug(" shutting down view : " + v.Value._view.Name);
+                        v.Value.Shutdown();
+                    }));
                 }
                 catch (Exception ex)
                 {
                     _log.Error(ex);
                 }
             }
+            Task.WaitAll(tasks.ToArray());
         }
 
         internal List<string> GetConsistentViews(Type type)

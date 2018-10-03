@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using RaptorDB.Common;
 using System.Threading;
+using fastBinaryJSON;
 
 namespace RaptorDB
 {
@@ -111,7 +112,7 @@ namespace RaptorDB
             return GetDuplicateBitmap(recno).GetBitIndexes();
         }
 
-        public WAHBitArray GetDuplicateBitmap(int recno)
+        public MGRB GetDuplicateBitmap(int recno)
         {
             return _bitmap.GetBitmap(recno);
         }
@@ -271,7 +272,7 @@ namespace RaptorDB
                         var bn = File.ReadAllBytes(_FileName + ".pagelist");
                         int blknum = Helper.ToInt32(bn, 0);
                         byte[] bb = _strings.GetData(blknum, _pagelistalllocblock);
-                        keys = (object[])fastBinaryJSON.BJSON.ToObject(bb);
+                        keys = (object[])BJSON.ToObject(bb);
                     }
                     for (int i = 0; i < count; i++)
                     {
@@ -325,7 +326,8 @@ namespace RaptorDB
                     // free old blocks
                     if (node.allocblocks != null)
                         _strings.FreeBlocks(node.allocblocks);
-                    blocknum = _strings.SaveData(node.DiskPageNumber.ToString(), fastBinaryJSON.BJSON.ToBJSON(keys));
+                    blocknum = _strings.SaveData(node.DiskPageNumber.ToString(), BJSON.ToBJSON(keys,
+                        new BJSONParameters { UseUnicodeStrings = false, UseTypedArrays = false }));
                 }
                 // node children
                 foreach (var kp in keys)
@@ -397,7 +399,7 @@ namespace RaptorDB
                             {
                                 int blknum = Helper.ToInt32(b, idx + 1, false);
                                 byte[] bb = _strings.GetData(blknum, page.allocblocks);
-                                keys = (object[])fastBinaryJSON.BJSON.ToObject(bb);
+                                keys = (object[])BJSON.ToObject(bb);
                             }
                             key = (T)keys[i];
                         }
@@ -419,11 +421,12 @@ namespace RaptorDB
             {
                 T[] keys = _pages.Keys();
                 int blocknum = 0;
-                if (_externalStrings) 
+                if (_externalStrings)
                 {
                     if (_pagelistalllocblock != null)
                         _strings.FreeBlocks(_pagelistalllocblock);
-                    blocknum = _strings.SaveData("pagelist", fastBinaryJSON.BJSON.ToBJSON(keys));
+                    blocknum = _strings.SaveData("pagelist", BJSON.ToBJSON(keys,
+                        new BJSONParameters { UseUnicodeStrings = false, UseTypedArrays = false }));
                     File.WriteAllBytes(_FileName + ".pagelist", Helper.GetBytes(blocknum, false));
                 }
                 // save page list

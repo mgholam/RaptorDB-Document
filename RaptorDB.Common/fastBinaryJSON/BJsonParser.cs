@@ -9,10 +9,12 @@ namespace fastBinaryJSON
         readonly byte[] _json;
         int _index;
         bool _useUTC = true;
+        bool _v1_4TA = false;
 
-        internal BJsonParser(byte[] json, bool useUTC)
+        internal BJsonParser(byte[] json, bool useUTC, bool v1_4TA)
         {
             this._json = json;
+            _v1_4TA = v1_4TA;
             _useUTC = useUTC;
         }
 
@@ -195,7 +197,12 @@ namespace fastBinaryJSON
         {
             typedarray ar = new typedarray();
             if (token == TOKENS.ARRAY_TYPED)
-                ar.typename = ParseName(); // RDB : use utf8 instead backward compatible
+            {
+                if (_v1_4TA)
+                    ar.typename = ParseName(); 
+                else
+                    ar.typename = ParseName2();
+            }
             else
                 ar.typename = ParseNameLong();
 

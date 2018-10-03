@@ -1,4 +1,16 @@
-﻿v3.3.19.1
+﻿v4.0.0*
+-------
+- upgrade to fastJSON v2.2.0
+- upgrade to fastBinaryJSON v1.5.1
+- changed to faster unicode <-> bytes conversion
+- optimized view data size without bjson typed arrays
+- new sparse bitmap index for less memory usage (MGRB based on roaring bitmap)
+- * possible breaking change if you are using High Frequency key store *
+- bug fix full text search in columns for case insensitive words
+- parallel shutdown indexes 
+- 
+
+v3.3.19.1
 ---------
 - bug fix shutting down in .net core on ubuntu
 

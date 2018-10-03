@@ -61,7 +61,7 @@
         /// <summary>
         /// Free memory checking timer (default = 300 sec ~ 5 min)
         /// </summary>
-        public static int FreeMemoryTimerSeconds = 5 * 60;// 1800;
+        public static int FreeMemoryTimerSeconds = 5 * 60;// 1800; 
         /// <summary>
         /// Memory usage limit for internal caching (default = 100 Mb) [using GC.GetTotalMemory()]
         /// </summary>
@@ -119,6 +119,10 @@
         ///    False -> more memory use SafeDictionary and faster
         /// </summary>
         public static bool UseLessMemoryStructures = false;
+
+        //public static bool useSortedList = false;
+
+        public static bool CompressBitmapBytes = false;
     }
 
 

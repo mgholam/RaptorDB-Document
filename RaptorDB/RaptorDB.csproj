@@ -97,7 +97,8 @@
     <Compile Include="cron\CronSchedule.cs" />
     <Compile Include="DataTypes\DataTypes.cs" />
     <Compile Include="Global.cs" />
-    <Compile Include="Helper\WAHBitarray2.cs" />
+    <Compile Include="Helper\Container.cs" />
+    <Compile Include="Helper\MGRB.cs" />
     <Compile Include="Indexes\BitmapIndex.cs" />
     <Compile Include="Indexes\Cache.cs" />
     <Compile Include="Indexes\Hoot.cs" />

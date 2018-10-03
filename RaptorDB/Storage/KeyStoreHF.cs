@@ -7,7 +7,7 @@ using System.Linq;
 namespace RaptorDB
 {
     // high frequency key value store
-    internal class KeyStoreHF : IKeyStoreHF
+    public class KeyStoreHF : IKeyStoreHF
     {
         internal class AllocationBlock
         {
@@ -73,7 +73,10 @@ namespace RaptorDB
 
         public int CountHF()
         {
-            return _keys.Count();
+            if (_keys != null)
+                return _keys.Count();
+            else
+                return 0;
         }
 
         public object GetObjectHF(string key)
@@ -223,19 +226,22 @@ namespace RaptorDB
             }
         }
 
-        internal void Shutdown()
+        public void Shutdown()
         {
             _datastore.Shutdown();
             if (_keys != null)
+            {
                 _keys.Shutdown();
 
-            if (File.Exists(_Path + _dirtyFilename))
-                File.Delete(_Path + _dirtyFilename);
+                if (File.Exists(_Path + _dirtyFilename))
+                    File.Delete(_Path + _dirtyFilename);
+            }
         }
 
         internal void FreeMemory()
         {
-            _keys.FreeMemory();
+            if (_keys != null)
+                _keys.FreeMemory();
         }
 
         #region [  private methods  ]
@@ -433,7 +439,7 @@ namespace RaptorDB
 
                 keys = new MGIndex<string>(_Path, "keys.idx", 255, /*Global.PageItemCount,*/ false);
 
-                WAHBitArray visited = new WAHBitArray();
+                MGRB visited = new MGRB();
 
                 int c = _datastore.NumberofBlocks();
 
@@ -524,6 +530,8 @@ namespace RaptorDB
                 _datastore.FreeBlocks(list);
         }
 
+
+        // for .string files
         internal int SaveData(string key, byte[] data)
         {
             lock (_lock)
@@ -540,6 +548,7 @@ namespace RaptorDB
             }
         }
 
+        // for .string files
         internal byte[] GetData(int blocknumber, List<int> usedblocks)
         {
             lock (_lock)

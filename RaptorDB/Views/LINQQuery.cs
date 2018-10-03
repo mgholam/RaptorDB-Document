@@ -7,8 +7,8 @@ using System.Reflection;
 
 namespace RaptorDB.Views
 {
-    delegate WAHBitArray QueryFromTo(string colname, object from, object to);
-    delegate WAHBitArray QueryExpression(string colname, RDBExpression exp, object from);
+    delegate MGRB QueryFromTo(string colname, object from, object to);
+    delegate MGRB QueryExpression(string colname, RDBExpression exp, object from);
 
     internal class QueryVisitor : ExpressionVisitor
     {
@@ -68,8 +68,8 @@ namespace RaptorDB.Views
                 if (_bitmap.Count > 1)
                 {
                     // do bitmap operations 
-                    WAHBitArray right = (WAHBitArray)_bitmap.Pop();
-                    WAHBitArray left = (WAHBitArray)_bitmap.Pop();
+                    MGRB right = (MGRB)_bitmap.Pop();
+                    MGRB left = (MGRB)_bitmap.Pop();
 
                     if (t == ExpressionType.And || t == ExpressionType.AndAlso)
                         _bitmap.Push(right.And(left));
@@ -160,7 +160,7 @@ namespace RaptorDB.Views
             return m;
         }
 
-        private WAHBitArray _inBmp = null;
+        private MGRB _inBmp = null;
         private string _InCommand = "";
         private int _count = 0;
         public override Expression Visit(Expression node)

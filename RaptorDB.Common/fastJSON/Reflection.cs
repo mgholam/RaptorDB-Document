@@ -5,7 +5,10 @@ using System.Reflection;
 using System.Collections;
 using System.Text;
 using System.Runtime.Serialization;
+#if NET4
+using System.Linq;
 using RaptorDB.Common;
+#endif
 #if !SILVERLIGHT
 using System.Data;
 #endif
@@ -82,6 +85,11 @@ namespace fastJSON
         }
         public static Reflection Instance { get { return instance; } }
 
+        public static bool RDBMode = false;
+
+        public delegate string Serialize(object data);
+        public delegate object Deserialize(string data);
+
         public delegate object GenericSetter(object target, object value);
         public delegate object GenericGetter(object obj);
         private delegate object CreateObject();
@@ -139,9 +147,9 @@ namespace fastJSON
             return b;
         }
 
-        public static string UnicodeGetString(byte[] bytes)
+        public static string UnicodeGetString(byte[] b)
         {
-            return UnicodeGetString(bytes, 0, bytes.Length);
+            return UnicodeGetString(b, 0, b.Length);
         }
 
         public unsafe static string UnicodeGetString(byte[] bytes, int offset, int buflen)
@@ -376,12 +384,18 @@ namespace fastJSON
             else
             {
                 Type t = Type.GetType(typename);
-                //if (t == null) // RaptorDB : loading runtime assemblies
-                //{
-                //    t = Type.GetType(typename, (name) => {
-                //        return AppDomain.CurrentDomain.GetAssemblies().Where(z => z.FullName == name.FullName).FirstOrDefault();
-                //    }, null, true);
-                //}
+#if NET4
+                if (RDBMode)
+                {
+                    if (t == null) // RaptorDB : loading runtime assemblies
+                    {
+                        t = Type.GetType(typename, (name) =>
+                        {
+                            return AppDomain.CurrentDomain.GetAssemblies().Where(z => z.FullName == name.FullName).FirstOrDefault();
+                        }, null, true);
+                    }
+                }
+#endif
                 _typecache.Add(typename, t);
                 return t;
             }
@@ -397,18 +411,30 @@ namespace fastJSON
                 CreateList c = null;
                 if (_conlistcache.TryGetValue(objtype, out c))
                 {
-                    return c(count);
+                    if (c != null) // kludge : non capacity lists
+                        return c(count);
+                    else
+                        return FastCreateInstance(objtype);
                 }
                 else
                 {
-                    DynamicMethod dynMethod = new DynamicMethod("_fcil", objtype, new Type[] { typeof(int) }, true);
-                    ILGenerator ilGen = dynMethod.GetILGenerator();
-                    ilGen.Emit(OpCodes.Ldarg_0);
-                    ilGen.Emit(OpCodes.Newobj, objtype.GetConstructor(new Type[] { typeof(int) }));
-                    ilGen.Emit(OpCodes.Ret);
-                    c = (CreateList)dynMethod.CreateDelegate(typeof(CreateList));
-                    _conlistcache.Add(objtype, c);
-                    return c(count);
+                    var cinfo = objtype.GetConstructor(new Type[] { typeof(int) });
+                    if (cinfo != null)
+                    {
+                        DynamicMethod dynMethod = new DynamicMethod("_fcil", objtype, new Type[] { typeof(int) }, true);
+                        ILGenerator ilGen = dynMethod.GetILGenerator();
+                        ilGen.Emit(OpCodes.Ldarg_0);
+                        ilGen.Emit(OpCodes.Newobj, objtype.GetConstructor(new Type[] { typeof(int) }));
+                        ilGen.Emit(OpCodes.Ret);
+                        c = (CreateList)dynMethod.CreateDelegate(typeof(CreateList));
+                        _conlistcache.Add(objtype, c);
+                        return c(count);
+                    }
+                    else
+                    {
+                        _conlistcache.Add(objtype, null);// kludge : non capacity lists
+                        return FastCreateInstance(objtype);
+                    }
                 }
             }
             catch (Exception exc)
