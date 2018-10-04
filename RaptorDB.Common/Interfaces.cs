@@ -194,6 +194,7 @@ namespace RaptorDB
         CompactStorageHF,
         IncrementHF,
         DecrementHF,
-        ServerSideWithArgs
+        ServerSideWithArgs,
+        FreeMemory
     }
 }

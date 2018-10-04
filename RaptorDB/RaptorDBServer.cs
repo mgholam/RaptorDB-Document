@@ -549,6 +549,14 @@ namespace RaptorDB
                     ret.OK = true;
                     ret.Data = _defaultInstance.rdb.ServerSide(GetServerSideFuncWithArgsCache(param[0].ToString(), param[1].ToString()), param[2].ToString(), param[3]);
                 });
+
+            _handlers.Add("" + COMMANDS.FreeMemory,
+                (p, ret) =>
+                {
+                    ret.OK = true;
+                    _log.Debug("Free memory called from client");
+                    _defaultInstance.rdb.FreeMemory();
+                });
         }
 
         private ServerSideFuncWithArgs GetServerSideFuncWithArgsCache(string type, string method)

@@ -315,6 +315,11 @@ namespace datagridbinding
             shutdown();
         }
 
+        private void freememoryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            rap.FreeMemory();
+        }
+
         //private void perftest()
         //{
         //    DateTime dt = DateTime.Now;

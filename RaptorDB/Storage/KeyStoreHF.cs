@@ -214,7 +214,7 @@ namespace RaptorDB
         public string[] GetKeysHF()
         {
             lock (_lock)
-                return _keys.GetKeys().Cast<string>().ToArray(); // FEATURE : dirty !?
+                return _keys.GetKeys().Cast<string>().ToArray(); // FEATURE : ugly and dirty !?
         }
 
         public bool ContainsHF(string key)
@@ -549,7 +549,7 @@ namespace RaptorDB
         }
 
         // for .string files
-        internal byte[] GetData(int blocknumber, List<int> usedblocks)
+        internal byte[] GetData(int blocknumber, out List<int> usedblocks)
         {
             lock (_lock)
             {

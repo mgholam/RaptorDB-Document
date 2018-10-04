@@ -863,5 +863,12 @@ namespace RaptorDB
             else
                 return null;
         }
+
+        public void FreeMemory()
+        {
+            Packet p = CreatePacket();
+            p.Command = "" + COMMANDS.FreeMemory;
+            ReturnPacket ret = (ReturnPacket)_client.Send(p);
+        }
     }
 }

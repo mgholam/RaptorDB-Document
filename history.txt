@@ -8,6 +8,7 @@
 - * possible breaking change if you are using High Frequency key store *
 - bug fix full text search in columns for case insensitive words
 - parallel shutdown indexes 
+- fixed .strings files kept growing
 - 
 
 v3.3.19.1

@@ -1323,18 +1323,7 @@ namespace RaptorDB
 
         void _freeMemTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            long l = GC.GetTotalMemory(true) / (1024 * 1024);
-            _log.Debug("GC.GetTotalMemory() = " + l.ToString("#,0"));
-            if (l > Global.MemoryLimit)
-            {
-                _log.Debug("Freeing memory on " + Global.MemoryLimit.ToString("#,0") + " limit ...");
-                _viewManager.FreeMemory();
-                _fulltextindex.FreeMemory();
-                _objStore.FreeMemory();
-                _fileStore.FreeMemory();
-                _objHF.FreeMemory();
-                GC.Collect();// GC.MaxGeneration);
-            }
+            FreeMemory();
         }
 
         private void UpgradeStorageFile(string filename, int ver)
@@ -1511,6 +1500,22 @@ namespace RaptorDB
         public T Fetch<T>(Guid docID) where T : class
         {
             return Fetch(docID) as T;
+        }
+
+        public void FreeMemory()
+        {
+            long l = GC.GetTotalMemory(true) / (1024 * 1024);
+            _log.Debug("GC.GetTotalMemory() = " + l.ToString("#,0"));
+            if (l > Global.MemoryLimit)
+            {
+                _log.Debug("Freeing memory on " + Global.MemoryLimit.ToString("#,0") + " limit ...");
+                _viewManager.FreeMemory();
+                _fulltextindex.FreeMemory();
+                _objStore.FreeMemory();
+                _fileStore.FreeMemory();
+                _objHF.FreeMemory();
+                GC.Collect();// GC.MaxGeneration);
+            }
         }
 
         #endregion

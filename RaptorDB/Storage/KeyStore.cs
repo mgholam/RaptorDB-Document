@@ -477,8 +477,6 @@ namespace RaptorDB
 
             //LogManager.Configure(_Path + Path.DirectorySeparatorChar + _FileName + ".txt", 500, false);
 
-            // FIX : check if indexes need upgrade to mgrb
-
             _index = new MGIndex<T>(_Path, _FileName + _idxExtension, _MaxKeySize, /*Global.PageItemCount,*/ AllowDuplicateKeys);
 
             if (Global.SaveAsBinaryJSON)

@@ -369,6 +369,8 @@ namespace RaptorDB.Common
         /// </summary>
         IKeyStoreHF GetKVHF();
 
+        void FreeMemory();
+
         void Shutdown();
     }
 }

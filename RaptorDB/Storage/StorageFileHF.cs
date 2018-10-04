@@ -108,12 +108,11 @@ namespace RaptorDB
                     // get free block num and size
                     int block = Helper.ToInt32(b, 2);
                     int len = Helper.ToInt32(b, 2 + 4);
-                    // read blocks upto size from block num
-                    // read freelist from master block from end of file
                     _lastBlockNumber = block;
                     b = new byte[len];
-                    SeekBlock(block);
                     var offset = 0;
+                    // read blocks upto size from block num
+                    SeekBlock(block);
                     while (len > 0)
                     {
                         // check header 
@@ -127,7 +126,9 @@ namespace RaptorDB
                         int c = len > _BLOCKSIZE ? _BLOCKSIZE - 2 : len;
                         Buffer.BlockCopy(bb, 2, b, offset, c);
                         len -= c;
+                        offset += c;
                     }
+                    // read freelist from master block from end of file
                     var o = fastBinaryJSON.BJSON.ToObject<MGRBData>(b);
                     _freeList.Deserialize(o);
                 }
@@ -137,7 +138,8 @@ namespace RaptorDB
         internal void SeekBlock(int blocknumber)
         {
             long offset = _fileheader.Length + (long)blocknumber * _BLOCKSIZE;
-            _datawrite.Seek(offset, SeekOrigin.Begin);// wiil seek past the end of file on fs.Write will zero the difference
+            // wiil seek past the end of file on fs.Write will zero the difference
+            _datawrite.Seek(offset, SeekOrigin.Begin);
         }
 
         internal void WriteBlockBytes(byte[] data, int start, int len)
@@ -150,7 +152,6 @@ namespace RaptorDB
         private void WriteFreeListBMPFile()
         {
             // write freelist to end of blocks and update master block
-
             if (_freeList != null)
             {
                 _freeList.Optimize();
@@ -214,7 +215,7 @@ namespace RaptorDB
             _datawrite.Read(hdr, 0, _fileheader.Length);
 
             _BLOCKSIZE = 0;
-            _BLOCKSIZE = (ushort)((int)hdr[5] + ((int)hdr[6]) << 8);
+            _BLOCKSIZE = (ushort)(hdr[5] + hdr[6] << 8);
 
             return hdr[4];
         }
@@ -241,7 +242,7 @@ namespace RaptorDB
 
         internal int NumberofBlocks()
         {
-            return (int)((_datawrite.Length / (int)_BLOCKSIZE)) + 1;
+            return (int)((_datawrite.Length / _BLOCKSIZE)) + 1;
         }
 
         internal void FreeBlock(int i)

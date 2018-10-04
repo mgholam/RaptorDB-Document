@@ -159,7 +159,7 @@ namespace RaptorDB
                         {
                             long offset = ReadRecordOffset(i);
 
-                            byte[] b = ReadBMPData(offset);
+                            byte[] b = ReadBMPDataForOptimize(offset);
                             if (b == null)
                             {
                                 _stopOperations = false;
@@ -358,7 +358,7 @@ namespace RaptorDB
             hdr[1] = (byte)'m';
             hdr[2] = 0; // uncompressed
 
-            if(Global.CompressBitmapBytes)
+            if (Global.CompressBitmapBytes)
             {
                 hdr[2] = 1;
                 b = MiniLZO.Compress(b);
@@ -376,20 +376,20 @@ namespace RaptorDB
             return off;
         }
 
-        private byte[] ReadBMPData(long offset)
+        private byte[] ReadBMPDataForOptimize(long offset)
         {
-            // fix : fix this code to new format
+            // return data + header
             _bitmapFileRead.Seek(offset, SeekOrigin.Begin);
 
-            byte[] b = new byte[8];
+            byte[] hdr = new byte[_hdrlen];
 
-            _bitmapFileRead.Read(b, 0, 8);
-            if (b[0] == (byte)'b' && b[1] == (byte)'m')// && b[7] == 0)
+            _bitmapFileRead.Read(hdr, 0, _hdrlen);
+            if (hdr[0] == (byte)'b' && hdr[1] == (byte)'m')
             {
-                int c = Helper.ToInt32(b, 2) * 4 + 8;
-                byte[] data = new byte[c]; 
-                _bitmapFileRead.Seek(offset, SeekOrigin.Begin);
-                _bitmapFileRead.Read(data, 0, c);
+                int c = Helper.ToInt32(hdr, 3);
+                var data = new byte[c + _hdrlen];
+                Buffer.BlockCopy(hdr, 0, data, 0, _hdrlen);
+                _bitmapFileRead.Read(data, _hdrlen, c);
                 return data;
             }
             return null;

@@ -40,7 +40,7 @@ namespace RaptorDB
 
         private KeyStoreHF _strings;
         private bool _externalStrings = false;
-        private List<int> _pagelistalllocblock = null;
+        //private List<int> _pagelistalllocblock = null;
         private string _FileName = "";
 
         public IndexFile(string filename, byte maxKeySize)//, ushort pageNodeCount)
@@ -267,13 +267,14 @@ namespace RaptorDB
                     nextpage = Helper.ToInt32(b, 11);
                     int index = _BlockHeader.Length;
                     object[] keys = null;
-                    if (File.Exists(_FileName + ".pagelist"))
-                    {
-                        var bn = File.ReadAllBytes(_FileName + ".pagelist");
-                        int blknum = Helper.ToInt32(bn, 0);
-                        byte[] bb = _strings.GetData(blknum, _pagelistalllocblock);
-                        keys = (object[])BJSON.ToObject(bb);
-                    }
+                    // TODO : needed??
+                    //if (File.Exists(_FileName + ".pagelist"))
+                    //{
+                    //    var bn = File.ReadAllBytes(_FileName + ".pagelist");
+                    //    int blknum = Helper.ToInt32(bn, 0);
+                    //    byte[] bb = _strings.GetData(blknum, out _pagelistalllocblock);
+                    //    keys = (object[])BJSON.ToObject(bb);
+                    //}
                     for (int i = 0; i < count; i++)
                     {
                         int idx = index + _rowSize * i;
@@ -398,7 +399,7 @@ namespace RaptorDB
                             if (keys == null)
                             {
                                 int blknum = Helper.ToInt32(b, idx + 1, false);
-                                byte[] bb = _strings.GetData(blknum, page.allocblocks);
+                                byte[] bb = _strings.GetData(blknum, out page.allocblocks);
                                 keys = (object[])BJSON.ToObject(bb);
                             }
                             key = (T)keys[i];
@@ -421,14 +422,15 @@ namespace RaptorDB
             {
                 T[] keys = _pages.Keys();
                 int blocknum = 0;
-                if (_externalStrings)
-                {
-                    if (_pagelistalllocblock != null)
-                        _strings.FreeBlocks(_pagelistalllocblock);
-                    blocknum = _strings.SaveData("pagelist", BJSON.ToBJSON(keys,
-                        new BJSONParameters { UseUnicodeStrings = false, UseTypedArrays = false }));
-                    File.WriteAllBytes(_FileName + ".pagelist", Helper.GetBytes(blocknum, false));
-                }
+                // TODO : needed??
+                //if (_externalStrings)
+                //{
+                //    if (_pagelistalllocblock != null)
+                //        _strings.FreeBlocks(_pagelistalllocblock);
+                //    blocknum = _strings.SaveData("pagelist", BJSON.ToBJSON(keys,
+                //        new BJSONParameters { UseUnicodeStrings = false, UseTypedArrays = false }));
+                //    File.WriteAllBytes(_FileName + ".pagelist", Helper.GetBytes(blocknum, false));
+                //}
                 // save page list
                 int c = (_pages.Count() / Global.PageItemCount) + 1;
                 // allocate pages needed 
