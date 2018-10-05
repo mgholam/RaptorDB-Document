@@ -335,12 +335,12 @@ namespace RaptorDB.Common
 
         public static byte[] GetBytes(string s)
         {
-            return Encoding.UTF8.GetBytes(s); // FIX : change to unicode ??
+            return Encoding.UTF8.GetBytes(s); // TODO : change to unicode ??
         }
 
         public static string GetString(byte[] buffer, int index, short length)
         {
-            return Encoding.UTF8.GetString(buffer, index, length); // FIX : change to unicode ??
+            return Encoding.UTF8.GetString(buffer, index, length); // TODO : change to unicode ??
         }
     }
 }

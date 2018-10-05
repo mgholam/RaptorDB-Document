@@ -1,16 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-using System.Threading;
+﻿using RaptorDB.Common;
 using RaptorDB.Views;
+using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using RaptorDB.Common;
-using System.IO.Compression;
-using System.CodeDom.Compiler;
+using System.Text;
 using System.Text.RegularExpressions;
-using System.ComponentModel;
+using System.Threading;
 
 // ----- Feature list -------
 // TODO : enum in row schema support
@@ -89,6 +90,8 @@ namespace RaptorDB
         private Replication.ReplicationClient _repclient;
         private DateTime _startTime = DateTime.Now;
         private ITokenizer _tokenizer = new tokenizer();
+        private int _RaptorDBVersion = 4;
+
 
         #region [            P U B L I C    I N T E R F A C E            ]
         /// <summary>
@@ -1123,6 +1126,11 @@ namespace RaptorDB
             if (v < StorageFile<int>._CurrentVersion)
                 UpgradeStorageFile(_Path + "Data" + _S + "files", v);
 
+            // upgrade old mgidx files 
+            if (File.Exists(_Path + "Data" + _S + "RaptorDB.version") == false)
+            {
+                RebuildDataFiles();
+            }
             _objStore = new KeyStore<Guid>(_Path + "Data" + _S + "data", true);
             _fileStore = new KeyStore<Guid>(_Path + "Data" + _S + "files", true);
 
@@ -1206,6 +1214,68 @@ namespace RaptorDB
             {
                 _log.Debug("Enabling WEBSTUDIO on port : " + Global.WebStudioPort);
                 _restServer = new rdbRest(Global.WebStudioPort, this, _Path, Global.LocalOnlyWebStudio);
+            }
+        }
+
+        private void RebuildDataFiles()
+        {
+            try
+            {
+                var data = _Path + "data" + _S;
+                var tmp = data + "temp" + _S;
+                _log.Debug("Rebuilding MGDAT files...");
+
+                _log.Debug("  deleting Fulltext folder.");
+                // delete "fulltext" folder -> will rebuild automatically
+                Directory.Delete(data + "Fulltext", true);
+
+                _log.Debug("  moving mgdat files to temp folder.");
+                Directory.CreateDirectory(tmp);
+                File.Move(data + "data.mgdat", tmp + "data.mgdat");
+                File.Move(data + "files.mgdat", tmp + "files.mgdat");
+
+                // delete all index files -> keep data.mgdat & files.mgdat
+                Directory.GetFiles(data, "*.*").ToList().ForEach(x => File.Delete(x));
+
+                // upgrade by rebuilding indexes 
+                var sf = StorageFile<Guid>.ReadForward(tmp + "data.mgdat");
+                var obstore = new KeyStore<Guid>(data + "data", true);
+                _log.Debug("  rebuilding index for data.mgdat");
+                _log.Debug("  docs count = " + sf.Count());
+                foreach (var i in sf.ReadOnlyEnumerate())
+                {
+                    if (i.meta.isDeleted)
+                        obstore.Delete(i.meta.key);
+                    else
+                    {
+                        var o = CreateObject(i.data);
+                        obstore.SetObject(i.meta.key, o);
+                    }
+                }
+                obstore.Shutdown();
+                sf.Shutdown();
+                sf = StorageFile<Guid>.ReadForward(tmp + "files.mgdat");
+                obstore = new KeyStore<Guid>(data + "files", true);
+                _log.Debug("  rebuilding index for files.mgdat");
+                _log.Debug("  files count = " + sf.Count());
+                foreach (var i in sf.ReadOnlyEnumerate())
+                {
+                    if (i.meta.isDeleted)
+                        obstore.Delete(i.meta.key);
+                    else
+                    {
+                        var o = CreateObject(i.data);
+                        obstore.SetObject(i.meta.key, o);
+                    }
+                }
+                obstore.Shutdown();
+                sf.Shutdown();
+                File.WriteAllText(data + "RaptorDB.version", "" + _RaptorDBVersion);
+                Directory.Delete(tmp, true);
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex);
             }
         }
 

@@ -498,10 +498,10 @@ namespace RaptorDB
 
     public enum CTYPE
     {
-        ALLONES,
-        BITMAP,
-        OFFSET,
-        OFFSETSL
+        ALLONES
+        ,BITMAP
+        ,OFFSET
+        //,OFFSETSL
     }
     public class CData
     {

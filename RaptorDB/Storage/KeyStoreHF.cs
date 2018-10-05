@@ -443,7 +443,7 @@ namespace RaptorDB
 
                 int c = _datastore.NumberofBlocks();
 
-                for (int i = 0; i < c; i++) // go through blocks
+                for (int i = 1; i < c; i++) // go through blocks skip first
                 {
                     if (visited.Get(i))
                         continue;

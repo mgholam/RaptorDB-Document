@@ -320,6 +320,15 @@ namespace datagridbinding
             rap.FreeMemory();
         }
 
+        private void dataGridView1_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            var id = (Guid)dataGridView1.Rows[e.RowIndex].Cells["docid"].Value;
+
+            var s = fastJSON.JSON.ToNiceJSON( rap.Fetch(id) , new fastJSON.JSONParameters {UseExtensions= false, UseFastGuid = false });
+
+            MessageBox.Show(s, "JSON Value");
+        }
+
         //private void perftest()
         //{
         //    DateTime dt = DateTime.Now;

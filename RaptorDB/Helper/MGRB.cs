@@ -48,8 +48,9 @@ namespace RaptorDB
                     _containers.Add(idx, c);
                 }
                 c.Set(position & _MASK, val);
-                if (c.ChangeRequired())
-                    _containers[idx] = c.Change();
+
+                //if (c.ChangeRequired())
+                //    _containers[idx] = c.Change();
             }
         }
 
