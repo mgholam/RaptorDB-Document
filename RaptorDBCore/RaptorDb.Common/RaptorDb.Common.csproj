@@ -12,6 +12,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputPath>..\..\output\</OutputPath>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE;NET4</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

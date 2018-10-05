@@ -14,6 +14,8 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <OutputPath>..\..\output</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,7 +24,8 @@
     <Compile Include="..\..\RaptorDB\cron\CronSchedule.cs" Link="cron\CronSchedule.cs" />
     <Compile Include="..\..\RaptorDB\DataTypes\DataTypes.cs" Link="DataTypes\DataTypes.cs" />
     <Compile Include="..\..\RaptorDB\Global.cs" Link="Global.cs" />
-    <Compile Include="..\..\RaptorDB\Helper\WAHBitarray2.cs" Link="Helper\WAHBitarray2.cs" />
+    <Compile Include="..\..\RaptorDB\Helper\Container.cs" Link="Helper\Container.cs" />
+    <Compile Include="..\..\RaptorDB\Helper\MGRB.cs" Link="Helper\MGRB.cs" />
     <Compile Include="..\..\RaptorDB\Indexes\BitmapIndex.cs" Link="Indexes\BitmapIndex.cs" />
     <Compile Include="..\..\RaptorDB\Indexes\Cache.cs" Link="Indexes\Cache.cs" />
     <Compile Include="..\..\RaptorDB\Indexes\Hoot.cs" Link="Indexes\Hoot.cs" />
