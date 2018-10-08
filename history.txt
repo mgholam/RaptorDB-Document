@@ -1,4 +1,8 @@
-﻿v4.0.1
+﻿v4.0.2
+------
+- bug fix MGRB.Fill() 
+
+v4.0.1
 ------
 - bug fix missing raptordb.version file in data folder
 

@@ -164,7 +164,7 @@ namespace RaptorDB
 
             var con = new SafeSortedList<int, Container>();
             var c = count >> 16;
-            for (int i = 0; i < c; i++)
+            for (int i = 0; i <= c; i++)
                 con.Add(i, new BitmapContainer(true));
 
             return new MGRB(con);
