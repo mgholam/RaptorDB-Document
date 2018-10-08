@@ -1,4 +1,8 @@
-﻿v4.0.0
+﻿v4.0.1
+------
+- bug fix missing raptordb.version file in data folder
+
+v4.0.0
 -------
 - upgrade to fastJSON v2.2.0
 - upgrade to fastBinaryJSON v1.5.1

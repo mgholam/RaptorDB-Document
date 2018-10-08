@@ -492,6 +492,7 @@ namespace RaptorDB
                 {
                     ushort* read = pointer;
                     ushort* write = (ushort*)bytePointer;
+
                     for (int i = 0; i < arrayLength; i++)
                     {
                         *write++ = *read++;

@@ -1131,6 +1131,9 @@ namespace RaptorDB
             {
                 RebuildDataFiles();
             }
+
+            File.WriteAllText(_Path + "data" + _S + "RaptorDB.version", "" + _RaptorDBVersion);
+
             _objStore = new KeyStore<Guid>(_Path + "Data" + _S + "data", true);
             _fileStore = new KeyStore<Guid>(_Path + "Data" + _S + "files", true);
 
