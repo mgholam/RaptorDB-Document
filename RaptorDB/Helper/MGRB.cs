@@ -7,17 +7,23 @@ namespace RaptorDB
     public class MGRB
     {
         public MGRB()
-        {
+        { }
 
-        }
+        internal MGRB(SafeSortedList<int, Container> containers) : this(containers, -1)
+        { }
 
-        internal MGRB(SafeSortedList<int, Container> containers)
+        internal MGRB(SafeSortedList<int, Container> containers, long size)
         {
             _containers = containers;
             var k = _containers.Keys();
-            var l = k.Length - 1;
-            if (l >= 0)
-                _size = (k[l] << 16) + _containers.GetValue(l).Size;
+            _size = size;
+            if (size == -1)
+            {
+                _size = 0;
+                var l = k.Length - 1;
+                if (l >= 0)
+                    _size = (k[l] << 16) + _containers.GetValue(l).Size;
+            }
         }
 
         private SafeSortedList<int, Container> _containers = new SafeSortedList<int, Container>();
@@ -43,7 +49,7 @@ namespace RaptorDB
                     //if (Global.useSortedList)
                     //    c = new OffsetContainerSL();
                     //else
-                        c = new OffsetContainer();
+                    c = new OffsetContainer();
                     // add container
                     _containers.Add(idx, c);
                 }
@@ -69,6 +75,9 @@ namespace RaptorDB
         public MGRB And(MGRB B)
         {
             var v = new SafeSortedList<int, Container>();
+            var len = _size;
+            if (B.Length < len)
+                len = B.Length;
             var a = LastContainerIdx();
             var b = B.LastContainerIdx();
             var min = a;
@@ -88,12 +97,15 @@ namespace RaptorDB
                     v.Add(i, containerAND(ca, cb));
             }
 
-            return new MGRB(v);
+            return new MGRB(v, len);
         }
 
         public MGRB Or(MGRB B)
         {
             var v = new SafeSortedList<int, Container>();
+            var len = _size;
+            if (B.Length > len)
+                len = B.Length;
             var a = LastContainerIdx();
             var b = B.LastContainerIdx();
             var max = a;
@@ -117,7 +129,7 @@ namespace RaptorDB
                     v.Add(i, containerOR(ca, cb));
             }
 
-            return new MGRB(v);
+            return new MGRB(v, len);
         }
 
         public MGRB AndNot(MGRB b)
@@ -137,7 +149,7 @@ namespace RaptorDB
                 con.Add(c.Key, c.Value.Not());
             }
 
-            return new MGRB(con);
+            return new MGRB(con, _size);
         }
 
         public MGRB Not(long count)
@@ -154,7 +166,7 @@ namespace RaptorDB
                     con.Add(i, a.Not());
             }
 
-            return new MGRB(con);
+            return new MGRB(con, count);
         }
 
         public static MGRB Fill(long count)
@@ -163,19 +175,28 @@ namespace RaptorDB
                 return new MGRB();
 
             var con = new SafeSortedList<int, Container>();
-            var c = count >> 16;
-            for (int i = 0; i <= c; i++)
-                con.Add(i, new BitmapContainer(true));
+            int i = 0;
+            long c = count;
+            while (count > 0)
+            {
+                if (count > Container.BSize)
+                    con.Add(i, new BitmapContainer(true));
+                else
+                    con.Add(i, new BitmapContainer((int)count));
+                count -= Container.BSize;
+                i++;
+            }
 
-            return new MGRB(con);
+            return new MGRB(con, c);
         }
 
         public long CountOnes()
         {
             long c = 0;
 
-            foreach (var i in _containers)
-                c += i.Value.CountOnes();
+            if (_size > 0)
+                foreach (var i in _containers)
+                    c += i.Value.CountOnes();
 
             return c;
         }
@@ -255,6 +276,12 @@ namespace RaptorDB
                         cd.t = CTYPE.OFFSET;
                         cd.d = ToByteArray(of.Values());
                     }
+                    else if (c.Value is InvertedContainer)
+                    {
+                        var inv = c.Value as InvertedContainer;
+                        cd.t = CTYPE.INV;
+                        cd.d = ToByteArray(inv.Values());
+                    }
                     //else
                     //{
                     //    var of = c.Value as OffsetContainerSL;
@@ -303,6 +330,16 @@ namespace RaptorDB
                         list.Add(ToUShort(c.d, i));
                     }
                     con = new OffsetContainer(list);
+                }
+                else if (c.t == CTYPE.INV)
+                {
+                    List<ushort> list = new List<ushort>();
+                    var dataLen = c.d.Length;
+                    for (int i = 0; i < dataLen; i += 2)
+                    {
+                        list.Add(ToUShort(c.d, i));
+                    }
+                    con = new InvertedContainer(list);
                 }
                 //else
                 //{
@@ -360,13 +397,17 @@ namespace RaptorDB
 
             if (ca is BitmapContainer)
                 a = (BitmapContainer)ca;
+            else if (ca is OffsetContainer)
+                a = (BitmapContainer)ca.ToBitmap();
             else
-                a = (BitmapContainer)ca.Change();
+                a = (BitmapContainer)ca.ToBitmap();
 
             if (cb is BitmapContainer)
                 b = (BitmapContainer)cb;
+            else if (cb is OffsetContainer)
+                b = (BitmapContainer)cb.ToBitmap();
             else
-                b = (BitmapContainer)cb.Change();
+                b = (BitmapContainer)cb.ToBitmap();
 
             var av = a.Values();
             var bv = b.Values();
@@ -399,13 +440,17 @@ namespace RaptorDB
 
             if (ca is BitmapContainer)
                 a = (BitmapContainer)ca;
+            else if (ca is OffsetContainer)
+                a = (BitmapContainer)ca.ToBitmap();
             else
-                a = (BitmapContainer)ca.Change();
+                a = (BitmapContainer)ca.ToBitmap();
 
             if (cb is BitmapContainer)
                 b = (BitmapContainer)cb;
+            else if (cb is OffsetContainer)
+                b = (BitmapContainer)cb.ToBitmap();
             else
-                b = (BitmapContainer)cb.Change();
+                b = (BitmapContainer)cb.ToBitmap();
 
             var av = a.Values();
             var bv = b.Values();
@@ -479,6 +524,15 @@ namespace RaptorDB
                 // below not working
                 //System.Runtime.InteropServices.Marshal.Copy(new IntPtr(pointer), byteArray, 0, arrayLength);
             }
+
+            // not working
+            //fixed (ulong* src = data)
+            //{
+            //    System.Runtime.InteropServices.Marshal.Copy(new IntPtr(src), byteArray, 0, arrayLength);
+            //}
+
+            // not working
+            //Buffer.BlockCopy(data, 0, byteArray, 0, arrayLength);
             return byteArray;
         }
 
@@ -492,13 +546,22 @@ namespace RaptorDB
                 {
                     ushort* read = pointer;
                     ushort* write = (ushort*)bytePointer;
-
                     for (int i = 0; i < arrayLength; i++)
                     {
                         *write++ = *read++;
                     }
                 }
             }
+
+            // not working
+            //fixed (ushort* src = data)
+            //{
+            //    System.Runtime.InteropServices.Marshal.Copy(new IntPtr(src), byteArray, 0, arrayLength);
+            //}
+
+            // not working
+            //Buffer.BlockCopy(data, 0, byteArray, 0, arrayLength);
+
             return byteArray;
         }
     }

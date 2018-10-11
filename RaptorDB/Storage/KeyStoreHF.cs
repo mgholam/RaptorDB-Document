@@ -54,7 +54,7 @@ namespace RaptorDB
             }
             _datastore = new StorageFileHF(_Path + "data.mghf", Global.HighFrequencyKVDiskBlockSize);
             _keys = new MGIndex<string>(_Path, "keys.idx", 255, /*Global.PageItemCount,*/ false);
-            _datastore.Initialize();
+            //_datastore.Initialize();
             _BlockSize = _datastore.GetBlockSize();
         }
 
@@ -67,7 +67,7 @@ namespace RaptorDB
             if (_Path.EndsWith(_S) == false) _Path += _S;
 
             _datastore = new StorageFileHF(_Path + filename, Global.HighFrequencyKVDiskBlockSize);
-            _datastore.Initialize();
+            //_datastore.Initialize();
             _BlockSize = _datastore.GetBlockSize();
         }
 

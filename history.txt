@@ -1,4 +1,13 @@
-﻿v4.0.2
+﻿v4.0.5
+------
+- bug fix MGRB.Fill(length) respect length value
+- bug fix MGRB.CountOnes() when length = 0
+- MGRB added locks for integrity
+- MGRB added InvertedContainer for better memory usage
+- MGRB respect lengths in computations
+- truncate StorageFileHF end free list data on read
+
+v4.0.2
 ------
 - bug fix MGRB.Fill() 
 

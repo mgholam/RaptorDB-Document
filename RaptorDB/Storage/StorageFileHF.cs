@@ -89,7 +89,7 @@ namespace RaptorDB
                 return Interlocked.Increment(ref _lastBlockNumber);
         }
 
-        internal void Initialize()
+        private void InitializeFreeList()
         {
             if (_lastBlockNumber < 0)
             {
@@ -108,7 +108,7 @@ namespace RaptorDB
                     // get free block num and size
                     int block = Helper.ToInt32(b, 2);
                     int len = Helper.ToInt32(b, 2 + 4);
-                    _lastBlockNumber = block;
+                    int freeblock = block;
                     b = new byte[len];
                     var offset = 0;
                     // read blocks upto size from block num
@@ -131,6 +131,11 @@ namespace RaptorDB
                     // read freelist from master block from end of file
                     var o = fastBinaryJSON.BJSON.ToObject<MGRBData>(b);
                     _freeList.Deserialize(o);
+
+                    _lastBlockNumber = freeblock;
+                    // truncate end of file freelist blocks if lastblock < file size
+                    if(_datawrite.Length > _lastBlockNumber *_BLOCKSIZE)
+                        _datawrite.SetLength(_lastBlockNumber * _BLOCKSIZE);
                 }
             }
         }
@@ -204,7 +209,7 @@ namespace RaptorDB
                 _lastBlockNumber++;
             }
 
-            Initialize();
+            InitializeFreeList();
         }
 
         private int ReadFileHeader()
