@@ -17,7 +17,7 @@ namespace RaptorDB
             _containers = containers;
             var k = _containers.Keys();
             _size = size;
-            if (size == -1)
+            if (size <= 0)//== -1)
             {
                 _size = 0;
                 var l = k.Length - 1;

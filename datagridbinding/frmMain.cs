@@ -1,9 +1,9 @@
-﻿using System;
+﻿using RaptorDB.Common;
+using SampleViews;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
-using RaptorDB.Common;
-using SampleViews;
 
 namespace datagridbinding
 {
@@ -207,7 +207,7 @@ namespace datagridbinding
             //        }
             //    }
             //}
-            if(c==0)
+            if (c == 0)
             {
                 kv.SetObjectHF("00", 100);
                 kv.SetObjectHF("01", 101);
@@ -251,6 +251,22 @@ namespace datagridbinding
         }
         private void testToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            var tc = rap.Count("test");
+            if (tc == 0)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    var u = new TestData()
+                    {
+                        id = Guid.NewGuid(),
+                        username = "" + i,
+                        password = "" + i
+                    };
+                    rap.Save(u.id, u);
+                }
+            }
+            var ppppp = rap.Query<TestSchema>(x => x.username == "1" && x.password == "1");
+
             GC.Collect();
             var llll = rap.Query<SalesInvoiceViewRowSchema>(x => x.CustomerName == "ruth" && x.Serial.Between(1600, 1630), 0, 100);
 
@@ -324,7 +340,7 @@ namespace datagridbinding
         {
             var id = (Guid)dataGridView1.Rows[e.RowIndex].Cells["docid"].Value;
 
-            var s = fastJSON.JSON.ToNiceJSON( rap.Fetch(id) , new fastJSON.JSONParameters {UseExtensions= false, UseFastGuid = false });
+            var s = fastJSON.JSON.ToNiceJSON(rap.Fetch(id), new fastJSON.JSONParameters { UseExtensions = false, UseFastGuid = false });
 
             MessageBox.Show(s, "JSON Value");
         }

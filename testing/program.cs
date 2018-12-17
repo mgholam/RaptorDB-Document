@@ -11,6 +11,7 @@ namespace testing
         {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
             server = new RaptorDBServer(90, @"..\..\RaptorDBdata");
+            //fastBinaryJSON.BJSON.Parameters.v1_4TypedArray = true;
             
             Console.WriteLine("Server started on port 90");
             Console.WriteLine("Press Enter to exit...");

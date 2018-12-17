@@ -34,7 +34,7 @@ namespace RaptorDB
             fastBinaryJSON.BJSON.Parameters.ParametricConstructorOverride = true;
             fastJSON.JSON.Parameters.UseEscapedUnicode = false;
             // backward compatibility 
-            fastBinaryJSON.BJSON.Parameters.v1_4TypedArray = true;
+            //fastBinaryJSON.BJSON.Parameters.v1_4TypedArray = true;
             fastJSON.Reflection.RDBMode = true;
 
             if (_S == "/")

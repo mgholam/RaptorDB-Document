@@ -9,6 +9,9 @@ namespace RaptorDB
 {
     public class Hoot
     {
+        public Hoot(string IndexPath, string FileName, bool DocMode) : this(IndexPath, FileName, DocMode, new tokenizer())
+        {
+        }
         public Hoot(string IndexPath, string FileName, bool DocMode, ITokenizer tokenizer)
         {
             if (tokenizer != null)
@@ -321,25 +324,21 @@ namespace RaptorDB
                 _docs.SaveIndex();
 
             if (_bitmaps != null)
-                _bitmaps.Commit(false);
+                _bitmaps.Commit(true);
 
             if (_words != null && _wordschanged == true)
             {
-                MemoryStream ms = new MemoryStream();
-                BinaryWriter bw = new BinaryWriter(ms, Encoding.UTF8);
-
                 // save words and bitmaps
                 using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Create))
                 {
-                    foreach (string key in _words.Keys())
+                    using (BinaryWriter bw = new BinaryWriter(words, Encoding.UTF8))
                     {
-                        bw.Write(key);
-                        bw.Write(_words[key]);
+                        foreach (string key in _words.Keys())
+                        {
+                            bw.Write(key);
+                            bw.Write(_words[key]);
+                        }
                     }
-                    byte[] b = ms.ToArray();
-                    words.Write(b, 0, b.Length);
-                    words.Flush();
-                    words.Close();
                 }
                 _wordschanged = false;
             }
@@ -351,26 +350,46 @@ namespace RaptorDB
             lock (_lock)
             {
                 if (_words == null)
-                    _words = new SafeDictionary<string, int>();// new SafeSortedList<string, int>();
+                    _words = new SafeDictionary<string, int>();
+                             //  new SafeSortedList<string, int>();
                 if (File.Exists(_Path + _FileName + ".words") == false)
                     return;
                 // load words
-                byte[] b = File.ReadAllBytes(_Path + _FileName + ".words");
-                if (b.Length == 0)
-                    return;
-                MemoryStream ms = new MemoryStream(b);
-                BinaryReader br = new BinaryReader(ms, Encoding.UTF8);
-                string s = br.ReadString();
-                while (s != "")
+                using (FileStream words = new FileStream(_Path + _FileName + ".words", FileMode.Open))
                 {
-                    int off = br.ReadInt32();
-                    _words.Add(s, off);
-                    try
+                    if (words.Length == 0)
+                        return;
+                    using (BinaryReader br = new BinaryReader(words, Encoding.UTF8))
                     {
-                        s = br.ReadString();
+                        string s = br.ReadString();
+                        while (s != "")
+                        {
+                            int off = br.ReadInt32();
+                            _words.Add(s, off);
+                            try
+                            {
+                                s = br.ReadString();
+                            }
+                            catch { s = ""; }
+                        }
                     }
-                    catch { s = ""; }
                 }
+                //byte[] b = File.ReadAllBytes(_Path + _FileName + ".words");
+                //if (b.Length == 0)
+                //    return;
+                //MemoryStream ms = new MemoryStream(b);
+                //BinaryReader br = new BinaryReader(ms, Encoding.UTF8);
+                //string s = br.ReadString();
+                //while (s != "")
+                //{
+                //    int off = br.ReadInt32();
+                //    _words.Add(s, off);
+                //    try
+                //    {
+                //        s = br.ReadString();
+                //    }
+                //    catch { s = ""; }
+                //}
                 _log.Debug("Word Count = " + _words.Count());
                 _wordschanged = true;
             }

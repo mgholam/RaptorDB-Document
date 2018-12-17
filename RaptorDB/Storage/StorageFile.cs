@@ -49,7 +49,7 @@ namespace RaptorDB
         public FileStream file;
     }
 
-    internal class StorageFile<T>
+    public class StorageFile<T>
     {
         FileStream _datawrite;
         FileStream _recfilewrite;

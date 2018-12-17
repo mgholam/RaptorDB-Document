@@ -43,6 +43,38 @@ namespace SampleViews
 
     #region [  views  ]
 
+    public class TestData
+    {
+        public Guid id;
+        public string username;
+        public string password;
+    }
+
+    public class TestSchema : RDBSchema
+    {
+        public string username;
+        public string password;
+    }
+
+    public class TestView : View<TestData>
+    {
+        public TestView()
+        {
+            this.Name = "test";
+            this.Schema = typeof(TestSchema);
+            this.Version = 1;
+            this.isPrimaryList = true;
+            this.isActive = true;
+            this.BackgroundIndexing = true;
+
+            this.Mapper = (api, docid, doc) =>
+            {
+                api.EmitObject(docid, doc);
+            };
+        }
+    }
+
+    [RegisterView]
     public class SalesInvoiceViewRowSchema : RDBSchema
     {
         //[FullText]

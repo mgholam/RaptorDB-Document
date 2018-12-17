@@ -1,4 +1,10 @@
-﻿v4.0.5
+﻿v4.0.6
+------
+- upgrade to fastBinaryJSON v1.5.2
+- bug fix loading empty hOOt words file
+- bug fix query MGRB index with less than 64 rows 
+
+v4.0.5
 ------
 - bug fix MGRB.Fill(length) respect length value
 - bug fix MGRB.CountOnes() when length = 0

@@ -28,11 +28,13 @@ namespace datagridbinding
                 p.RegisterView(new SalesInvoiceView());
                 p.RegisterView(new SalesItemRowsView());
                 p.RegisterView(new newview());
+                p.RegisterView(new TestView());
                 _rap = p;
             }
             else
             {
                 _rap = new RaptorDB.RaptorDBClient(txtServer.Text, int.Parse(txtPort.Text), txtUser.Text, txtPassword.Text);
+                //fastBinaryJSON.BJSON.Parameters.v1_4TypedArray = true;
             }
         }
 

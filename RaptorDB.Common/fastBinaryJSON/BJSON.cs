@@ -130,14 +130,16 @@ namespace fastBinaryJSON
                 EnableAnonymousTypes = EnableAnonymousTypes,
                 UsingGlobalTypes = UsingGlobalTypes,
                 IgnoreAttributes = new List<Type>(IgnoreAttributes),
-                //IgnoreCaseOnDeserialize = IgnoreCaseOnDeserialize,
                 UseUnicodeStrings = UseUnicodeStrings,
                 SerializeNulls = SerializeNulls,
                 ParametricConstructorOverride = ParametricConstructorOverride,
                 SerializerMaxDepth = SerializerMaxDepth,
                 UseTypedArrays = UseTypedArrays,
                 UseExtensions = UseExtensions,
-                UseUTCDateTime = UseUTCDateTime                
+                UseUTCDateTime = UseUTCDateTime,
+                v1_4TypedArray = v1_4TypedArray//,
+                //OptimizeSize = OptimizeSize
+
             };
         }
     }
