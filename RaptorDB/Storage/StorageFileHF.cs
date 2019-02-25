@@ -31,7 +31,7 @@ namespace RaptorDB
 
         //private SafeDictionary<string, int> _masterblock = new SafeDictionary<string, int>();
 
-        public StorageFileHF(string filename, ushort blocksize) 
+        public StorageFileHF(string filename, ushort blocksize)
         {
             _Path = Path.GetDirectoryName(filename);
             if (_Path.EndsWith(_S) == false) _Path += _S;
@@ -111,16 +111,18 @@ namespace RaptorDB
                     int freeblock = block;
                     b = new byte[len];
                     var offset = 0;
+                    bool failed = false;
                     // read blocks upto size from block num
                     SeekBlock(block);
                     while (len > 0)
                     {
                         // check header 
                         var bb = ReadBlock(block++);
-                        if(bb[0]!=(byte)'F' || bb[1]!=(byte)'L')
+                        if (bb[0] != (byte)'F' || bb[1] != (byte)'L')
                         {
                             // throw exception??
                             _log.Error("Free list header does not match : " + _filename);
+                            failed = true;
                             break;
                         }
                         int c = len > _BLOCKSIZE ? _BLOCKSIZE - 2 : len;
@@ -128,14 +130,16 @@ namespace RaptorDB
                         len -= c;
                         offset += c;
                     }
-                    // read freelist from master block from end of file
-                    var o = fastBinaryJSON.BJSON.ToObject<MGRBData>(b);
-                    _freeList.Deserialize(o);
-
+                    if (failed == false)
+                    {
+                        // read freelist from master block from end of file
+                        var o = fastBinaryJSON.BJSON.ToObject<MGRBData>(b);
+                        _freeList.Deserialize(o);
+                        // truncate end of file freelist blocks if lastblock < file size
+                        if (_datawrite.Length > _lastBlockNumber * _BLOCKSIZE)
+                            _datawrite.SetLength(_lastBlockNumber * _BLOCKSIZE);
+                    }
                     _lastBlockNumber = freeblock;
-                    // truncate end of file freelist blocks if lastblock < file size
-                    if(_datawrite.Length > _lastBlockNumber *_BLOCKSIZE)
-                        _datawrite.SetLength(_lastBlockNumber * _BLOCKSIZE);
                 }
             }
         }

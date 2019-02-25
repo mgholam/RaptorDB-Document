@@ -1,4 +1,8 @@
-﻿v4.0.6
+﻿v4.0.7
+------
+- bug fix StorageFileHF reloading free list from previous failed shutdown
+
+v4.0.6
 ------
 - upgrade to fastBinaryJSON v1.5.2
 - bug fix loading empty hOOt words file
