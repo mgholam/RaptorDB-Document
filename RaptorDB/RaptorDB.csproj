@@ -34,7 +34,7 @@
     <DebugSymbols>true</DebugSymbols>
     <FileAlignment>4096</FileAlignment>
     <NoStdLib>false</NoStdLib>
-    <Optimize>true</Optimize>
+    <Optimize>false</Optimize>
     <RegisterForComInterop>false</RegisterForComInterop>
     <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
@@ -122,6 +122,7 @@
     <Compile Include="REST\rdbRest.cs" />
     <Compile Include="Storage\KeyStore.cs" />
     <Compile Include="RaptorDB.cs" />
+    <Compile Include="Storage\StringHF.cs" />
     <Compile Include="Storage\KeyStoreHF.cs" />
     <Compile Include="Storage\StorageFileHF.cs" />
     <Compile Include="Storage\StorageFile.cs">

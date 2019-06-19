@@ -38,7 +38,7 @@ namespace RaptorDB
         IGetBytes<T> _T = null;
         private object _fileLock = new object();
 
-        private KeyStoreHF _strings;
+        private StringHF _strings;
         private bool _externalStrings = false;
         //private List<int> _pagelistalllocblock = null;
         private string _FileName = "";
@@ -87,7 +87,7 @@ namespace RaptorDB
             }
             if (_externalStrings)
             {
-                _strings = new KeyStoreHF(path, Path.GetFileNameWithoutExtension(filename) + ".strings");
+                _strings = new StringHF(path, Path.GetFileNameWithoutExtension(filename) + ".strings");
             }
             if (_LastPageNumber == 0)
                 _LastPageNumber = 1;
@@ -391,7 +391,7 @@ namespace RaptorDB
                     {
                         int idx = index + _rowSize * i;
                         byte ks = b[idx];
-                        T key;
+                        T key = default(T);
                         if (_externalStrings == false)
                             key = _T.GetObject(b, idx + 1, ks);
                         else
@@ -399,7 +399,9 @@ namespace RaptorDB
                             if (keys == null)
                             {
                                 int blknum = Helper.ToInt32(b, idx + 1, false);
-                                byte[] bb = _strings.GetData(blknum, out page.allocblocks);
+                                List<int> ablocks = new List<int>();
+                                byte[] bb = _strings.GetData(blknum, out ablocks);
+                                page.allocblocks = ablocks;
                                 keys = (object[])BJSON.ToObject(bb);
                             }
                             key = (T)keys[i];

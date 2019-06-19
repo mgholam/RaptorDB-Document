@@ -854,20 +854,22 @@ namespace RaptorDB.Views
                         _nocase.Add(p.Name, 0);
                     if (_view.CaseInsensitiveColumns.Contains(p.Name) || _view.CaseInsensitiveColumns.Contains(p.Name.ToLower()))
                         _nocase.Add(p.Name, 0);
-
-                    var a = p.GetCustomAttributes(typeof(StringIndexLength), false);
-                    if (a.Length > 0)
+                    if (t != typeof(FullTextString))
                     {
-                        byte l = (a[0] as StringIndexLength).Length;
-                        _idxlen.Add(p.Name, l);
-                    }
-                    if (_view.StringIndexLength.ContainsKey(p.Name) || _view.StringIndexLength.ContainsKey(p.Name.ToLower()))
-                    {
-                        byte b = 0;
-                        if (_view.StringIndexLength.TryGetValue(p.Name, out b))
-                            _idxlen.Add(p.Name, b);
-                        if (_view.StringIndexLength.TryGetValue(p.Name.ToLower(), out b))
-                            _idxlen.Add(p.Name, b);
+                        var a = p.GetCustomAttributes(typeof(StringIndexLength), false);
+                        if (a.Length > 0)
+                        {
+                            byte l = (a[0] as StringIndexLength).Length;
+                            _idxlen.Add(p.Name, l);
+                        }
+                        if (_view.StringIndexLength.ContainsKey(p.Name) || _view.StringIndexLength.ContainsKey(p.Name.ToLower()))
+                        {
+                            byte b = 0;
+                            if (_view.StringIndexLength.TryGetValue(p.Name, out b))
+                                _idxlen.Add(p.Name, b);
+                            if (_view.StringIndexLength.TryGetValue(p.Name.ToLower(), out b))
+                                _idxlen.Add(p.Name, b);
+                        }
                     }
                     if (t == typeof(DateTime))
                     {
@@ -900,20 +902,22 @@ namespace RaptorDB.Views
                         _nocase.Add(f.Name, 0);
                     if (_view.CaseInsensitiveColumns.Contains(f.Name) || _view.CaseInsensitiveColumns.Contains(f.Name.ToLower()))
                         _nocase.Add(f.Name, 0);
-
-                    var a = f.GetCustomAttributes(typeof(StringIndexLength), false);
-                    if (a.Length > 0)
+                    if (t != typeof(FullTextString))
                     {
-                        byte l = (a[0] as StringIndexLength).Length;
-                        _idxlen.Add(f.Name, l);
-                    }
-                    if (_view.StringIndexLength.ContainsKey(f.Name) || _view.StringIndexLength.ContainsKey(f.Name.ToLower()))
-                    {
-                        byte b = 0;
-                        if (_view.StringIndexLength.TryGetValue(f.Name, out b))
-                            _idxlen.Add(f.Name, b);
-                        if (_view.StringIndexLength.TryGetValue(f.Name.ToLower(), out b))
-                            _idxlen.Add(f.Name, b);
+                        var a = f.GetCustomAttributes(typeof(StringIndexLength), false);
+                        if (a.Length > 0)
+                        {
+                            byte l = (a[0] as StringIndexLength).Length;
+                            _idxlen.Add(f.Name, l);
+                        }
+                        if (_view.StringIndexLength.ContainsKey(f.Name) || _view.StringIndexLength.ContainsKey(f.Name.ToLower()))
+                        {
+                            byte b = 0;
+                            if (_view.StringIndexLength.TryGetValue(f.Name, out b))
+                                _idxlen.Add(f.Name, b);
+                            if (_view.StringIndexLength.TryGetValue(f.Name.ToLower(), out b))
+                                _idxlen.Add(f.Name, b);
+                        }
                     }
                     if (t == typeof(DateTime))
                     {

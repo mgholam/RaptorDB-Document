@@ -171,12 +171,12 @@ namespace RaptorDB
                 var offset = 0;
                 // write master block 
                 SeekBlock(0);
-                _lastBlockNumber++;
+                //_lastBlockNumber++;
                 WriteBlockBytes(new byte[] { (byte)'F', (byte)'L' }, 0, 2);
                 WriteBlockBytes(Helper.GetBytes(_lastBlockNumber, false), 0, 4);
                 WriteBlockBytes(Helper.GetBytes(len, false), 0, 4);
                 // seek to end of file
-                SeekBlock(_lastBlockNumber);
+                SeekBlock(_lastBlockNumber+1);
                 while (len > 0)
                 {
                     WriteBlockBytes(new byte[] { (byte)'F', (byte)'L' }, 0, 2);
@@ -210,7 +210,7 @@ namespace RaptorDB
                     // fixx : upgrade storage file here
                 }
                 _lastBlockNumber = (int)((_datawrite.Length - _fileheader.Length) / _BLOCKSIZE);
-                _lastBlockNumber++;
+                //_lastBlockNumber++;
             }
 
             InitializeFreeList();

@@ -58,18 +58,18 @@ namespace RaptorDB
             _BlockSize = _datastore.GetBlockSize();
         }
 
-        // mgindex special storage for strings ctor -> no idx file
-        //    use SaveData() GetData()
-        public KeyStoreHF(string folder, string filename)
-        {
-            _Path = folder;
-            Directory.CreateDirectory(_Path);
-            if (_Path.EndsWith(_S) == false) _Path += _S;
+        //// mgindex special storage for strings ctor -> no idx file
+        ////    use SaveData() GetData()
+        //public KeyStoreHF(string folder, string filename)
+        //{
+        //    _Path = folder;
+        //    Directory.CreateDirectory(_Path);
+        //    if (_Path.EndsWith(_S) == false) _Path += _S;
 
-            _datastore = new StorageFileHF(_Path + filename, Global.HighFrequencyKVDiskBlockSize);
-            //_datastore.Initialize();
-            _BlockSize = _datastore.GetBlockSize();
-        }
+        //    _datastore = new StorageFileHF(_Path + filename, Global.HighFrequencyKVDiskBlockSize);
+        //    //_datastore.Initialize();
+        //    _BlockSize = _datastore.GetBlockSize();
+        //}
 
         public int CountHF()
         {
@@ -230,12 +230,10 @@ namespace RaptorDB
         {
             _datastore.Shutdown();
             if (_keys != null)
-            {
                 _keys.Shutdown();
 
-                if (File.Exists(_Path + _dirtyFilename))
-                    File.Delete(_Path + _dirtyFilename);
-            }
+            if (File.Exists(_Path + _dirtyFilename))
+                File.Delete(_Path + _dirtyFilename);
         }
 
         internal void FreeMemory()
@@ -524,42 +522,42 @@ namespace RaptorDB
         }
         #endregion
 
-        internal void FreeBlocks(List<int> list)
-        {
-            lock (_lock)
-                _datastore.FreeBlocks(list);
-        }
+        //internal void FreeBlocks(List<int> list)
+        //{
+        //    lock (_lock)
+        //        _datastore.FreeBlocks(list);
+        //}
 
 
-        // for .string files
-        internal int SaveData(string key, byte[] data)
-        {
-            lock (_lock)
-            {
-                byte[] kb = Helper.GetBytes(key);
-                AllocationBlock ab = new AllocationBlock();
-                ab.key = key;
-                ab.keylen = (byte)kb.Length;
-                ab.isCompressed = false;
-                ab.isBinaryJSON = true;
-                ab.datalength = data.Length;
+        //// for .string files
+        //internal int SaveData(string key, byte[] data)
+        //{
+        //    lock (_lock)
+        //    {
+        //        byte[] kb = Helper.GetBytes(key);
+        //        AllocationBlock ab = new AllocationBlock();
+        //        ab.key = key;
+        //        ab.keylen = (byte)kb.Length;
+        //        ab.isCompressed = false;
+        //        ab.isBinaryJSON = true;
+        //        ab.datalength = data.Length;
 
-                return internalSave(kb, data, ab);
-            }
-        }
+        //        return internalSave(kb, data, ab);
+        //    }
+        //}
 
-        // for .string files
-        internal byte[] GetData(int blocknumber, out List<int> usedblocks)
-        {
-            lock (_lock)
-            {
-                AllocationBlock ab = FillAllocationBlock(blocknumber);
-                usedblocks = ab.Blocks;
-                byte[] data = readblockdata(ab);
+        //// for .string files
+        //internal byte[] GetData(int blocknumber, out List<int> usedblocks)
+        //{
+        //    lock (_lock)
+        //    {
+        //        AllocationBlock ab = FillAllocationBlock(blocknumber);
+        //        usedblocks = ab.Blocks;
+        //        byte[] data = readblockdata(ab);
 
-                return data;
-            }
-        }
+        //        return data;
+        //    }
+        //}
 
         public int Increment(string key, int amount)
         {
