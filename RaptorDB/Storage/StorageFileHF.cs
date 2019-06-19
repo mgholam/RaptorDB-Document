@@ -113,11 +113,11 @@ namespace RaptorDB
                     var offset = 0;
                     bool failed = false;
                     // read blocks upto size from block num
-                    SeekBlock(block);
+                    SeekBlock(++block);
                     while (len > 0)
                     {
                         // check header 
-                        var bb = ReadBlock(block++);
+                        var bb = ReadBlock(block);
                         if (bb[0] != (byte)'F' || bb[1] != (byte)'L')
                         {
                             // throw exception??

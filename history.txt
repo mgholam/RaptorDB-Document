@@ -1,4 +1,9 @@
-﻿v4.0.7
+﻿v4.0.8
+------
+- bug fix .string index files growing on save
+- 
+
+v4.0.7
 ------
 - bug fix StorageFileHF reloading free list from previous failed shutdown
 
