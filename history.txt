@@ -1,7 +1,8 @@
 ﻿v4.0.8
 ------
-- bug fix .string index files growing on save
-- 
+- bug fix .string index files growing over time
+- upgrade to fastJSON v2.2.5
+- upgrade to fastBinaryJSON v1.5.3
 
 v4.0.7
 ------

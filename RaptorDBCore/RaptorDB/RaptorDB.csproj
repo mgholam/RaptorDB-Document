@@ -48,6 +48,7 @@
     <Compile Include="..\..\RaptorDB\Storage\KeyStoreHF.cs" Link="Storage\KeyStoreHF.cs" />
     <Compile Include="..\..\RaptorDB\Storage\StorageFile.cs" Link="Storage\StorageFile.cs" />
     <Compile Include="..\..\RaptorDB\Storage\StorageFileHF.cs" Link="Storage\StorageFileHF.cs" />
+    <Compile Include="..\..\RaptorDB\Storage\StringHF.cs" Link="Storage\StringHF.cs" />
     <Compile Include="..\..\RaptorDB\Views\apimapper.cs" Link="Views\apimapper.cs" />
     <Compile Include="..\..\RaptorDB\Views\Dynamic.cs" Link="Views\Dynamic.cs" />
     <Compile Include="..\..\RaptorDB\Views\LINQQuery.cs" Link="Views\LINQQuery.cs" />

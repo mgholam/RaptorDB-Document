@@ -575,7 +575,7 @@ namespace fastBinaryJSON
                 append = true;
             }
 
-            Getters[] g = Reflection.Instance.GetGetters(t, _params.ShowReadOnlyProperties, _params.IgnoreAttributes);
+            Getters[] g = Reflection.Instance.GetGetters(t, /*_params.ShowReadOnlyProperties,*/ _params.IgnoreAttributes);
             int c = g.Length;
             for (int ii = 0; ii < c; ii++)
             {

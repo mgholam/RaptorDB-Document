@@ -975,7 +975,7 @@ namespace RaptorDB.Views
             foreach (var obj in rows)
             {
                 object[] r = new object[colcount];
-                Getters[] getters = Reflection.Instance.GetGetters(obj.GetType(), true, null);
+                Getters[] getters = Reflection.Instance.GetGetters(obj.GetType(), /*true,*/ null);
 
                 for (int i = 0; i < colcount; i++)
                 {

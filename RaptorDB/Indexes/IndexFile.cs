@@ -303,37 +303,39 @@ namespace RaptorDB
             }
         }
 
-        internal void SavePage(Page<T> node)
+        internal void SavePage(Page<T> page)
         {
             lock (_fileLock)
             {
-                int pnum = node.DiskPageNumber;
+                int pnum = page.DiskPageNumber;
                 if (pnum > _LastPageNumber)
                     throw new Exception("should not be here: page out of bounds");
 
                 SeekPage(pnum);
-                byte[] page = new byte[_PageLength];
-                byte[] blockheader = CreateBlockHeader(0, (ushort)node.tree.Count(), node.RightPageNumber);
-                Buffer.BlockCopy(blockheader, 0, page, 0, blockheader.Length);
+                byte[] pagebytes = new byte[_PageLength];
+                byte[] blockheader = CreateBlockHeader(0, (ushort)page.tree.Count(), page.RightPageNumber);
+                Buffer.BlockCopy(blockheader, 0, pagebytes, 0, blockheader.Length);
 
                 int index = blockheader.Length;
                 int i = 0;
                 byte[] b = null;
-                T[] keys = node.tree.Keys();
+                T[] keys = page.tree.Keys();
                 Array.Sort(keys); // sort keys on save for read performance
                 int blocknum = 0;
                 if (_externalStrings)
                 {
                     // free old blocks
-                    if (node.allocblocks != null)
-                        _strings.FreeBlocks(node.allocblocks);
-                    blocknum = _strings.SaveData(node.DiskPageNumber.ToString(), BJSON.ToBJSON(keys,
-                        new BJSONParameters { UseUnicodeStrings = false, UseTypedArrays = false }));
+                    if (page.allocblocks != null)
+                        _strings.FreeBlocks(page.allocblocks);
+                    List<int> blocks = new List<int>();
+                    blocknum = _strings.SaveData(page.DiskPageNumber.ToString(), BJSON.ToBJSON(keys,
+                        new BJSONParameters { UseUnicodeStrings = false, UseTypedArrays = false }), out blocks);
+                    page.allocblocks = blocks;
                 }
                 // node children
                 foreach (var kp in keys)
                 {
-                    var val = node.tree[kp];
+                    var val = page.tree[kp];
                     int idx = index + _rowSize * i;
                     // key bytes
                     byte[] kk;
@@ -352,17 +354,17 @@ namespace RaptorDB
                         size = 4;
                     }
                     // key size = 1 byte
-                    page[idx] = size;
-                    Buffer.BlockCopy(kk, 0, page, idx + 1, page[idx]);
+                    pagebytes[idx] = size;
+                    Buffer.BlockCopy(kk, 0, pagebytes, idx + 1, pagebytes[idx]);
                     // offset = 4 bytes
                     b = Helper.GetBytes(val.RecordNumber, false);
-                    Buffer.BlockCopy(b, 0, page, idx + 1 + _maxKeySize, b.Length);
+                    Buffer.BlockCopy(b, 0, pagebytes, idx + 1 + _maxKeySize, b.Length);
                     // duplicatepage = 4 bytes
                     b = Helper.GetBytes(val.DuplicateBitmapNumber, false);
-                    Buffer.BlockCopy(b, 0, page, idx + 1 + _maxKeySize + 4, b.Length);
+                    Buffer.BlockCopy(b, 0, pagebytes, idx + 1 + _maxKeySize + 4, b.Length);
                     i++;
                 }
-                _file.Write(page, 0, page.Length);
+                _file.Write(pagebytes, 0, pagebytes.Length);
             }
         }
 

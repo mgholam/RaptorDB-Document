@@ -93,7 +93,9 @@ namespace RaptorDB
 
         private int internalSave(byte[] keybytes, byte[] data, AllocationBlock ab)
         {
+            ab.Blocks = new List<int>();
             int firstblock = _datastore.GetFreeBlockNumber();
+            ab.Blocks.Add(firstblock);
             int blocknum = firstblock;
             byte[] header = CreateAllocHeader(ab, keybytes);
             int dblocksize = _BlockSize - header.Length;
@@ -109,7 +111,6 @@ namespace RaptorDB
                 int next = 0;
                 if (datablockcount > 0)
                     next = _datastore.GetFreeBlockNumber();
-
                 Buffer.BlockCopy(Helper.GetBytes(counter, false), 0, header, 0, 4);    // set block number
                 Buffer.BlockCopy(Helper.GetBytes(next, false), 0, header, 4, 4); // set next pointer
 
@@ -121,7 +122,10 @@ namespace RaptorDB
                 _datastore.WriteBlockBytes(data, offset, c);
 
                 if (next > 0)
+                {
                     blocknum = next;
+                    ab.Blocks.Add(next);
+                }
                 offset += c;
                 len -= c;
                 counter++;
@@ -221,7 +225,7 @@ namespace RaptorDB
 
 
         // for .string files
-        internal int SaveData(string key, byte[] data)
+        internal int SaveData(string key, byte[] data, out List<int> blocks)
         {
             lock (_lock)
             {
@@ -233,7 +237,9 @@ namespace RaptorDB
                 ab.isBinaryJSON = true;
                 ab.datalength = data.Length;
 
-                return internalSave(kb, data, ab);
+                int firstblock = internalSave(kb, data, ab);
+                blocks = ab.Blocks;
+                return firstblock;
             }
         }
 

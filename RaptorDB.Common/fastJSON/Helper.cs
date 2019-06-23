@@ -51,12 +51,17 @@ namespace fastJSON
             return oset;
         }
 
-        public static long AutoConv(object value)
+        public static long AutoConv(object value, JSONParameters param)
         {
             if (value is string)
             {
-                string s = (string)value;
-                return CreateLong(s, 0, s.Length);
+                if (param.AutoConvertStringToNumbers == true)
+                {
+                    string s = (string)value;
+                    return CreateLong(s, 0, s.Length);
+                }
+                else
+                    throw new Exception("AutoConvertStringToNumbers is disabled for converting string : " + value);
             }
             else if (value is long)
                 return (long)value;
@@ -66,22 +71,45 @@ namespace fastJSON
 
         public static long CreateLong(string s, int index, int count)
         {
-            long num = 0;
-            bool neg = false;
-            for (int x = 0; x < count; x++, index++)
-            {
-                char cc = s[index];
+            //long num = 0;
+            //bool neg = false;
+            //for (int x = 0; x < count; x++, index++)
+            //{
+            //    char cc = s[index];
 
-                if (cc == '-')
-                    neg = true;
-                else if (cc == '+')
-                    neg = false;
-                else
-                {
-                    num *= 10;
-                    num += (int)(cc - '0');
-                }
+            //    if (cc == '-')
+            //        neg = true;
+            //    else if (cc == '+')
+            //        neg = false;
+            //    else
+            //    {
+            //        num *= 10;
+            //        num += (int)(cc - '0');
+            //    }
+            //}
+            //if (neg) num = -num;
+
+            //return num;
+            bool neg = false;
+
+            char cc = s[index++];
+            if (cc == '-')
+            {
+                neg = true;
+                count--;
+                cc = s[index++];
             }
+            else if (cc == '+')
+            {
+                count--;
+                cc = s[index++];
+            }
+
+            long num = (long)(cc - '0');
+
+            while (--count > 0)
+                num = num * 10 + (long)(s[index++] - '0');
+
             if (neg) num = -num;
 
             return num;
@@ -89,22 +117,45 @@ namespace fastJSON
 
         public static long CreateLong(char[] s, int index, int count)
         {
-            long num = 0;
-            bool neg = false;
-            for (int x = 0; x < count; x++, index++)
-            {
-                char cc = s[index];
+            //long num = 0;
+            //bool neg = false;
+            //for (int x = 0; x < count; x++, index++)
+            //{
+            //    char cc = s[index];
 
-                if (cc == '-')
-                    neg = true;
-                else if (cc == '+')
-                    neg = false;
-                else
-                {
-                    num *= 10;
-                    num += (int)(cc - '0');
-                }
+            //    if (cc == '-')
+            //        neg = true;
+            //    else if (cc == '+')
+            //        neg = false;
+            //    else
+            //    {
+            //        num *= 10;
+            //        num += (int)(cc - '0');
+            //    }
+            //}
+            //if (neg) num = -num;
+
+            //return num;
+            bool neg = false;
+
+            char cc = s[index++];
+            if (cc == '-')
+            {
+                neg = true;
+                count--;
+                cc = s[index++];
             }
+            else if (cc == '+')
+            {
+                count--;
+                cc = s[index++];
+            }
+
+            long num = (long)(cc - '0');
+
+            while (--count > 0)
+                num = num * 10 + (long)(s[index++] - '0');
+
             if (neg) num = -num;
 
             return num;
@@ -112,22 +163,45 @@ namespace fastJSON
 
         public static int CreateInteger(string s, int index, int count)
         {
-            int num = 0;
-            bool neg = false;
-            for (int x = 0; x < count; x++, index++)
-            {
-                char cc = s[index];
+            //int num = 0;
+            //bool neg = false;
+            //for (int x = 0; x < count; x++, index++)
+            //{
+            //    char cc = s[index];
 
-                if (cc == '-')
-                    neg = true;
-                else if (cc == '+')
-                    neg = false;
-                else
-                {
-                    num *= 10;
-                    num += (int)(cc - '0');
-                }
+            //    if (cc == '-')
+            //        neg = true;
+            //    else if (cc == '+')
+            //        neg = false;
+            //    else
+            //    {
+            //        num *= 10;
+            //        num += (int)(cc - '0');
+            //    }
+            //}
+            //if (neg) num = -num;
+
+            //return num;
+            bool neg = false;
+
+            char cc = s[index++];
+            if (cc == '-')
+            {
+                neg = true;
+                count--;
+                cc = s[index++];
             }
+            else if (cc == '+')
+            {
+                count--;
+                cc = s[index++];
+            }
+
+            int num = (int)(cc - '0');
+
+            while (--count > 0)
+                num = num * 10 + (int)(s[index++] - '0');
+
             if (neg) num = -num;
 
             return num;
