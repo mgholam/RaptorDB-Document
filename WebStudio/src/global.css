@@ -1,0 +1,39 @@
+body {
+    font-family: sans-serif;
+    color: #222;
+    background: #414141;
+}
+
+.tab-content {
+    background-color: white;
+    padding: 5px;
+    padding-top: 15px;
+    min-height: 90vh;
+}
+
+.LogArea {
+    border-style: solid;
+    border-color: gray;
+    background-color: #e0e0e0;
+    padding: 5px;
+}
+
+.LogItems {
+    font-family: "Courier New", monospace;
+    white-space: pre-wrap;
+    font-size: smaller;
+}
+
+.JSONArea {
+    border-style: solid;
+    border-color: gray;
+    background-color: white;
+    padding: 5px;
+    min-height: 500px;
+}
+
+.JSON {
+    font-family: "Courier New", monospace;
+    white-space: pre-wrap;
+    font-size: smaller;
+}
