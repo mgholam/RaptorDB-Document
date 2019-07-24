@@ -148,6 +148,9 @@
           <label class="link2" on:click={() => addcolumn('.between(,)')}>
             Between
           </label>
+          <label class="link2" on:click={() => addcolumn('.in(,)')}>
+            In
+          </label>
           <label class="link2" on:click={() => addcolumn('.year')}>Year</label>
           <label class="link2" on:click={() => addcolumn('.month')}>
             Month
