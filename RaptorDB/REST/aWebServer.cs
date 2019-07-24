@@ -82,7 +82,7 @@ namespace RaptorDB
                     if (path == "")
                     {
                         ctx.Response.ContentType = "text/html";
-                        WriteResponse(ctx, 200, ReadFromStream(_WebCache[(webpath + "app.html").ToLower()]), false);
+                        WriteResponse(ctx, 200, ReadFromStream(_WebCache[(webpath + "index.html").ToLower()]), false);
                     }
                     else
                     {

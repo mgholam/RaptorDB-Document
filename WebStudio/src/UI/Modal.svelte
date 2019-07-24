@@ -19,21 +19,19 @@
     left: 0;
     width: 100%;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.55);
     z-index: 10;
   }
 
   .modal {
-    position: fixed;
-    top: 10vh;
-    left: 10%;
+    position: absolute;
+    top: 10vh; 
     width: 80%;
     max-height: 80vh;
     background: white;
     border-radius: 5px;
     z-index: 100;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
-    /* overflow: scroll; */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.96);
   }
 
   h1 {

@@ -1,4 +1,8 @@
-﻿v4.0.8
+﻿v4.0.9
+------
+- rewritten the web studio with Svelte
+
+v4.0.8
 ------
 - bug fix .string index files growing over time
 - upgrade to fastJSON v2.2.5

@@ -58,30 +58,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\app.html" Link="WEB\app.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\bundle.css" Link="WEB\bundle.css" />
     <EmbeddedResource Include="..\..\RaptorDB\WEB\favicon.ico" Link="WEB\favicon.ico" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\nav.html" Link="WEB\nav.html" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\global.css" Link="WEB\global.css" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\index.html" Link="WEB\index.html" />
     <EmbeddedResource Include="..\..\RaptorDB\WEB\raptordb.png" Link="WEB\raptordb.png" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\style.css" Link="WEB\style.css" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\configs.html" Link="WEB\pages\configs.html" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\dochistory.html" Link="WEB\pages\dochistory.html" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\docsearch.html" Link="WEB\pages\docsearch.html" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\docview.html" Link="WEB\pages\docview.html" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\fileview.html" Link="WEB\pages\fileview.html" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\hfbrowse.html" Link="WEB\pages\hfbrowse.html" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\query.html" Link="WEB\pages\query.html" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\schema.html" Link="WEB\pages\schema.html" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\schemadata.html" Link="WEB\pages\schemadata.html" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\ssquery.html" Link="WEB\pages\ssquery.html" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\pages\systeminfo.html" Link="WEB\pages\systeminfo.html" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="..\..\RaptorDB\Replication\msg.txt" Link="Replication\msg.txt" />
     <None Include="..\..\RaptorDB\Replication\Readme.txt" Link="Replication\Readme.txt" />
+    <EmbeddedResource Include="..\..\RaptorDB\WEB\bundle.js" Link="WEB\bundle.js" />
   </ItemGroup>
 
   <ItemGroup>
@@ -105,25 +92,11 @@
     <Folder Include="cron\" />
     <Folder Include="DataTypes\" />
     <Folder Include="Helper\" />
+    <Folder Include="WEB\" />
     <Folder Include="REST\" />
     <Folder Include="Replication\" />
     <Folder Include="Storage\" />
     <Folder Include="Views\" />
-    <Folder Include="WEB\JS\" />
-    <Folder Include="WEB\pages\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\docview.js" Link="WEB\JS\docview.js" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\extensions.js" Link="WEB\JS\extensions.js" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\hfview.js" Link="WEB\JS\hfview.js" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\nav.js" Link="WEB\JS\nav.js" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\query.js" Link="WEB\JS\query.js" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\raptordb.js" Link="WEB\JS\raptordb.js" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\schema.js" Link="WEB\JS\schema.js" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\ssquery.js" Link="WEB\JS\ssquery.js" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\system.js" Link="WEB\JS\system.js" />
-    <EmbeddedResource Include="..\..\RaptorDB\WEB\JS\weld.js" Link="WEB\JS\weld.js" />
   </ItemGroup>
 
 </Project>

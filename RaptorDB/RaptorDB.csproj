@@ -155,66 +155,16 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Replication\msg.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\nav.html" />
-    <EmbeddedResource Include="WEB\pages\query.html" />
-    <EmbeddedResource Include="WEB\JS\raptordb.js" />
-    <EmbeddedResource Include="WEB\raptordb.png" />
-    <EmbeddedResource Include="WEB\pages\ssquery.html" />
-    <EmbeddedResource Include="WEB\style.css" />
-    <EmbeddedResource Include="WEB\app.html" />
-    <EmbeddedResource Include="WEB\pages\systeminfo.html" />
-    <EmbeddedResource Include="WEB\pages\configs.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\pages\docview.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\pages\dochistory.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\pages\fileview.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\pages\docsearch.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\pages\hfbrowse.html" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="WEB\favicon.ico" />
+    <EmbeddedResource Include="WEB\raptordb.png" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="WEB\JS\nav.js" />
+    <EmbeddedResource Include="WEB\bundle.css" />
+    <EmbeddedResource Include="WEB\bundle.js" />
+    <EmbeddedResource Include="WEB\global.css" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="WEB\JS\query.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\JS\docview.js" />
-    <EmbeddedResource Include="WEB\JS\system.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\JS\hfview.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\JS\weld.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\JS\extensions.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\JS\ssquery.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\pages\schema.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\JS\schema.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="WEB\pages\schemadata.html" />
+    <EmbeddedResource Include="WEB\index.html" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

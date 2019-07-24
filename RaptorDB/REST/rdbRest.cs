@@ -340,7 +340,7 @@ namespace RaptorDB
                     string path = ctx.Request.Url.GetComponents(UriComponents.Path, UriFormat.Unescaped).ToLower();
 
                     var data = DoQuery(_rdb, ctx, path.Replace("raptordb/excelexport/", ""), null);
-                    ctx.Response.AddHeader("content-disposition", "attachment;filename='" + data.Title + ".csv'");
+                    ctx.Response.AddHeader("content-disposition", "attachment;filename=" + data.Title + ".csv");
                     ctx.Response.AddHeader("Content-Type", "application/vnd.ms-excel");
                     _log.Debug("exporting to excel rows : " + data.Rows.Count);
                     WriteResponse(ctx, 200, WriteCsv(data.Rows), true);

@@ -3,8 +3,6 @@ import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
-//import { uglify } from 'rollup-plugin-uglify';
-
 
 const production = !process.env.ROLLUP_WATCH;
 const dir = production ? "dist" : "public";
@@ -45,7 +43,6 @@ export default {
         // instead of npm run dev), minify
 
         production && terser()
-        //        production && uglify()
     ],
     watch: {
         clearScreen: true
