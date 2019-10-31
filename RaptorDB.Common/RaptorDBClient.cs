@@ -870,5 +870,10 @@ namespace RaptorDB
             p.Command = "" + COMMANDS.FreeMemory;
             ReturnPacket ret = (ReturnPacket)_client.Send(p);
         }
+
+        public void SaveToDocsOnViewInsert(bool yes)
+        {
+            // FIX: set on server
+        }
     }
 }

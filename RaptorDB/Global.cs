@@ -123,6 +123,8 @@
         //public static bool useSortedList = false;
 
         public static bool CompressBitmapBytes = false;
+
+        public static bool SkipDocsOnViewInsert = false;
     }
 
 

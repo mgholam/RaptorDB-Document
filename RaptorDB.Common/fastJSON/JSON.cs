@@ -7,6 +7,7 @@ using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Collections.Specialized;
+using RaptorDB.Common;
 
 namespace fastJSON
 {
@@ -104,6 +105,16 @@ namespace fastJSON
         /// When disabled you will get an exception if the types don't match
         /// </summary>
         public bool AutoConvertStringToNumbers = true;
+        /// <summary>
+        /// Override object equality hash code checking (default = false)
+        /// </summary>
+        public bool OverrideObjectHashCodeChecking = false;
+        /// <summary>
+        /// Checking black list types to prevent friday 13th json attacks (default = true)
+        /// 
+        /// Will throw an exception if encountered and set
+        /// </summary>
+        public bool BlackListTypeChecking = true;
 
         public void FixValues()
         {
@@ -140,7 +151,9 @@ namespace fastJSON
                 UseUTCDateTime = UseUTCDateTime,
                 UseValuesOfEnums = UseValuesOfEnums,
                 UsingGlobalTypes = UsingGlobalTypes,
-                AutoConvertStringToNumbers = AutoConvertStringToNumbers
+                AutoConvertStringToNumbers = AutoConvertStringToNumbers,
+                OverrideObjectHashCodeChecking = OverrideObjectHashCodeChecking,
+                BlackListTypeChecking = BlackListTypeChecking
             };
         }
     }
@@ -364,13 +377,17 @@ namespace fastJSON
     {
         public deserializer(JSONParameters param)
         {
+            if (param.OverrideObjectHashCodeChecking)
+                _circobj = new Dictionary<object, int>(10, ReferenceEqualityComparer.Default);
+            else
+                _circobj = new Dictionary<object, int>();
             param.FixValues();
             _params = param.MakeCopy();
         }
 
         private JSONParameters _params;
         private bool _usingglobals = false;
-        private Dictionary<object, int> _circobj = new Dictionary<object, int>();
+        private Dictionary<object, int> _circobj;// = new Dictionary<object, int>();
         private Dictionary<int, object> _cirrev = new Dictionary<int, object>();
 
         public T ToObject<T>(string json)
@@ -671,11 +688,11 @@ namespace fastJSON
                     if (globaltypes != null && globaltypes.TryGetValue((string)tn, out tname))
                         tn = tname;
                 }
-                type = Reflection.Instance.GetTypeFromCache((string)tn);
+                type = Reflection.Instance.GetTypeFromCache((string)tn, _params.BlackListTypeChecking);
             }
 
             if (type == null)
-                throw new Exception("Cannot determine type");
+                throw new Exception("Cannot determine type : " + tn);
 
             string typename = type.FullName;
             object o = input;

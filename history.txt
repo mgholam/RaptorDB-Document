@@ -1,4 +1,9 @@
-﻿v4.0.9
+﻿v4.0.10
+-------
+- upgrade to fastJSON v2.3.0
+- upgrade to fastBinaryJSON v1.6.0
+
+v4.0.9
 ------
 - rewritten the web studio with Svelte
 

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -18,6 +20,14 @@ namespace RaptorDB.Common
         // safesortedlist only
         //V GetValue(int index);
         //T GetKey(int index);
+    }
+
+    public class ReferenceEqualityComparer : IEqualityComparer, IEqualityComparer<object>
+    {
+        public static ReferenceEqualityComparer Default { get; } = new ReferenceEqualityComparer();
+
+        public new bool Equals(object x, object y) => x.Equals(y);
+        public int GetHashCode(object obj) => RuntimeHelpers.GetHashCode(obj);
     }
 
     public class SafeDictionary<TKey, TValue> : IKV<TKey, TValue>

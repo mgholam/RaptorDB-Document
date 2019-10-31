@@ -904,13 +904,16 @@ namespace RaptorDB
             int c = _viewManager.ViewDelete(filter);
             if (c > 0)
             {
-                // save this filter to docs
-                View_delete vd = new View_delete();
-                LINQString lq = new LINQString();
-                lq.Visit(filter);
-                vd.Filter = lq.sb.ToString();
-                vd.Viewname = _viewManager.GetViewName(typeof(TRowSchema));
-                _objStore.SetObject(vd.ID, vd);
+                if (Global.SkipDocsOnViewInsert)
+                {
+                    // save this filter to docs
+                    View_delete vd = new View_delete();
+                    LINQString lq = new LINQString();
+                    lq.Visit(filter);
+                    vd.Filter = lq.sb.ToString();
+                    vd.Viewname = _viewManager.GetViewName(typeof(TRowSchema));
+                    _objStore.SetObject(vd.ID, vd);
+                }
             }
             return c;
         }
@@ -927,11 +930,14 @@ namespace RaptorDB
             int c = _viewManager.ViewDelete(viewname, filter);
             if (c > 0)
             {
-                // save this filter to docs
-                View_delete vd = new View_delete();
-                vd.Filter = filter;
-                vd.Viewname = viewname;
-                _objStore.SetObject(vd.ID, vd);
+                if (Global.SkipDocsOnViewInsert)
+                {
+                    // save this filter to docs
+                    View_delete vd = new View_delete();
+                    vd.Filter = filter;
+                    vd.Viewname = viewname;
+                    _objStore.SetObject(vd.ID, vd);
+                }
             }
             return c;
         }
@@ -950,11 +956,14 @@ namespace RaptorDB
             {
                 if (_viewManager.ViewInsert(id, row))
                 {
-                    View_insert vi = new View_insert();
-                    vi.ID = id;
-                    vi.Viewname = vn;
-                    vi.RowObject = row;
-                    _objStore.SetObject(vi.ID, vi);
+                    if (Global.SkipDocsOnViewInsert == false)
+                    {
+                        View_insert vi = new View_insert();
+                        vi.ID = id;
+                        vi.Viewname = vn;
+                        vi.RowObject = row;
+                        _objStore.SetObject(vi.ID, vi);
+                    }
                     return true;
                 }
             }
@@ -972,11 +981,14 @@ namespace RaptorDB
         {
             if (_viewManager.ViewInsert(viewname, id, row))
             {
-                View_insert vi = new View_insert();
-                vi.ID = id;
-                vi.Viewname = viewname;
-                vi.RowObject = row;
-                _objStore.SetObject(vi.ID, vi);
+                if (Global.SkipDocsOnViewInsert == false)
+                {
+                    View_insert vi = new View_insert();
+                    vi.ID = id;
+                    vi.Viewname = viewname;
+                    vi.RowObject = row;
+                    _objStore.SetObject(vi.ID, vi);
+                }
                 return true;
             }
             return false;
@@ -1589,6 +1601,11 @@ namespace RaptorDB
                 _objHF.FreeMemory();
                 GC.Collect();// GC.MaxGeneration);
             }
+        }
+
+        public void SaveToDocsOnViewInsert(bool yes)
+        {
+            Global.SkipDocsOnViewInsert = yes;
         }
 
         #endregion

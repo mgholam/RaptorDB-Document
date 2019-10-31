@@ -1,6 +1,6 @@
 using System.Reflection;
-// build number = 593
-// build version = 4.0.9
+// build number = 606
+// build version = 4.0.10
 
 [assembly: AssemblyVersion("4.0.0.0")]
-[assembly: AssemblyFileVersion("4.0.9.593")]
+[assembly: AssemblyFileVersion("4.0.10.606")]

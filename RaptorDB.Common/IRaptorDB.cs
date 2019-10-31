@@ -372,5 +372,7 @@ namespace RaptorDB.Common
         void FreeMemory();
 
         void Shutdown();
+
+        void SaveToDocsOnViewInsert(bool yes);
     }
 }

@@ -105,6 +105,15 @@ namespace fastJSON
         private SafeDictionary<Type, Type[]> _genericTypes = new SafeDictionary<Type, Type[]>(10);
         private SafeDictionary<Type, Type> _genericTypeDef = new SafeDictionary<Type, Type>(10);
         private static SafeDictionary<short, OpCode> _opCodes;
+        private static List<string> _blacklistTypes = new List<string>()
+        {
+            "system.configuration.install.assemblyinstaller",
+            "system.activities.presentation.workflowdesigner",
+            "system.windows.resourcedictionary",
+            "system.windows.data.objectdataprovider",
+            "system.windows.forms.bindingsource",
+            "microsoft.exchange.management.systemmanager.winforms.exchangesettingsprovider"
+        };
 
         private static bool TryGetOpCode(short code, out OpCode opCode)
         {
@@ -260,7 +269,7 @@ namespace fastJSON
                         sd.Add(d.memberName, d);
                     else
 #endif
-                        sd.Add(p.Name.ToLowerInvariant(), d);
+                    sd.Add(p.Name.ToLowerInvariant(), d);
                 }
                 FieldInfo[] fi = type.GetFields(bf);
                 foreach (FieldInfo f in fi)
@@ -288,7 +297,7 @@ namespace fastJSON
                             sd.Add(d.memberName, d);
                         else
 #endif
-                            sd.Add(f.Name.ToLowerInvariant(), d);
+                        sd.Add(f.Name.ToLowerInvariant(), d);
                     }
                 }
 
@@ -378,13 +387,21 @@ namespace fastJSON
             }
         }
 
-        internal Type GetTypeFromCache(string typename)
+        internal Type GetTypeFromCache(string typename, bool blacklistChecking)
         {
             Type val = null;
             if (_typecache.TryGetValue(typename, out val))
                 return val;
             else
             {
+                // check for BLACK LIST types -> more secure when using $type
+                if (blacklistChecking)
+                {
+                    var tn = typename.Trim().ToLowerInvariant();
+                    foreach (var s in _blacklistTypes)
+                        if (tn.StartsWith(s, StringComparison.Ordinal))
+                            throw new Exception("Black list type encountered, possible attack vector when using $type : " + typename);
+                }
                 Type t = Type.GetType(typename);
 #if NET4
                 if (RDBMode)
